@@ -1,7 +1,5 @@
 name: Deploy to Hostinger (Manual)
 
-# Runs ONLY when you click "Run workflow" in the Actions tab.
-# It never runs automatically on a push.
 on:
   workflow_dispatch:
 
@@ -17,6 +15,8 @@ jobs:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          protocol: ftps
+          port: 21
           local-dir: ./
           server-dir: /public_html/mydutchwords/
           exclude: |
