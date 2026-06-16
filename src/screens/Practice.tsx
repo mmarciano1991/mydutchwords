@@ -1,7 +1,9 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { PracticeResult, Word } from "../lib/types";
 import { blankOut, isCorrect } from "../lib/blank";
+import { getExerciseSentence } from "../lib/exercise";
 import { CheckCircle, CrossCircle } from "../components/icons";
+import { GenderChip } from "../components/GenderChip";
 
 export function Practice({
   words,
@@ -15,23 +17,38 @@ export function Practice({
   const [index, setIndex] = useState(0);
   const [typed, setTyped] = useState("");
   const [checked, setChecked] = useState(false);
+  const [sentence, setSentence] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
   const results = useRef<PracticeResult[]>([]);
 
   const total = words.length;
   const word = words[index];
+
+  // Fetch a fresh AI sentence for each question (falls back to cache/example).
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setSentence(null);
+    getExerciseSentence(word).then((s) => {
+      if (active) {
+        setSentence(s);
+        setLoading(false);
+      }
+    });
+    return () => {
+      active = false;
+    };
+  }, [word]);
+
   const blanked = useMemo(
-    () => blankOut(word.exampleSentence, word.dutch),
-    [word]
+    () => (sentence ? blankOut(sentence, word.dutch) : null),
+    [sentence, word]
   );
   const correct = isCorrect(typed, word.dutch);
 
   function check() {
-    if (checked || !typed.trim()) return;
-    results.current.push({
-      wordId: word.id,
-      correct,
-      timestamp: Date.now(),
-    });
+    if (checked || !typed.trim() || loading) return;
+    results.current.push({ wordId: word.id, correct, timestamp: Date.now() });
     setChecked(true);
   }
 
@@ -50,7 +67,12 @@ export function Practice({
   return (
     <div className="screen pad-top">
       <div className="topbar">
-        <button className="iconbtn" onClick={onClose} aria-label="Close practice" style={{ width: 34, height: 34, borderRadius: 11, fontSize: 17 }}>
+        <button
+          className="iconbtn"
+          onClick={onClose}
+          aria-label="Close practice"
+          style={{ width: 34, height: 34, borderRadius: 11, fontSize: 17 }}
+        >
           ×
         </button>
         <div className="progress">
@@ -65,13 +87,22 @@ export function Practice({
         <div className="eyebrow">Fill in the blank</div>
 
         <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 14 }}>
+          <GenderChip gender={word.gender} size="sm" />
           <span className="muted" style={{ fontSize: 15.5 }}>
             means “<strong style={{ color: "var(--primary)" }}>{word.translation}</strong>”
           </span>
         </div>
 
         <div className="card" style={{ marginTop: 18, padding: "26px 22px", boxShadow: "var(--shadow-card)" }}>
-          {blanked.found ? (
+          {loading || !blanked ? (
+            <div className="sentence" style={{ color: "var(--text-faint)" }}>
+              <span className="skeleton-line" />
+              <span className="skeleton-line short" />
+              <span className="faint" style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: 12.5, marginTop: 12 }}>
+                Writing a fresh sentence…
+              </span>
+            </div>
+          ) : blanked.found ? (
             <div className="sentence">
               {blanked.before}
               {checked ? (
@@ -84,9 +115,7 @@ export function Practice({
               {blanked.after}
             </div>
           ) : (
-            <div className="sentence">
-              What's the Dutch word for “{word.translation}”?
-            </div>
+            <div className="sentence">What's the Dutch word for “{word.translation}”?</div>
           )}
         </div>
 
@@ -104,22 +133,20 @@ export function Practice({
             autoComplete="off"
             autoCapitalize="off"
             spellCheck={false}
+            disabled={loading}
           />
         ) : (
           <>
-            <div
-              className={`notice ${correct ? "notice--success" : "notice--error"}`}
-              style={{ marginTop: 20 }}
-            >
+            <div className={`notice ${correct ? "notice--success" : "notice--error"}`} style={{ marginTop: 20 }}>
               {correct ? <CheckCircle /> : <CrossCircle />}
               <span>
                 {correct ? "Goed zo! · Correct" : "Bijna — the answer was "}
                 {!correct && <strong>{word.dutch}</strong>}
               </span>
             </div>
-            {!correct && !blanked.found && (
+            {!correct && blanked && !blanked.found && (
               <p className="faint" style={{ fontSize: 13, marginTop: 10 }}>
-                {word.exampleSentence}
+                {sentence}
               </p>
             )}
           </>
@@ -129,9 +156,9 @@ export function Practice({
       <div className="gutter" style={{ padding: "10px 22px 32px" }}>
         {!checked ? (
           <button
-            className={`btn ${typed.trim() ? "btn--primary" : "btn--disabled"}`}
+            className={`btn ${typed.trim() && !loading ? "btn--primary" : "btn--disabled"}`}
             onClick={check}
-            disabled={!typed.trim()}
+            disabled={!typed.trim() || loading}
           >
             Check answer
           </button>

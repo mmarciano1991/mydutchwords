@@ -1,8 +1,12 @@
+/** Dutch grammatical article for nouns; null for non-nouns / unknown. */
+export type Gender = "de" | "het" | null;
+
 export interface Word {
   id: string;
   dutch: string;
   translation: string;
-  /** A Dutch example sentence that contains `dutch` (used for fill-in-the-blank). */
+  gender: Gender;
+  /** A Dutch example sentence that contains `dutch` (shown on capture; offline exercise fallback). */
   exampleSentence: string;
   dateAdded: number;
 }
@@ -13,8 +17,9 @@ export interface PracticeResult {
   timestamp: number;
 }
 
-/** What a lookup (Claude or fallback) returns for a captured word. */
+/** What a dictionary lookup (Claude proxy or offline fallback) returns. */
 export interface Lookup {
   translation: string;
+  gender: Gender;
   example_sentence: string;
 }

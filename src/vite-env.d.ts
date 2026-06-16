@@ -1,8 +1,8 @@
 /// <reference types="vite/client" />
 
 interface ImportMetaEnv {
-  readonly VITE_ANTHROPIC_API_KEY?: string;
-  readonly VITE_ANTHROPIC_MODEL?: string;
+  /** Override the proxy endpoint (defaults to "api.php" relative to the app). */
+  readonly VITE_API_BASE?: string;
 }
 
 interface ImportMeta {

@@ -4,6 +4,7 @@ import { lookupWord } from "../lib/anthropic";
 import { findDuplicate } from "../lib/storage";
 import { BackIcon, SaveIcon, SearchIcon } from "../components/icons";
 import { WarnCircle } from "../components/icons";
+import { GenderChip } from "../components/GenderChip";
 
 const SUGGESTIONS = ["tentoonstelling", "gewoonte", "fiets"];
 
@@ -50,6 +51,7 @@ export function AddWord({
       id: crypto.randomUUID(),
       dutch,
       translation: lookup.translation,
+      gender: lookup.gender,
       exampleSentence: lookup.example_sentence,
       dateAdded: Date.now(),
     });
@@ -149,7 +151,13 @@ export function AddWord({
 
         {status === "found" && lookup && (
           <div className="card" style={{ marginTop: 18, padding: 22 }}>
-            <div className="eyebrow">Translation</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
+              {lookup.gender ? (
+                <GenderChip gender={lookup.gender} />
+              ) : (
+                <span className="eyebrow">Translation</span>
+              )}
+            </div>
             <div style={{ fontFamily: "var(--font-serif)", fontSize: 37, fontWeight: 600, color: "var(--text-display)", marginTop: 9, lineHeight: 1.02 }}>
               {dutch}
             </div>
