@@ -1,0 +1,24 @@
+/* Woordkast — Typography
+   Spectral (serif) carries Dutch words & display — the "dictionary / fine china" voice.
+   Hanken Grotesk (sans) carries all UI chrome, labels, and body copy. */
+:root {
+  --font-serif: 'Spectral', Georgia, 'Times New Roman', serif;
+  --font-sans: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+
+  /* Display & word specimens (serif) */
+  --type-word-hero: 600 40px/1.1 var(--font-serif);   /* flashcard / capture word */
+  --type-display:   600 31px/1.06 var(--font-serif);  /* screen titles */
+  --type-word-row:  600 19px/1.15 var(--font-serif);  /* word in list */
+  --type-quote:     500 16.5px/1.5 var(--font-serif);  /* in-context example (italic) */
+
+  /* UI (sans) */
+  --type-button:    700 17px/1 var(--font-sans);
+  --type-body:      400 15px/1.55 var(--font-sans);
+  --type-body-sm:   400 13.5px/1.45 var(--font-sans);
+  --type-caption:   400 12.5px/1.4 var(--font-sans);
+  --type-label:     700 12px/1 var(--font-sans);      /* UPPERCASE, letter-spacing .12em */
+  --type-wordmark:  600 12px/1 var(--font-serif);     /* UPPERCASE, letter-spacing .18em */
+
+  --tracking-label: 0.12em;
+  --tracking-wordmark: 0.18em;
+}

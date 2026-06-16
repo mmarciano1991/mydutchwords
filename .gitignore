@@ -1,0 +1,21 @@
+node_modules/
+dist/
+*.local
+
+# TypeScript / build emit
+*.tsbuildinfo
+vite.config.js
+vite.config.d.ts
+
+.env
+.env.*
+!.env.example
+
+# Design exports (reference only — fetched on demand, not committed)
+*.tar.gz
+design-system/
+woordkast-design/
+
+# Editor / OS
+.DS_Store
+.vscode/

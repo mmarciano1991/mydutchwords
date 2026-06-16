@@ -1,0 +1,66 @@
+/* Woordkast — Color system (Delft Blue)
+   Inspired by Delftware porcelain: deep cobalt on warm porcelain cream. */
+:root {
+  /* — Delft blue ramp (primary) — */
+  --blue-900: #0F2B54;  /* deepest navy ink — display headings on light */
+  --blue-700: #1B4079;  /* PRIMARY — buttons, active nav, gender "de" */
+  --blue-500: #2E5EA8;  /* mid cobalt — illustration fill, secondary accents */
+  --blue-300: #6E92C4;  /* soft blue — ornament accents, muted icons */
+  --blue-200: #9DB6D8;  /* pale blue — dividers in summary, chart ghosts */
+  --blue-100: #DCE4F1;  /* wash — tag/pill backgrounds */
+  --blue-050: #EEF3FA;  /* faint tint — exercise card icon wells, flipped card */
+
+  /* — Porcelain neutrals — */
+  --cream-000: #FFFFFF;  /* card surfaces */
+  --cream-050: #FBF8F1;  /* app canvas (porcelain) */
+  --cream-100: #F0ECE1;  /* hairline on cream */
+  --cream-200: #EDE8DB;  /* card border on cream */
+  --cream-300: #E6E3D8;  /* gallery / deep canvas */
+  --line-cool: #E4E9F2;  /* cool border on white cards */
+  --line-cool-strong: #D7DEEA; /* input borders */
+
+  /* — Ink / text — */
+  --ink-900: #1B2638;  /* body text */
+  --ink-600: #5A6B86;  /* secondary text */
+  --ink-500: #6B7689;  /* tertiary / captions */
+  --ink-400: #9AA1AF;  /* faint labels, placeholders-on-card */
+  --ink-300: #A9B0BE;  /* input placeholder */
+
+  /* — Semantic: success (correct) — */
+  --success-fg: #2E5E40;
+  --success-solid: #3E7A57;
+  --success-bg: #E7F0EA;
+  --success-border: #C2DBCB;
+
+  /* — Semantic: caution (tricky / near-miss) — */
+  --caution-fg: #8A6A1E;
+  --caution-solid: #C99A2E;
+  --caution-bg: #FBF1DD;
+  --caution-border: #E9D5A6;
+
+  /* — Semantic: error (wrong / duplicate) — */
+  --error-fg: #9A3B22;
+  --error-solid: #B5462F;
+  --error-bg: #F7E8E2;
+  --error-border: #E7C6B8;
+
+  /* — Mastery dots — */
+  --mastery-new: #CDBA86;
+  --mastery-weak: #B5462F;
+  --mastery-strong: #3E7A57;
+
+  /* — Semantic aliases (use these in UI) — */
+  --bg-canvas: var(--cream-050);
+  --bg-canvas-deep: var(--cream-300);
+  --surface-card: var(--cream-000);
+  --surface-tint: var(--blue-050);
+  --primary: var(--blue-700);
+  --primary-press: var(--blue-900);
+  --on-primary: var(--cream-050);
+  --text-display: var(--blue-900);
+  --text-body: var(--ink-900);
+  --text-muted: var(--ink-600);
+  --text-faint: var(--ink-400);
+  --border-warm: var(--cream-200);
+  --border-cool: var(--line-cool);
+}
