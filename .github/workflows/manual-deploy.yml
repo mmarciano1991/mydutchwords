@@ -21,6 +21,16 @@ jobs:
       - name: Build
         run: npm run build
 
+      # Inject the Anthropic key into the build so the PHP proxy can use it.
+      # Only runs if the ANTHROPIC_API_KEY repo secret is set; otherwise the
+      # app stays on its offline fallback dictionary. The key is never committed
+      # and GitHub masks it in logs.
+      - name: Inject Anthropic key
+        if: ${{ secrets.ANTHROPIC_API_KEY != '' }}
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: printf "<?php\nreturn '%s';\n" "$ANTHROPIC_API_KEY" > dist/config.local.php
+
       - name: Upload to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
         with:
