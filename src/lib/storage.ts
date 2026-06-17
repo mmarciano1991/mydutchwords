@@ -1,6 +1,6 @@
-import type { PracticeResult, Word } from "./types";
+import type { DeckItem, PracticeResult } from "./types";
 
-const WORDS_KEY = "woordkast.words";
+const DECK_KEY = "woordkast.deck";
 const RESULTS_KEY = "woordkast.results";
 
 function read<T>(key: string, fallback: T): T {
@@ -20,13 +20,17 @@ function write(key: string, value: unknown): void {
   }
 }
 
-export function loadWords(): Word[] {
-  // Newest first.
-  return read<Word[]>(WORDS_KEY, []).sort((a, b) => b.dateAdded - a.dateAdded);
+/** The user's flashcard deck, newest first. */
+export function loadDeck(): DeckItem[] {
+  return read<DeckItem[]>(DECK_KEY, []).sort((a, b) => b.dateAdded - a.dateAdded);
 }
 
-export function saveWords(words: Word[]): void {
-  write(WORDS_KEY, words);
+export function saveDeck(deck: DeckItem[]): void {
+  write(DECK_KEY, deck);
+}
+
+export function isInDeck(deck: DeckItem[], entryId: string): boolean {
+  return deck.some((d) => d.id === entryId);
 }
 
 export function loadResults(): PracticeResult[] {
@@ -35,14 +39,4 @@ export function loadResults(): PracticeResult[] {
 
 export function saveResults(results: PracticeResult[]): void {
   write(RESULTS_KEY, results);
-}
-
-/** Normalise a Dutch word for duplicate comparison. */
-export function normalize(word: string): string {
-  return word.trim().toLowerCase();
-}
-
-export function findDuplicate(words: Word[], dutch: string): Word | undefined {
-  const n = normalize(dutch);
-  return words.find((w) => normalize(w.dutch) === n);
 }

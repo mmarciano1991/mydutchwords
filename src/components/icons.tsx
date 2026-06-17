@@ -86,6 +86,16 @@ export function ListIcon({ color = "currentColor" }: { color?: string }) {
   );
 }
 
+export function BookIcon({ color = "currentColor" }: { color?: string }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+      <path d="M5 4.5h9a2.5 2.5 0 012.5 2.5v12.5H7.5A2.5 2.5 0 015 17V4.5z" stroke={color} strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M16.5 7H19v12.5H7.5" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M8 8.5h5M8 11h5" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 export function GearIcon({ color = "currentColor" }: { color?: string }) {
   return (
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">

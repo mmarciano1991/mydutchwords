@@ -1,68 +1,35 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import type { PracticeResult, Word } from "../lib/types";
-import { blankOut, isCorrect } from "../lib/blank";
-import { getExerciseSentence } from "../lib/exercise";
-import { CheckCircle, CrossCircle } from "../components/icons";
+import { useState } from "react";
+import type { DictionaryEntry, PracticeResult } from "../lib/types";
 import { GenderChip } from "../components/GenderChip";
 
 export function Practice({
-  words,
+  entries,
   onFinish,
   onClose,
 }: {
-  words: Word[];
+  entries: DictionaryEntry[];
   onFinish: (results: PracticeResult[]) => void;
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(0);
-  const [typed, setTyped] = useState("");
-  const [checked, setChecked] = useState(false);
-  const [sentence, setSentence] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const results = useRef<PracticeResult[]>([]);
+  const [flipped, setFlipped] = useState(false);
+  const [results, setResults] = useState<PracticeResult[]>([]);
 
-  const total = words.length;
-  const word = words[index];
+  const total = entries.length;
+  const entry = entries[index];
 
-  // Fetch a fresh AI sentence for each question (falls back to cache/example).
-  useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setSentence(null);
-    getExerciseSentence(word).then((s) => {
-      if (active) {
-        setSentence(s);
-        setLoading(false);
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [word]);
-
-  const blanked = useMemo(
-    () => (sentence ? blankOut(sentence, word.dutch) : null),
-    [sentence, word]
-  );
-  const correct = isCorrect(typed, word.dutch);
-
-  function check() {
-    if (checked || !typed.trim() || loading) return;
-    results.current.push({ wordId: word.id, correct, timestamp: Date.now() });
-    setChecked(true);
-  }
-
-  function next() {
+  function answer(knew: boolean) {
+    const next = [...results, { entryId: entry.id, knew, timestamp: Date.now() }];
     if (index + 1 >= total) {
-      onFinish(results.current);
+      onFinish(next);
       return;
     }
+    setResults(next);
     setIndex(index + 1);
-    setTyped("");
-    setChecked(false);
+    setFlipped(false);
   }
 
-  const progress = ((index + (checked ? 1 : 0)) / total) * 100;
+  const progress = (index / total) * 100;
 
   return (
     <div className="screen pad-top">
@@ -83,90 +50,56 @@ export function Practice({
         </span>
       </div>
 
-      <div className="screen__body gutter" style={{ padding: "18px 22px 8px" }}>
-        <div className="eyebrow">Fill in the blank</div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 9, marginTop: 14 }}>
-          <GenderChip gender={word.gender} size="sm" />
-          <span className="muted" style={{ fontSize: 15.5 }}>
-            means “<strong style={{ color: "var(--primary)" }}>{word.translation}</strong>”
-          </span>
+      <div className="screen__body gutter" style={{ padding: "14px 22px 4px", display: "flex", flexDirection: "column" }}>
+        <div className="eyebrow" style={{ textAlign: "center" }}>
+          {flipped ? "Translation" : "Do you know this word?"}
         </div>
 
-        <div className="card" style={{ marginTop: 18, padding: "26px 22px", boxShadow: "var(--shadow-card)" }}>
-          {loading || !blanked ? (
-            <div className="sentence" style={{ color: "var(--text-faint)" }}>
-              <span className="skeleton-line" />
-              <span className="skeleton-line short" />
-              <span className="faint" style={{ display: "block", fontFamily: "var(--font-sans)", fontSize: 12.5, marginTop: 12 }}>
-                Writing a fresh sentence…
-              </span>
-            </div>
-          ) : blanked.found ? (
-            <div className="sentence">
-              {blanked.before}
-              {checked ? (
-                <span className={correct ? "blank blank--filled" : "blank blank--wrong"}>
-                  {correct ? blanked.answer : typed.trim() || "—"}
-                </span>
-              ) : (
-                <span className="blank" />
-              )}
-              {blanked.after}
+        <button
+          className="flashcard"
+          onClick={() => setFlipped((f) => !f)}
+          aria-label="Flip card"
+        >
+          {!flipped ? (
+            <div className="flashcard__face">
+              <span className="flashcard__label">Dutch</span>
+              <div className="flashcard__word">{entry.dutch}</div>
+              <div className="flashcard__hint">
+                <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
+                  <path d="M3 9a6 6 0 1010-4.5M3 9l-1.5-2M3 9l2-1.5" stroke="#A9B2C2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                Tap to flip
+              </div>
             </div>
           ) : (
-            <div className="sentence">What's the Dutch word for “{word.translation}”?</div>
-          )}
-        </div>
-
-        {!checked ? (
-          <input
-            className="text-input"
-            style={{ marginTop: 20 }}
-            value={typed}
-            onChange={(e) => setTyped(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") check();
-            }}
-            placeholder="Type the missing word"
-            autoFocus
-            autoComplete="off"
-            autoCapitalize="off"
-            spellCheck={false}
-            disabled={loading}
-          />
-        ) : (
-          <>
-            <div className={`notice ${correct ? "notice--success" : "notice--error"}`} style={{ marginTop: 20 }}>
-              {correct ? <CheckCircle /> : <CrossCircle />}
-              <span>
-                {correct ? "Goed zo! · Correct" : "Bijna — the answer was "}
-                {!correct && <strong>{word.dutch}</strong>}
-              </span>
+            <div className="flashcard__face flashcard__face--back">
+              <GenderChip gender={entry.gender} />
+              <div className="flashcard__translation">{entry.english}</div>
+              <div className="flashcard__rule" />
+              <div className="quote" style={{ fontStyle: "italic", color: "#46546F", textAlign: "center" }}>
+                {entry.example}
+              </div>
+              <div className="faint" style={{ fontSize: 13, marginTop: 6, textAlign: "center" }}>
+                {entry.exampleEn}
+              </div>
             </div>
-            {!correct && blanked && !blanked.found && (
-              <p className="faint" style={{ fontSize: 13, marginTop: 10 }}>
-                {sentence}
-              </p>
-            )}
-          </>
-        )}
+          )}
+        </button>
       </div>
 
-      <div className="gutter" style={{ padding: "10px 22px 32px" }}>
-        {!checked ? (
-          <button
-            className={`btn ${typed.trim() && !loading ? "btn--primary" : "btn--disabled"}`}
-            onClick={check}
-            disabled={!typed.trim() || loading}
-          >
-            Check answer
-          </button>
-        ) : (
-          <button className="btn btn--primary" onClick={next}>
-            {index + 1 >= total ? "See results" : "Next"}
-          </button>
-        )}
+      <div className="gutter" style={{ padding: "12px 22px 32px", display: "flex", gap: 12 }}>
+        <button className="btn btn--still" onClick={() => answer(false)}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M4 4l8 8M12 4l-8 8" stroke="#B5462F" strokeWidth="2" strokeLinecap="round" />
+          </svg>
+          Still learning
+        </button>
+        <button className="btn btn--success" onClick={() => answer(true)}>
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8.5l3.2 3.2L13 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          I knew it
+        </button>
       </div>
     </div>
   );

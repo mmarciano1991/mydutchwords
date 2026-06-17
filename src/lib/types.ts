@@ -1,25 +1,25 @@
-/** Dutch grammatical article for nouns; null for non-nouns / unknown. */
+/** Dutch grammatical article for nouns; null for non-nouns. */
 export type Gender = "de" | "het" | null;
 
-export interface Word {
+/** A bundled dictionary word (offline, authored). */
+export interface DictionaryEntry {
   id: string;
   dutch: string;
-  translation: string;
+  english: string;
   gender: Gender;
-  /** A Dutch example sentence that contains `dutch` (shown on capture; offline exercise fallback). */
-  exampleSentence: string;
+  example: string;
+  exampleEn: string;
+}
+
+/** A word the user has added to their flashcard deck (references a dictionary entry). */
+export interface DeckItem {
+  id: string; // dictionary entry id
   dateAdded: number;
 }
 
+/** One flashcard answer during a practice session. */
 export interface PracticeResult {
-  wordId: string;
-  correct: boolean;
+  entryId: string;
+  knew: boolean;
   timestamp: number;
-}
-
-/** What a dictionary lookup (Claude proxy or offline fallback) returns. */
-export interface Lookup {
-  translation: string;
-  gender: Gender;
-  example_sentence: string;
 }
