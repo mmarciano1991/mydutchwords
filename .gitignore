@@ -11,10 +11,6 @@ vite.config.d.ts
 .env.*
 !.env.example
 
-# Server secret — the real Anthropic key, never committed
-config.local.php
-public/config.local.php
-
 # Design exports (reference only — fetched on demand, not committed)
 *.tar.gz
 design-system/

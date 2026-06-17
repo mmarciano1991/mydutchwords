@@ -34,7 +34,7 @@ export function PracticeSummary({
           </span>
         </div>
         <div className="muted" style={{ fontSize: 14, marginTop: 6 }}>
-          answered correctly
+          words you knew
         </div>
       </div>
 

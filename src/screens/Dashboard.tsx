@@ -1,9 +1,9 @@
-import type { Word } from "../lib/types";
 import { HeroOrnament, TulipMedallion, Wordmark } from "../components/brand";
 import { ArrowRight, PlusIcon } from "../components/icons";
 import { GenderChip } from "../components/GenderChip";
+import type { DictionaryEntry } from "../lib/types";
 
-const PRACTICE_THRESHOLD = 5;
+const PRACTICE_MIN = 4;
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -14,20 +14,20 @@ function greeting(): string {
 }
 
 export function Dashboard({
-  words,
-  onAdd,
+  deck,
   onPractice,
-  onOpenWords,
+  onBrowse,
+  onOpenDeck,
 }: {
-  words: Word[];
-  onAdd: () => void;
+  deck: DictionaryEntry[];
   onPractice: () => void;
-  onOpenWords: () => void;
+  onBrowse: () => void;
+  onOpenDeck: () => void;
 }) {
-  const count = words.length;
-  const canPractice = count >= PRACTICE_THRESHOLD;
+  const count = deck.length;
+  const canPractice = count >= PRACTICE_MIN;
 
-  // ── First run: empty state ──
+  // ── Empty deck: invite to build it ──
   if (count === 0) {
     return (
       <div className="screen pad-top">
@@ -40,25 +40,24 @@ export function Dashboard({
             Dutch words, kept like fine&nbsp;china.
           </p>
           <p className="muted" style={{ fontSize: 15.5, margin: "18px 0 0", lineHeight: 1.6, maxWidth: 286 }}>
-            Start by capturing one word you read today. We'll translate it and
-            help you remember it.
+            Pick the words you want to learn from the built-in dictionary, then
+            practise them as flashcards.
           </p>
         </div>
         <div className="gutter" style={{ paddingBottom: 30 }}>
-          <button className="btn btn--primary" onClick={onAdd}>
-            <PlusIcon color="#FBF8F1" /> Capture your first word
+          <button className="btn btn--primary" onClick={onBrowse}>
+            <PlusIcon color="#FBF8F1" /> Build your deck
           </button>
           <p className="faint" style={{ textAlign: "center", fontSize: 12.5, margin: "13px 0 0" }}>
-            No account needed · Three taps to save
+            No account · works offline
           </p>
         </div>
       </div>
     );
   }
 
-  // ── Populated dashboard ──
-  const recent = words.slice(0, 4);
-  const remaining = PRACTICE_THRESHOLD - count;
+  const recent = deck.slice(0, 4);
+  const remaining = PRACTICE_MIN - count;
 
   return (
     <div className="screen pad-top">
@@ -72,12 +71,10 @@ export function Dashboard({
           <HeroOrnament />
           <div className="hero__label">Daily practice</div>
           <div className="hero__stat">
-            {canPractice ? `${count} words ready` : `${count} word${count === 1 ? "" : "s"} saved`}
+            {count} word{count === 1 ? "" : "s"} in your deck
           </div>
           <div className="hero__sub">
-            {canPractice
-              ? "Tricky ones come up more often."
-              : `${PRACTICE_THRESHOLD} words unlock practice`}
+            {canPractice ? "Flip the cards and rate yourself." : `${PRACTICE_MIN} words unlock practice`}
           </div>
 
           {canPractice ? (
@@ -86,7 +83,7 @@ export function Dashboard({
             </button>
           ) : (
             <div className="hero__locked">
-              Add {remaining} more word{remaining === 1 ? "" : "s"} to unlock practice.
+              Add {remaining} more word{remaining === 1 ? "" : "s"} to start practising.
             </div>
           )}
         </section>
@@ -95,26 +92,26 @@ export function Dashboard({
           <span style={{ fontFamily: "var(--font-serif)", fontSize: 18, fontWeight: 600, color: "var(--text-display)" }}>
             Your words
           </span>
-          <button className="link-btn faint" style={{ fontWeight: 400, fontSize: 12.5 }} onClick={onOpenWords}>
+          <button className="link-btn faint" style={{ fontWeight: 400, fontSize: 12.5 }} onClick={onOpenDeck}>
             See all
           </button>
         </div>
 
         <div className="wordlist">
-          {recent.map((w) => (
-            <div className="wordrow" key={w.id}>
+          {recent.map((e) => (
+            <div className="wordrow" key={e.id}>
               <span className="dot" />
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="wordrow__dutch">{w.dutch}</div>
-                <div className="wordrow__gloss">{w.translation}</div>
+                <div className="wordrow__dutch">{e.dutch}</div>
+                <div className="wordrow__gloss">{e.english}</div>
               </div>
-              <GenderChip gender={w.gender} size="sm" />
+              <GenderChip gender={e.gender} size="sm" />
             </div>
           ))}
         </div>
       </div>
 
-      <button className="fab" onClick={onAdd} aria-label="Add a new word">
+      <button className="fab" onClick={onBrowse} aria-label="Browse the dictionary">
         <PlusIcon size={26} color="#fff" />
       </button>
     </div>
