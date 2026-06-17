@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { Word } from "../lib/types";
 import { Wordmark } from "../components/brand";
 import { PlusIcon } from "../components/icons";
+import { GenderChip } from "../components/GenderChip";
 
 export function Dictionary({
   words,
@@ -50,6 +51,7 @@ export function Dictionary({
                         <div className="wordrow__dutch">{w.dutch}</div>
                         <div className="wordrow__gloss">{w.translation}</div>
                       </div>
+                      <GenderChip gender={w.gender} size="sm" />
                     </button>
 
                     {open && (

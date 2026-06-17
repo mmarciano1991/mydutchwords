@@ -1,86 +1,80 @@
-import type { Lookup } from "./types";
+import type { Gender, Lookup } from "./types";
 import { fallbackLookup } from "./fallbackDictionary";
-import { loadApiKey } from "./storage";
 
-const API_URL = "https://api.anthropic.com/v1/messages";
-const DEFAULT_MODEL = "claude-haiku-4-5-20251001";
+// The app talks to its own PHP proxy (same origin), never to Anthropic directly,
+// so the API key stays on the server. Relative path resolves under the app's
+// base (e.g. /mydutchwords/api.php). Overridable for other hosting setups.
+const API_URL = import.meta.env.VITE_API_BASE || "api.php";
 
-function resolveKey(): string {
-  return loadApiKey() || import.meta.env.VITE_ANTHROPIC_API_KEY || "";
+function normalizeGender(value: unknown): Gender {
+  return value === "de" || value === "het" ? value : null;
 }
 
-/** True when a real Claude lookup is possible (a key is configured). */
-export function hasApiKey(): boolean {
-  return resolveKey().length > 0;
-}
-
-function stripFences(text: string): string {
-  return text
-    .trim()
-    .replace(/^```(?:json)?/i, "")
-    .replace(/```$/, "")
-    .trim();
-}
-
-function buildPrompt(dutch: string): string {
-  return [
-    `You are a Dutch–English dictionary for a language learner.`,
-    `For the Dutch word "${dutch}", respond with ONLY a JSON object, no prose, no code fences:`,
-    `{"translation": "<concise English translation>", "example_sentence": "<one natural Dutch sentence that uses the word \\"${dutch}\\" verbatim>"}`,
-    `The example_sentence MUST contain the exact word "${dutch}".`,
-  ].join("\n");
+async function callProxy<T>(body: Record<string, unknown>): Promise<T> {
+  const res = await fetch(API_URL, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) throw new Error(`Proxy ${res.status}`);
+  return (await res.json()) as T;
 }
 
 /**
- * Look up a Dutch word's translation and a Dutch example sentence.
- *
- * Approach A from the build spec: one Claude call returning
- * { translation, example_sentence }. If no API key is configured or the call
- * fails, falls back to the offline dictionary so the demo always works.
+ * Look up a Dutch word: English translation, de/het gender, and an example
+ * sentence. Falls back to the offline dictionary if the backend is unreachable
+ * or not configured, so capture always works.
  */
 export async function lookupWord(dutch: string): Promise<Lookup> {
-  const apiKey = resolveKey();
-  if (!apiKey) return fallbackLookup(dutch);
-
   try {
-    const res = await fetch(API_URL, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        // Required to call the API directly from a browser.
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
-      body: JSON.stringify({
-        model: import.meta.env.VITE_ANTHROPIC_MODEL || DEFAULT_MODEL,
-        max_tokens: 200,
-        messages: [{ role: "user", content: buildPrompt(dutch) }],
-      }),
+    const data = await callProxy<Partial<Lookup> & { error?: string }>({
+      action: "lookup",
+      word: dutch,
     });
-
-    if (!res.ok) throw new Error(`Anthropic API ${res.status}`);
-
-    const data = (await res.json()) as {
-      content?: Array<{ type: string; text?: string }>;
-    };
-    const text = data.content?.find((b) => b.type === "text")?.text ?? "";
-    const parsed = JSON.parse(stripFences(text)) as Partial<Lookup>;
-
-    if (
-      typeof parsed.translation === "string" &&
-      typeof parsed.example_sentence === "string" &&
-      parsed.translation.trim() &&
-      parsed.example_sentence.trim()
-    ) {
+    if (data.error) throw new Error(data.error);
+    if (typeof data.translation === "string" && typeof data.example_sentence === "string") {
       return {
-        translation: parsed.translation.trim(),
-        example_sentence: parsed.example_sentence.trim(),
+        translation: data.translation.trim(),
+        gender: normalizeGender(data.gender),
+        example_sentence: data.example_sentence.trim(),
       };
     }
-    throw new Error("Unexpected response shape");
+    throw new Error("Unexpected lookup shape");
   } catch (err) {
-    console.warn("Claude lookup failed, using offline fallback:", err);
+    console.warn("Lookup via proxy failed, using offline fallback:", err);
     return fallbackLookup(dutch);
+  }
+}
+
+/**
+ * Generate a FRESH Dutch sentence that uses `dutch` verbatim, for a
+ * fill-in-the-blank exercise. Returns null on failure so the caller can fall
+ * back to a cached/stored sentence.
+ */
+export async function generateExerciseSentence(dutch: string): Promise<string | null> {
+  try {
+    const data = await callProxy<{ sentence?: string; error?: string }>({
+      action: "exercise",
+      word: dutch,
+    });
+    if (data.error || typeof data.sentence !== "string" || !data.sentence.trim()) {
+      throw new Error(data.error || "Unexpected exercise shape");
+    }
+    return data.sentence.trim();
+  } catch (err) {
+    console.warn("Exercise generation via proxy failed:", err);
+    return null;
+  }
+}
+
+/** Health check for Settings: is the proxy reachable and is a key configured? */
+export async function checkBackend(): Promise<{ reachable: boolean; configured: boolean }> {
+  try {
+    const res = await fetch(API_URL, { method: "GET" });
+    if (!res.ok) return { reachable: false, configured: false };
+    const data = (await res.json()) as { ok?: boolean; configured?: boolean };
+    return { reachable: Boolean(data.ok), configured: Boolean(data.configured) };
+  } catch {
+    return { reachable: false, configured: false };
   }
 }

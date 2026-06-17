@@ -1,6 +1,7 @@
 import type { Word } from "../lib/types";
 import { HeroOrnament, TulipMedallion, Wordmark } from "../components/brand";
 import { ArrowRight, PlusIcon } from "../components/icons";
+import { GenderChip } from "../components/GenderChip";
 
 const PRACTICE_THRESHOLD = 5;
 
@@ -107,6 +108,7 @@ export function Dashboard({
                 <div className="wordrow__dutch">{w.dutch}</div>
                 <div className="wordrow__gloss">{w.translation}</div>
               </div>
+              <GenderChip gender={w.gender} size="sm" />
             </div>
           ))}
         </div>
