@@ -1,4 +1,5 @@
 import type { DictionaryEntry } from "../lib/types";
+import { GENERATED } from "./freedict.generated";
 
 /**
  * Woordkast bundled dictionary — Dutch → English, with grammatical gender and a
@@ -196,15 +197,32 @@ const ENTRIES: Omit<DictionaryEntry, "id">[] = [
   { dutch: "kleur", english: "colour", gender: "de", example: "Blauw is mijn favoriete kleur.", exampleEn: "Blue is my favourite colour." },
 ];
 
-// De-duplicate by headword (keep first sense) and attach a stable id.
-const seen = new Set<string>();
-export const DICTIONARY: DictionaryEntry[] = ENTRIES.filter((e) => {
-  const key = e.dutch.toLowerCase();
-  if (seen.has(key)) return false;
-  seen.add(key);
-  return true;
-}).map((e) => ({ id: e.dutch.toLowerCase(), ...e }));
+// 1. Curated core: rich entries (translation + de/het gender + example).
+const ids = new Set<string>();
+const curated: DictionaryEntry[] = [];
+for (const e of ENTRIES) {
+  const id = e.dutch.toLowerCase();
+  if (ids.has(id)) continue;
+  ids.add(id);
+  curated.push({ id, ...e });
+}
 
+// 2. The rest of the FreeDict dictionary: real translations, no gender/example.
+const generated: DictionaryEntry[] = [];
+for (const [dutch, english] of GENERATED) {
+  const id = dutch.toLowerCase();
+  if (ids.has(id)) continue;
+  ids.add(id);
+  generated.push({ id, dutch, english, gender: null, example: "", exampleEn: "" });
+}
+
+/** The full bundled dictionary — curated (rich) words first, then the rest. */
+export const DICTIONARY: DictionaryEntry[] = [...curated, ...generated];
+
+/** Count of words that carry an example sentence (the curated core). */
+export const RICH_COUNT = curated.length;
+
+const BY_ID = new Map(DICTIONARY.map((e) => [e.id, e]));
 export function findEntry(id: string): DictionaryEntry | undefined {
-  return DICTIONARY.find((e) => e.id === id);
+  return BY_ID.get(id);
 }

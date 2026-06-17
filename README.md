@@ -20,11 +20,19 @@ picking the words you want to learn.
 
 ## The dictionary
 
-The dictionary lives in `src/data/dictionary.ts` — a plain array of
-`{ dutch, english, gender, example, exampleEn }`. It's authored by hand
-(translations, correct `de/het`, and example sentences) so the whole app works
-offline with no generation at runtime. **Adding words is trivial** — append
-entries to that array and rebuild.
+~22,700 Dutch→English words, fully bundled and offline, in two layers:
+
+- **Curated core** (`src/data/dictionary.ts`) — ~158 common words hand-authored
+  with `{ dutch, english, gender, example, exampleEn }`, i.e. correct `de/het`
+  gender and a natural example sentence. Add more by appending to that array.
+- **Full base** (`src/data/freedict.generated.ts`) — the rest of the dictionary,
+  generated from the open **FreeDict nld-eng** dataset (CC-BY-SA). These have
+  real English translations but no gender/example. Regenerate with
+  `node scripts/gen-freedict.mjs` (reads the FreeDict TEI).
+
+`dictionary.ts` merges the two (curated entries win) into one `DICTIONARY`.
+Flashcards work for every word (Dutch ⇄ translation); the example sentence and
+gender chip show only where present (the curated core).
 
 ## Develop
 

@@ -4,6 +4,8 @@ import { Wordmark } from "../components/brand";
 import { GenderChip } from "../components/GenderChip";
 import { SearchIcon, PlusIcon } from "../components/icons";
 
+const RENDER_LIMIT = 120;
+
 export function Browse({
   deckIds,
   onToggle,
@@ -14,15 +16,21 @@ export function Browse({
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
 
+  // Sort the whole dictionary once; filtering keeps that order.
+  const sorted = useMemo(
+    () => [...DICTIONARY].sort((a, b) => a.dutch.localeCompare(b.dutch, "nl")),
+    []
+  );
+
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q
-      ? DICTIONARY.filter(
-          (e) => e.dutch.toLowerCase().includes(q) || e.english.toLowerCase().includes(q)
-        )
-      : DICTIONARY;
-    return [...list].sort((a, b) => a.dutch.localeCompare(b.dutch, "nl"));
-  }, [query]);
+    if (!q) return sorted;
+    return sorted.filter(
+      (e) => e.dutch.toLowerCase().includes(q) || e.english.toLowerCase().includes(q)
+    );
+  }, [query, sorted]);
+
+  const shown = results.slice(0, RENDER_LIMIT);
 
   return (
     <div className="screen pad-top">
@@ -30,7 +38,7 @@ export function Browse({
         <Wordmark />
         <h1 className="title-serif" style={{ marginTop: 7 }}>Dictionary</h1>
         <p className="muted" style={{ fontSize: 13.5, margin: "4px 0 0" }}>
-          {DICTIONARY.length} words · tap + to add to your deck
+          {DICTIONARY.length.toLocaleString()} words · tap + to add to your deck
         </p>
         <label className="field" style={{ marginTop: 14 }}>
           <SearchIcon />
@@ -52,52 +60,68 @@ export function Browse({
             No words match “{query}”.
           </p>
         ) : (
-          <div className="wordlist">
-            {results.map((e) => {
-              const added = deckIds.has(e.id);
-              const open = openId === e.id;
-              return (
-                <div key={e.id}>
-                  <div className="wordrow" style={{ gap: 11 }}>
-                    <button
-                      onClick={() => setOpenId(open ? null : e.id)}
-                      aria-expanded={open}
-                      style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 13, background: "none", border: "none", textAlign: "left", padding: 0 }}
-                    >
-                      <span className="dot" />
-                      <span style={{ flex: 1, minWidth: 0 }}>
-                        <span className="wordrow__dutch" style={{ display: "block" }}>{e.dutch}</span>
-                        <span className="wordrow__gloss" style={{ display: "block" }}>{e.english}</span>
-                      </span>
-                      <GenderChip gender={e.gender} size="sm" />
-                    </button>
-                    <button
-                      className={`addbtn${added ? " addbtn--on" : ""}`}
-                      onClick={() => onToggle(e.id)}
-                      aria-label={added ? `Remove ${e.dutch}` : `Add ${e.dutch}`}
-                      aria-pressed={added}
-                    >
-                      {added ? (
-                        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                          <path d="M3.5 9.2l3.2 3.2L14.5 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      ) : (
-                        <PlusIcon size={18} color="#1B4079" />
-                      )}
-                    </button>
-                  </div>
-
-                  {open && (
-                    <div className="card" style={{ marginTop: 8, padding: "14px 18px", borderRadius: 16 }}>
-                      <div className="eyebrow" style={{ marginBottom: 7 }}>In context</div>
-                      <div className="quote">{e.example}</div>
-                      <div className="faint" style={{ fontSize: 13, marginTop: 5 }}>{e.exampleEn}</div>
+          <>
+            <div className="wordlist">
+              {shown.map((e) => {
+                const added = deckIds.has(e.id);
+                const open = openId === e.id;
+                return (
+                  <div key={e.id}>
+                    <div className="wordrow" style={{ gap: 11 }}>
+                      <button
+                        onClick={() => setOpenId(open ? null : e.id)}
+                        aria-expanded={open}
+                        style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 13, background: "none", border: "none", textAlign: "left", padding: 0 }}
+                      >
+                        <span className="dot" />
+                        <span style={{ flex: 1, minWidth: 0 }}>
+                          <span className="wordrow__dutch" style={{ display: "block" }}>{e.dutch}</span>
+                          <span className="wordrow__gloss" style={{ display: "block" }}>{e.english}</span>
+                        </span>
+                        <GenderChip gender={e.gender} size="sm" />
+                      </button>
+                      <button
+                        className={`addbtn${added ? " addbtn--on" : ""}`}
+                        onClick={() => onToggle(e.id)}
+                        aria-label={added ? `Remove ${e.dutch}` : `Add ${e.dutch}`}
+                        aria-pressed={added}
+                      >
+                        {added ? (
+                          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                            <path d="M3.5 9.2l3.2 3.2L14.5 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        ) : (
+                          <PlusIcon size={18} color="#1B4079" />
+                        )}
+                      </button>
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+
+                    {open && (
+                      <div className="card" style={{ marginTop: 8, padding: "14px 18px", borderRadius: 16 }}>
+                        {e.example ? (
+                          <>
+                            <div className="eyebrow" style={{ marginBottom: 7 }}>In context</div>
+                            <div className="quote">{e.example}</div>
+                            <div className="faint" style={{ fontSize: 13, marginTop: 5 }}>{e.exampleEn}</div>
+                          </>
+                        ) : (
+                          <div className="faint" style={{ fontSize: 13 }}>
+                            No example sentence yet — the flashcard shows the translation.
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {results.length > RENDER_LIMIT && (
+              <p className="faint" style={{ fontSize: 12.5, textAlign: "center", marginTop: 16 }}>
+                Showing {RENDER_LIMIT} of {results.length.toLocaleString()} — keep typing to narrow.
+              </p>
+            )}
+          </>
         )}
       </div>
     </div>

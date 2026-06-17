@@ -75,13 +75,17 @@ export function Practice({
             <div className="flashcard__face flashcard__face--back">
               <GenderChip gender={entry.gender} />
               <div className="flashcard__translation">{entry.english}</div>
-              <div className="flashcard__rule" />
-              <div className="quote" style={{ fontStyle: "italic", color: "#46546F", textAlign: "center" }}>
-                {entry.example}
-              </div>
-              <div className="faint" style={{ fontSize: 13, marginTop: 6, textAlign: "center" }}>
-                {entry.exampleEn}
-              </div>
+              {entry.example && (
+                <>
+                  <div className="flashcard__rule" />
+                  <div className="quote" style={{ fontStyle: "italic", color: "#46546F", textAlign: "center" }}>
+                    {entry.example}
+                  </div>
+                  <div className="faint" style={{ fontSize: 13, marginTop: 6, textAlign: "center" }}>
+                    {entry.exampleEn}
+                  </div>
+                </>
+              )}
             </div>
           )}
         </button>

@@ -1,5 +1,5 @@
 import { Wordmark } from "../components/brand";
-import { DICTIONARY } from "../data/dictionary";
+import { DICTIONARY, RICH_COUNT } from "../data/dictionary";
 
 export function Settings({ deckCount }: { deckCount: number }) {
   return (
@@ -15,10 +15,10 @@ export function Settings({ deckCount }: { deckCount: number }) {
             Fully offline
           </div>
           <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.55, margin: "8px 0 0" }}>
-            Woordkast ships with a built-in Dutch dictionary of {DICTIONARY.length} words —
-            each with its English meaning, <em>de/het</em> gender, and an example
-            sentence. Everything runs on your device; there's no account, no
-            internet needed, and nothing to pay for.
+            Woordkast ships with a built-in Dutch→English dictionary of{" "}
+            {DICTIONARY.length.toLocaleString()} words. A curated core of {RICH_COUNT} common
+            words also has <em>de/het</em> gender and an example sentence.
+            Everything runs on your device; no account, no internet, nothing to pay for.
           </p>
         </div>
 
