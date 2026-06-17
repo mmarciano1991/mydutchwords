@@ -31,7 +31,7 @@ jobs:
           port: 21
           # Give the FTPS control socket longer to connect (Hostinger can be
           # slow to answer; the 30s default was timing out).
-          timeout: 120000
+          timeout: 1200
           # Upload the production build only.
           local-dir: ./dist/
           server-dir: /public_html/mydutchwords/
