@@ -1,4 +1,5 @@
 import type { DictionaryEntry } from "../lib/types";
+import { GENERATED } from "./freedict.generated";
 
 /**
  * Woordkast bundled dictionary — Dutch → English, with grammatical gender and a
@@ -194,17 +195,179 @@ const ENTRIES: Omit<DictionaryEntry, "id">[] = [
   { dutch: "werk", english: "work / job", gender: "het", example: "Zij zoekt nieuw werk.", exampleEn: "She's looking for a new job." },
   { dutch: "geluid", english: "sound / noise", gender: "het", example: "Wat is dat voor geluid?", exampleEn: "What's that noise?" },
   { dutch: "kleur", english: "colour", gender: "de", example: "Blauw is mijn favoriete kleur.", exampleEn: "Blue is my favourite colour." },
+
+  // ── Batch 1: common words expansion ──
+  // Places in town
+  { dutch: "kerk", english: "church", gender: "de", example: "De kerk staat midden in het dorp.", exampleEn: "The church is in the middle of the village." },
+  { dutch: "museum", english: "museum", gender: "het", example: "Het museum is op maandag gesloten.", exampleEn: "The museum is closed on Mondays." },
+  { dutch: "restaurant", english: "restaurant", gender: "het", example: "We eten vanavond in een restaurant.", exampleEn: "We're eating at a restaurant tonight." },
+  { dutch: "hotel", english: "hotel", gender: "het", example: "Het hotel ligt vlak bij het strand.", exampleEn: "The hotel is right by the beach." },
+  { dutch: "bibliotheek", english: "library", gender: "de", example: "Ik leen boeken bij de bibliotheek.", exampleEn: "I borrow books from the library." },
+  { dutch: "supermarkt", english: "supermarket", gender: "de", example: "De supermarkt is tot tien uur open.", exampleEn: "The supermarket is open until ten." },
+  { dutch: "apotheek", english: "pharmacy", gender: "de", example: "Je haalt de medicijnen bij de apotheek.", exampleEn: "You collect the medicine from the pharmacy." },
+  { dutch: "bank", english: "bank", gender: "de", example: "Ik moet even naar de bank.", exampleEn: "I need to pop to the bank." },
+  { dutch: "park", english: "park", gender: "het", example: "We wandelen graag in het park.", exampleEn: "We like to walk in the park." },
+  { dutch: "plein", english: "square", gender: "het", example: "Op het plein staat een standbeeld.", exampleEn: "There's a statue on the square." },
+  { dutch: "strand", english: "beach", gender: "het", example: "In de zomer gaan we naar het strand.", exampleEn: "In summer we go to the beach." },
+  { dutch: "zee", english: "sea", gender: "de", example: "De zee is vandaag heel rustig.", exampleEn: "The sea is very calm today." },
+  { dutch: "bos", english: "forest / wood", gender: "het", example: "We fietsen door het bos.", exampleEn: "We cycle through the forest." },
+  { dutch: "berg", english: "mountain", gender: "de", example: "Vanaf de berg zie je het hele dal.", exampleEn: "From the mountain you can see the whole valley." },
+  { dutch: "dorp", english: "village", gender: "het", example: "Zij is in een klein dorp opgegroeid.", exampleEn: "She grew up in a small village." },
+
+  // House & rooms
+  { dutch: "kamer", english: "room", gender: "de", example: "Mijn kamer kijkt uit op de tuin.", exampleEn: "My room looks out onto the garden." },
+  { dutch: "keuken", english: "kitchen", gender: "de", example: "De keuken ruikt naar verse koffie.", exampleEn: "The kitchen smells of fresh coffee." },
+  { dutch: "badkamer", english: "bathroom", gender: "de", example: "De badkamer is net schoongemaakt.", exampleEn: "The bathroom has just been cleaned." },
+  { dutch: "slaapkamer", english: "bedroom", gender: "de", example: "De kinderen delen een slaapkamer.", exampleEn: "The children share a bedroom." },
+  { dutch: "tuin", english: "garden", gender: "de", example: "In de tuin bloeien de rozen.", exampleEn: "The roses are blooming in the garden." },
+  { dutch: "muur", english: "wall", gender: "de", example: "Aan de muur hangt een klok.", exampleEn: "There's a clock on the wall." },
+  { dutch: "vloer", english: "floor", gender: "de", example: "De vloer is koud onder je voeten.", exampleEn: "The floor is cold under your feet." },
+  { dutch: "trap", english: "stairs", gender: "de", example: "Neem de trap, niet de lift.", exampleEn: "Take the stairs, not the lift." },
+  { dutch: "lamp", english: "lamp", gender: "de", example: "Doe je de lamp even aan?", exampleEn: "Could you turn the lamp on?" },
+  { dutch: "bank", english: "couch / bank", gender: "de", example: "Hij ligt op de bank te slapen.", exampleEn: "He's asleep on the couch." },
+  { dutch: "spiegel", english: "mirror", gender: "de", example: "Ze kijkt in de spiegel.", exampleEn: "She looks in the mirror." },
+
+  // Kitchen & table
+  { dutch: "bord", english: "plate", gender: "het", example: "Zet de borden op tafel.", exampleEn: "Put the plates on the table." },
+  { dutch: "glas", english: "glass", gender: "het", example: "Mag ik nog een glas water?", exampleEn: "May I have another glass of water?" },
+  { dutch: "vork", english: "fork", gender: "de", example: "Er ligt geen vork bij mijn bord.", exampleEn: "There's no fork by my plate." },
+  { dutch: "mes", english: "knife", gender: "het", example: "Dit mes is niet scherp genoeg.", exampleEn: "This knife isn't sharp enough." },
+  { dutch: "lepel", english: "spoon", gender: "de", example: "Roer met een lepel door de soep.", exampleEn: "Stir the soup with a spoon." },
+  { dutch: "pan", english: "pan", gender: "de", example: "De pan staat op het vuur.", exampleEn: "The pan is on the stove." },
+  { dutch: "koelkast", english: "fridge", gender: "de", example: "De melk staat in de koelkast.", exampleEn: "The milk is in the fridge." },
+
+  // Clothing
+  { dutch: "jas", english: "coat", gender: "de", example: "Doe je jas aan, het is koud.", exampleEn: "Put your coat on, it's cold." },
+  { dutch: "broek", english: "trousers", gender: "de", example: "Deze broek is me te groot.", exampleEn: "These trousers are too big for me." },
+  { dutch: "overhemd", english: "shirt", gender: "het", example: "Hij draagt een wit overhemd.", exampleEn: "He's wearing a white shirt." },
+  { dutch: "schoen", english: "shoe", gender: "de", example: "Mijn linker schoen zit te strak.", exampleEn: "My left shoe is too tight." },
+  { dutch: "jurk", english: "dress", gender: "de", example: "Ze draagt een mooie blauwe jurk.", exampleEn: "She's wearing a lovely blue dress." },
+  { dutch: "trui", english: "sweater", gender: "de", example: "Trek een warme trui aan.", exampleEn: "Put on a warm sweater." },
+  { dutch: "bril", english: "glasses", gender: "de", example: "Zonder bril zie ik niets.", exampleEn: "Without glasses I can't see a thing." },
+
+  // Office & tech
+  { dutch: "computer", english: "computer", gender: "de", example: "Mijn computer is weer traag.", exampleEn: "My computer is slow again." },
+  { dutch: "scherm", english: "screen", gender: "het", example: "Het scherm is te fel.", exampleEn: "The screen is too bright." },
+  { dutch: "internet", english: "internet", gender: "het", example: "Het internet doet het niet.", exampleEn: "The internet isn't working." },
+  { dutch: "bestand", english: "file", gender: "het", example: "Ik kan het bestand niet openen.", exampleEn: "I can't open the file." },
+  { dutch: "bureau", english: "desk", gender: "het", example: "Mijn papieren liggen op het bureau.", exampleEn: "My papers are on the desk." },
+  { dutch: "vergadering", english: "meeting", gender: "de", example: "De vergadering duurt te lang.", exampleEn: "The meeting is taking too long." },
+  { dutch: "baas", english: "boss", gender: "de", example: "Mijn baas is vandaag in een goede bui.", exampleEn: "My boss is in a good mood today." },
+
+  // Money & shopping
+  { dutch: "prijs", english: "price", gender: "de", example: "De prijs is de afgelopen maand gestegen.", exampleEn: "The price has gone up over the past month." },
+  { dutch: "korting", english: "discount", gender: "de", example: "Er is korting op alle jassen.", exampleEn: "There's a discount on all coats." },
+  { dutch: "rekening", english: "bill / account", gender: "de", example: "Mag ik de rekening, alstublieft?", exampleEn: "Could I have the bill, please?" },
+  { dutch: "portemonnee", english: "wallet", gender: "de", example: "Ik ben mijn portemonnee vergeten.", exampleEn: "I've forgotten my wallet." },
+  { dutch: "kassa", english: "checkout / till", gender: "de", example: "Er staat een lange rij bij de kassa.", exampleEn: "There's a long queue at the checkout." },
+
+  // States & feelings
+  { dutch: "honger", english: "hunger", gender: "de", example: "Ik heb enorme honger.", exampleEn: "I'm really hungry." },
+  { dutch: "dorst", english: "thirst", gender: "de", example: "Na het sporten heb ik dorst.", exampleEn: "After exercising I'm thirsty." },
+  { dutch: "bang", english: "afraid", gender: null, example: "Het kind is bang voor de hond.", exampleEn: "The child is afraid of the dog." },
+  { dutch: "boos", english: "angry", gender: null, example: "Ze is boos op haar broer.", exampleEn: "She's angry with her brother." },
+  { dutch: "ziek", english: "sick / ill", gender: null, example: "Hij is ziek en blijft thuis.", exampleEn: "He's ill and staying home." },
+  { dutch: "druk", english: "busy", gender: null, example: "Het is druk in de winkel.", exampleEn: "The shop is busy." },
+
+  // More common verbs
+  { dutch: "koken", english: "to cook", gender: null, example: "Vanavond kook ik pasta.", exampleEn: "Tonight I'll cook pasta." },
+  { dutch: "wassen", english: "to wash", gender: null, example: "Ik moet mijn kleren nog wassen.", exampleEn: "I still have to wash my clothes." },
+  { dutch: "schoonmaken", english: "to clean", gender: null, example: "Op zaterdag maken we het huis schoon.", exampleEn: "On Saturdays we clean the house." },
+  { dutch: "gebruiken", english: "to use", gender: null, example: "Mag ik je pen even gebruiken?", exampleEn: "May I use your pen for a second?" },
+  { dutch: "beginnen", english: "to begin", gender: null, example: "De les begint over vijf minuten.", exampleEn: "The lesson begins in five minutes." },
+  { dutch: "sluiten", english: "to close", gender: null, example: "De winkels sluiten om zes uur.", exampleEn: "The shops close at six." },
+  { dutch: "openen", english: "to open", gender: null, example: "Ze openen morgen een nieuw filiaal.", exampleEn: "They're opening a new branch tomorrow." },
+  { dutch: "vragen", english: "to ask", gender: null, example: "Mag ik je iets vragen?", exampleEn: "May I ask you something?" },
+  { dutch: "bellen", english: "to call (phone)", gender: null, example: "Ik bel je vanavond terug.", exampleEn: "I'll call you back tonight." },
+  { dutch: "sturen", english: "to send", gender: null, example: "Ik stuur je het adres per bericht.", exampleEn: "I'll send you the address by message." },
+  { dutch: "brengen", english: "to bring", gender: null, example: "Kun je het pakket naar haar brengen?", exampleEn: "Can you bring the parcel to her?" },
+  { dutch: "zoeken", english: "to search / look for", gender: null, example: "Ik zoek mijn sleutels.", exampleEn: "I'm looking for my keys." },
+  { dutch: "verliezen", english: "to lose", gender: null, example: "Ik wil dit spel niet verliezen.", exampleEn: "I don't want to lose this game." },
+  { dutch: "winnen", english: "to win", gender: null, example: "Welk team gaat winnen?", exampleEn: "Which team is going to win?" },
+  { dutch: "proberen", english: "to try", gender: null, example: "Probeer het nog een keer.", exampleEn: "Try it one more time." },
+  { dutch: "kiezen", english: "to choose", gender: null, example: "Je mag zelf kiezen.", exampleEn: "You may choose yourself." },
+  { dutch: "veranderen", english: "to change", gender: null, example: "Er is veel veranderd in de stad.", exampleEn: "A lot has changed in the city." },
+  { dutch: "blijven", english: "to stay / remain", gender: null, example: "Blijf je vanavond thuis?", exampleEn: "Are you staying home tonight?" },
+  { dutch: "worden", english: "to become", gender: null, example: "Het wordt morgen warmer.", exampleEn: "It'll get warmer tomorrow." },
+  { dutch: "voelen", english: "to feel", gender: null, example: "Ik voel me vandaag veel beter.", exampleEn: "I feel much better today." },
+  { dutch: "horen", english: "to hear", gender: null, example: "Hoor je dat geluid ook?", exampleEn: "Do you hear that sound too?" },
+  { dutch: "kijken", english: "to look / watch", gender: null, example: "We kijken samen naar de wedstrijd.", exampleEn: "We're watching the match together." },
+  { dutch: "luisteren", english: "to listen", gender: null, example: "Luister goed naar de vraag.", exampleEn: "Listen carefully to the question." },
+  { dutch: "vergeten", english: "to forget", gender: null, example: "Vergeet je paraplu niet.", exampleEn: "Don't forget your umbrella." },
+  { dutch: "onthouden", english: "to remember", gender: null, example: "Dit woord is moeilijk te onthouden.", exampleEn: "This word is hard to remember." },
+  { dutch: "vertellen", english: "to tell", gender: null, example: "Vertel eens wat er gebeurd is.", exampleEn: "Tell me what happened." },
+  { dutch: "spelen", english: "to play", gender: null, example: "De kinderen spelen in de tuin.", exampleEn: "The children are playing in the garden." },
+  { dutch: "reizen", english: "to travel", gender: null, example: "Zij reist graag door Europa.", exampleEn: "She loves travelling through Europe." },
+  { dutch: "zwemmen", english: "to swim", gender: null, example: "In de zomer gaan we vaak zwemmen.", exampleEn: "In summer we often go swimming." },
+  { dutch: "zingen", english: "to sing", gender: null, example: "Hij zingt in een koor.", exampleEn: "He sings in a choir." },
+
+  // More common adjectives
+  { dutch: "lang", english: "long / tall", gender: null, example: "Het is een lange dag geweest.", exampleEn: "It's been a long day." },
+  { dutch: "kort", english: "short", gender: null, example: "We nemen een korte pauze.", exampleEn: "We're taking a short break." },
+  { dutch: "hoog", english: "high / tall", gender: null, example: "Die toren is erg hoog.", exampleEn: "That tower is very high." },
+  { dutch: "laag", english: "low", gender: null, example: "De prijzen zijn nu laag.", exampleEn: "The prices are low right now." },
+  { dutch: "breed", english: "wide", gender: null, example: "De rivier is hier heel breed.", exampleEn: "The river is very wide here." },
+  { dutch: "zwaar", english: "heavy", gender: null, example: "Deze koffer is te zwaar.", exampleEn: "This suitcase is too heavy." },
+  { dutch: "licht", english: "light", gender: null, example: "De tas is gelukkig licht.", exampleEn: "Luckily the bag is light." },
+  { dutch: "sterk", english: "strong", gender: null, example: "Hij is sterk genoeg om te helpen.", exampleEn: "He's strong enough to help." },
+  { dutch: "leeg", english: "empty", gender: null, example: "De fles is al leeg.", exampleEn: "The bottle is already empty." },
+  { dutch: "schoon", english: "clean", gender: null, example: "Mijn handen zijn weer schoon.", exampleEn: "My hands are clean again." },
+  { dutch: "vies", english: "dirty", gender: null, example: "Je schoenen zijn helemaal vies.", exampleEn: "Your shoes are completely dirty." },
+  { dutch: "nat", english: "wet", gender: null, example: "Mijn jas is nat van de regen.", exampleEn: "My coat is wet from the rain." },
+  { dutch: "droog", english: "dry", gender: null, example: "De handdoek is nog niet droog.", exampleEn: "The towel isn't dry yet." },
+  { dutch: "donker", english: "dark", gender: null, example: "Het wordt vroeg donker in de winter.", exampleEn: "It gets dark early in winter." },
+  { dutch: "stil", english: "quiet", gender: null, example: "Het is hier lekker stil.", exampleEn: "It's nice and quiet here." },
+  { dutch: "vroeg", english: "early", gender: null, example: "Ik sta morgen vroeg op.", exampleEn: "I'm getting up early tomorrow." },
+  { dutch: "laat", english: "late", gender: null, example: "Het is al laat, ik ga slapen.", exampleEn: "It's late already, I'm going to sleep." },
+  { dutch: "ver", english: "far", gender: null, example: "Is het station nog ver?", exampleEn: "Is the station still far?" },
+  { dutch: "aardig", english: "kind / nice", gender: null, example: "De buurvrouw is heel aardig.", exampleEn: "The neighbour is very kind." },
+  { dutch: "grappig", english: "funny", gender: null, example: "Dat was een grappig verhaal.", exampleEn: "That was a funny story." },
+  { dutch: "belangrijk", english: "important", gender: null, example: "Dit is een belangrijke vraag.", exampleEn: "This is an important question." },
+  { dutch: "gevaarlijk", english: "dangerous", gender: null, example: "Het is gevaarlijk om hier te zwemmen.", exampleEn: "It's dangerous to swim here." },
+  { dutch: "veilig", english: "safe", gender: null, example: "Hier kun je veilig oversteken.", exampleEn: "You can cross safely here." },
+  { dutch: "gezond", english: "healthy", gender: null, example: "Groente is heel gezond.", exampleEn: "Vegetables are very healthy." },
+  { dutch: "lekker", english: "tasty / nice", gender: null, example: "Dit brood is echt lekker.", exampleEn: "This bread is really tasty." },
+  { dutch: "saai", english: "boring", gender: null, example: "De film was nogal saai.", exampleEn: "The film was rather boring." },
+
+  // Time & direction words
+  { dutch: "nu", english: "now", gender: null, example: "We moeten nu vertrekken.", exampleEn: "We have to leave now." },
+  { dutch: "straks", english: "later (soon)", gender: null, example: "Ik bel je straks even.", exampleEn: "I'll call you in a bit." },
+  { dutch: "altijd", english: "always", gender: null, example: "Hij komt altijd te laat.", exampleEn: "He's always late." },
+  { dutch: "nooit", english: "never", gender: null, example: "Ik ben nog nooit in Parijs geweest.", exampleEn: "I've never been to Paris." },
+  { dutch: "soms", english: "sometimes", gender: null, example: "Soms regent het de hele dag.", exampleEn: "Sometimes it rains all day." },
+  { dutch: "vaak", english: "often", gender: null, example: "We gaan vaak naar de markt.", exampleEn: "We often go to the market." },
+  { dutch: "links", english: "left", gender: null, example: "Sla bij de kerk links af.", exampleEn: "Turn left at the church." },
+  { dutch: "rechts", english: "right", gender: null, example: "De bakker zit aan de rechterkant.", exampleEn: "The bakery is on the right." },
+  { dutch: "hier", english: "here", gender: null, example: "Kom je hier vaak?", exampleEn: "Do you come here often?" },
+  { dutch: "daar", english: "there", gender: null, example: "Daar staat je fiets.", exampleEn: "Your bike is over there." },
 ];
 
-// De-duplicate by headword (keep first sense) and attach a stable id.
-const seen = new Set<string>();
-export const DICTIONARY: DictionaryEntry[] = ENTRIES.filter((e) => {
-  const key = e.dutch.toLowerCase();
-  if (seen.has(key)) return false;
-  seen.add(key);
-  return true;
-}).map((e) => ({ id: e.dutch.toLowerCase(), ...e }));
+// 1. Curated core: rich entries (translation + de/het gender + example).
+const ids = new Set<string>();
+const curated: DictionaryEntry[] = [];
+for (const e of ENTRIES) {
+  const id = e.dutch.toLowerCase();
+  if (ids.has(id)) continue;
+  ids.add(id);
+  curated.push({ id, ...e });
+}
 
+// 2. The rest of the FreeDict dictionary: real translations, no gender/example.
+const generated: DictionaryEntry[] = [];
+for (const [dutch, english] of GENERATED) {
+  const id = dutch.toLowerCase();
+  if (ids.has(id)) continue;
+  ids.add(id);
+  generated.push({ id, dutch, english, gender: null, example: "", exampleEn: "" });
+}
+
+/** The full bundled dictionary — curated (rich) words first, then the rest. */
+export const DICTIONARY: DictionaryEntry[] = [...curated, ...generated];
+
+/** Count of words that carry an example sentence (the curated core). */
+export const RICH_COUNT = curated.length;
+
+const BY_ID = new Map(DICTIONARY.map((e) => [e.id, e]));
 export function findEntry(id: string): DictionaryEntry | undefined {
-  return DICTIONARY.find((e) => e.id === id);
+  return BY_ID.get(id);
 }

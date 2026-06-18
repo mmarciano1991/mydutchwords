@@ -1,6 +1,5 @@
 import { HeroOrnament, TulipMedallion, Wordmark } from "../components/brand";
 import { ArrowRight, PlusIcon } from "../components/icons";
-import { GenderChip } from "../components/GenderChip";
 import type { DictionaryEntry } from "../lib/types";
 
 const PRACTICE_MIN = 4;
@@ -17,12 +16,10 @@ export function Dashboard({
   deck,
   onPractice,
   onBrowse,
-  onOpenDeck,
 }: {
   deck: DictionaryEntry[];
   onPractice: () => void;
   onBrowse: () => void;
-  onOpenDeck: () => void;
 }) {
   const count = deck.length;
   const canPractice = count >= PRACTICE_MIN;
@@ -56,7 +53,6 @@ export function Dashboard({
     );
   }
 
-  const recent = deck.slice(0, 4);
   const remaining = PRACTICE_MIN - count;
 
   return (
@@ -87,33 +83,7 @@ export function Dashboard({
             </div>
           )}
         </section>
-
-        <div className="spread" style={{ alignItems: "baseline", margin: "24px 2px 13px" }}>
-          <span style={{ fontFamily: "var(--font-serif)", fontSize: 18, fontWeight: 600, color: "var(--text-display)" }}>
-            Your words
-          </span>
-          <button className="link-btn faint" style={{ fontWeight: 400, fontSize: 12.5 }} onClick={onOpenDeck}>
-            See all
-          </button>
-        </div>
-
-        <div className="wordlist">
-          {recent.map((e) => (
-            <div className="wordrow" key={e.id}>
-              <span className="dot" />
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div className="wordrow__dutch">{e.dutch}</div>
-                <div className="wordrow__gloss">{e.english}</div>
-              </div>
-              <GenderChip gender={e.gender} size="sm" />
-            </div>
-          ))}
-        </div>
       </div>
-
-      <button className="fab" onClick={onBrowse} aria-label="Browse the dictionary">
-        <PlusIcon size={26} color="#fff" />
-      </button>
     </div>
   );
 }
