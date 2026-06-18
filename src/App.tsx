@@ -4,7 +4,6 @@ import { findEntry } from "./data/dictionary";
 import { isInDeck, loadDeck, loadResults, saveDeck, saveResults } from "./lib/storage";
 import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
-import { Deck } from "./screens/Deck";
 import { Practice } from "./screens/Practice";
 import { PracticeSummary } from "./screens/PracticeSummary";
 import { Settings } from "./screens/Settings";
@@ -33,7 +32,7 @@ export default function App() {
   const deckIds = useMemo(() => new Set(deck.map((d) => d.id)), [deck]);
 
   const activeTab: Tab = useMemo(() => {
-    if (route === "browse" || route === "deck" || route === "settings") return route;
+    if (route === "browse" || route === "settings") return route;
     return "dashboard";
   }, [route]);
 
@@ -43,10 +42,6 @@ export default function App() {
         ? prev.filter((d) => d.id !== entryId)
         : [{ id: entryId, dateAdded: Date.now() }, ...prev]
     );
-  }
-
-  function removeWord(entryId: string) {
-    setDeck((prev) => prev.filter((d) => d.id !== entryId));
   }
 
   function startPractice() {
@@ -75,15 +70,10 @@ export default function App() {
               deck={deckEntries}
               onPractice={startPractice}
               onBrowse={() => setRoute("browse")}
-              onOpenDeck={() => setRoute("deck")}
             />
           )}
 
           {route === "browse" && <Browse deckIds={deckIds} onToggle={toggleWord} />}
-
-          {route === "deck" && (
-            <Deck entries={deckEntries} onRemove={removeWord} onBrowse={() => setRoute("browse")} />
-          )}
 
           {route === "settings" && <Settings deckCount={deck.length} />}
 

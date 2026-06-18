@@ -1,6 +1,6 @@
-import { BookIcon, GearIcon, HomeIcon, ListIcon } from "./icons";
+import { BookIcon, GearIcon, HomeIcon } from "./icons";
 
-export type Tab = "dashboard" | "browse" | "deck" | "settings";
+export type Tab = "dashboard" | "browse" | "settings";
 
 export function TabBar({
   active,
@@ -28,7 +28,6 @@ export function TabBar({
     <nav className="tabbar">
       {item("dashboard", "Home", (c) => <HomeIcon color={c} />)}
       {item("browse", "Dictionary", (c) => <BookIcon color={c} />)}
-      {item("deck", "Words", (c) => <ListIcon color={c} />)}
       {item("settings", "About", (c) => <GearIcon color={c} />)}
     </nav>
   );
