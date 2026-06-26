@@ -1,9 +1,9 @@
 /* Woordkast app styles — Delft Blue.
    Tokens are imported first; everything below consumes them. */
 @import "./tokens/fonts.css";
-@import "./tokens/colors.css";
+@import "./tokens/_generated.css"; /* AUTO-GENERATED from Figma — color/spacing/radius/grid/size tokens. Run `npm run tokens`. */
+@import "./tokens/shadows.css";
 @import "./tokens/typography.css";
-@import "./tokens/spacing.css";
 
 *,
 *::before,
@@ -180,7 +180,7 @@ input {
 .btn--secondary {
   background: var(--surface-card);
   color: var(--primary);
-  border: 1.5px solid #c9d3e5;
+  border: 1.5px solid var(--line-blue-soft);
   box-shadow: none;
   font-size: 15.5px;
   padding: 13px;
@@ -189,15 +189,15 @@ input {
 
 .btn--success {
   background: var(--success-solid);
-  color: #fff;
+  color: var(--cream-000);
   box-shadow: var(--shadow-success);
 }
 
 /* Flashcard "still learning" (left) button */
 .btn--still {
   flex: 1;
-  border: 1.5px solid #e2c3b8;
-  background: #fff;
+  border: 1.5px solid var(--error-border-soft);
+  background: var(--cream-000);
   color: var(--error-fg);
   box-shadow: none;
   font-size: 15px;
@@ -214,7 +214,7 @@ input {
 .btn--disabled,
 .btn:disabled {
   background: var(--bg-canvas-deep);
-  color: #aaa597;
+  color: var(--ink-disabled);
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -347,7 +347,7 @@ input {
   align-items: center;
   gap: 11px;
   padding: 2px 14px 2px 15px;
-  box-shadow: 0 2px 9px rgba(15, 43, 84, 0.05);
+  box-shadow: var(--shadow-field);
   transition: border-color 0.12s ease;
 }
 
@@ -399,10 +399,10 @@ input {
 }
 .chip--de {
   background: var(--primary);
-  color: #fff;
+  color: var(--cream-000);
 }
 .chip--het {
-  background: #fff;
+  background: var(--cream-000);
   color: var(--primary);
   box-shadow: inset 0 0 0 1.6px var(--primary);
 }
@@ -448,8 +448,8 @@ input {
   width: 38px;
   height: 38px;
   border-radius: 12px;
-  border: 1px solid #e2ddcf;
-  background: #fff;
+  border: 1px solid var(--line-warm);
+  background: var(--cream-000);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -505,7 +505,7 @@ input {
   height: 60px;
   border-radius: var(--radius-fab);
   background: var(--primary);
-  color: #fff;
+  color: var(--cream-000);
   border: none;
   box-shadow: var(--shadow-fab);
   display: flex;
@@ -517,7 +517,7 @@ input {
   font-family: var(--font-serif);
   font-style: italic;
   font-size: 16.5px;
-  color: #34405a;
+  color: var(--ink-quote);
   line-height: 1.5;
 }
 
@@ -528,7 +528,7 @@ input {
   flex-shrink: 0;
   border-radius: 12px;
   border: 1.5px solid var(--line-cool-strong);
-  background: #fff;
+  background: var(--cream-000);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -539,7 +539,7 @@ input {
   border-color: var(--success-solid);
 }
 .addbtn--remove {
-  border-color: #e2c3b8;
+  border-color: var(--error-border-soft);
 }
 
 /* ── Flashcard ── */
@@ -559,7 +559,7 @@ input {
   max-width: 300px;
   min-height: 360px;
   box-sizing: border-box;
-  background: #fff;
+  background: var(--cream-000);
   border: 1px solid var(--border-cool);
   border-radius: var(--radius-card-lg);
   box-shadow: var(--shadow-float);
@@ -572,11 +572,11 @@ input {
 }
 .flashcard__face--back {
   background: var(--blue-050);
-  border-color: #cbd8ec;
+  border-color: var(--blue-back-border);
 }
 .flashcard__label {
   font-size: 11.5px;
-  color: #a9b2c2;
+  color: var(--ink-hint);
   text-transform: uppercase;
   letter-spacing: 0.14em;
   font-weight: 700;
@@ -594,7 +594,7 @@ input {
   align-items: center;
   gap: 7px;
   margin-top: 24px;
-  color: #a9b2c2;
+  color: var(--ink-hint);
   font-size: 12.5px;
   font-weight: 600;
 }
@@ -609,7 +609,7 @@ input {
 .flashcard__rule {
   height: 1px;
   width: 60px;
-  background: #c2cfe4;
+  background: var(--blue-rule);
   margin: 18px 0;
 }
 
@@ -631,7 +631,7 @@ input {
 }
 .divider {
   height: 1px;
-  background: #eef0f4;
+  background: var(--line-divider);
 }
 .link-btn {
   background: none;
