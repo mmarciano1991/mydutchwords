@@ -10582,7 +10582,7 @@ const ENTRIES: Omit<DictionaryEntry, "id">[] = [
   { dutch: "behartigen", english: "to look after / promote", gender: null, example: "De vakbond behartigt de belangen van werknemers.", exampleEn: "The trade union looks after the interests of employees." },
   { dutch: "bekommernis", english: "concern / worry", gender: "de", example: "De bekommernis om het milieu groeit.", exampleEn: "Concern about the environment is growing." },
   { dutch: "belachelijk", english: "ridiculous / absurd", gender: null, example: "Zijn kleding was belachelijk.", exampleEn: "His clothing was ridiculous." },
-  { dutch: "bespiegeling", english: "reflection / contemplation", gender: "de", example: "De bespiegeling over het leven", exampleEn: "The contemplation of life." },
+  { dutch: "bespiegeling", english: "reflection / contemplation", gender: "de", example: "Zijn bespiegeling over het leven was diepzinnig.", exampleEn: "His contemplation of life was profound." },
   { dutch: "bevrediging", english: "satisfaction / gratification", gender: "de", example: "De bevrediging van zijn werk was groot.", exampleEn: "The satisfaction from his work was great." },
   { dutch: "bezieling", english: "inspiration / animation", gender: "de", example: "De bezieling van de dirigent was voelbaar.", exampleEn: "The inspiration of the conductor was palpable." },
   { dutch: "bijbel", english: "Bible", gender: "de", example: "De bijbel is het heilige boek van het christendom.", exampleEn: "The Bible is the holy book of Christianity." },
