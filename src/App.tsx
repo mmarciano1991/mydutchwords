@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import { findEntry } from "./data/dictionary";
 import { isInDeck, loadDeck, loadResults, saveDeck, saveResults } from "./lib/storage";
+import { isMastered, recallCounts } from "./lib/confidence";
 import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
 import { Practice } from "./screens/Practice";
@@ -31,6 +32,9 @@ export default function App() {
   );
   const deckIds = useMemo(() => new Set(deck.map((d) => d.id)), [deck]);
 
+  // Successful-recall tally per word, used for confidence bars + mastery gating.
+  const recalls = useMemo(() => recallCounts(results), [results]);
+
   const activeTab: Tab = useMemo(() => {
     if (route === "browse" || route === "settings") return route;
     return "dashboard";
@@ -45,8 +49,10 @@ export default function App() {
   }
 
   function startPractice() {
-    if (deckEntries.length === 0) return;
-    setQueue(deckEntries);
+    // Mastered words (15+ successful recalls) are retired from practice.
+    const due = deckEntries.filter((e) => !isMastered(recalls.get(e.id) ?? 0));
+    if (due.length === 0) return;
+    setQueue(due);
     setRoute("practice");
   }
 
@@ -73,7 +79,9 @@ export default function App() {
             />
           )}
 
-          {route === "browse" && <Browse deckIds={deckIds} onToggle={toggleWord} />}
+          {route === "browse" && (
+            <Browse deckIds={deckIds} recalls={recalls} onToggle={toggleWord} />
+          )}
 
           {route === "settings" && <Settings deckCount={deck.length} />}
 

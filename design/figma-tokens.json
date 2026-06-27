@@ -34,7 +34,7 @@
       { "name": "error/bg", "css": "error-bg", "type": "COLOR", "value": { "color": "#f7e8e2", "alpha": 1 } },
       { "name": "error/border", "css": "error-border", "type": "COLOR", "value": { "color": "#e7c6b8", "alpha": 1 } },
       { "name": "mastery/new", "css": "mastery-new", "type": "COLOR", "value": { "color": "#cdba86", "alpha": 1 } },
-      { "name": "mastery/weak", "css": "mastery-weak", "type": "COLOR", "value": { "color": "#b5462f", "alpha": 1 } },
+      { "name": "mastery/weak", "css": "mastery-weak", "type": "COLOR", "value": { "color": "#5a6b86", "alpha": 1 } },
       { "name": "mastery/strong", "css": "mastery-strong", "type": "COLOR", "value": { "color": "#3e7a57", "alpha": 1 } },
       { "name": "semantic/bg-canvas", "css": "bg-canvas", "type": "COLOR", "value": { "alias": "cream-050" } },
       { "name": "semantic/bg-canvas-deep", "css": "bg-canvas-deep", "type": "COLOR", "value": { "alias": "cream-300" } },
