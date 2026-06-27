@@ -2,7 +2,8 @@ import { useMemo, useState } from "react";
 import { DICTIONARY } from "../data/dictionary";
 import { Wordmark } from "../components/brand";
 import { GenderChip } from "../components/GenderChip";
-import { SearchIcon, PlusIcon } from "../components/icons";
+import { IconButton } from "../components/IconButton";
+import { SearchIcon } from "../components/icons";
 
 const RENDER_LIMIT = 120;
 
@@ -80,20 +81,13 @@ export function Browse({
                         </span>
                         <GenderChip gender={e.gender} size="sm" />
                       </button>
-                      <button
-                        className={`addbtn${added ? " addbtn--on" : ""}`}
+                      <IconButton
+                        action="add"
+                        success={added}
                         onClick={() => onToggle(e.id)}
                         aria-label={added ? `Remove ${e.dutch}` : `Add ${e.dutch}`}
                         aria-pressed={added}
-                      >
-                        {added ? (
-                          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                            <path d="M3.5 9.2l3.2 3.2L14.5 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
-                        ) : (
-                          <PlusIcon size={18} color="#1B4079" />
-                        )}
-                      </button>
+                      />
                     </div>
 
                     {open && (

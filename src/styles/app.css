@@ -444,17 +444,44 @@ input {
   padding: 4px 20px 4px;
 }
 
-.iconbtn {
+/* ── IconButton (add · close · remove) — default / pressed / success ──
+   Merged from the former IconButton + AddButton (Figma node 61:22). */
+.icon-btn {
   width: 38px;
   height: 38px;
-  border-radius: 12px;
-  border: 1px solid var(--line-warm);
-  background: var(--cream-000);
+  flex-shrink: 0;
+  padding: 0;
+  border-radius: var(--radius-input);
+  border: 1.5px solid var(--line-cool-strong);
+  background: var(--surface-card);
+  color: var(--primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  color: var(--text-muted);
+  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+.icon-btn svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+/* add + close: cool border, primary glyph (default). add has a pressed tint. */
+.icon-btn--add:active {
+  background: var(--surface-tint);
+}
+/* remove: error border, caution glyph; pressed deepens the canvas. */
+.icon-btn--remove {
+  border-color: var(--error-border);
+  color: var(--caution-solid);
+}
+.icon-btn--remove:active {
+  background: var(--bg-canvas-deep);
+}
+/* success (added): solid green chip with a light check. */
+.icon-btn--success {
+  background: var(--success-solid);
+  border-color: var(--success-solid);
+  color: var(--success-bg);
 }
 
 .progress {
@@ -521,26 +548,7 @@ input {
   line-height: 1.5;
 }
 
-/* ── Add / remove button on dictionary & deck rows ── */
-.addbtn {
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-  border-radius: 12px;
-  border: 1.5px solid var(--line-cool-strong);
-  background: var(--cream-000);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.12s ease, border-color 0.12s ease;
-}
-.addbtn--on {
-  background: var(--success-solid);
-  border-color: var(--success-solid);
-}
-.addbtn--remove {
-  border-color: var(--error-border-soft);
-}
+/* (Add / remove buttons are now the unified .icon-btn component above.) */
 
 /* ── Flashcard ── */
 .flashcard {
