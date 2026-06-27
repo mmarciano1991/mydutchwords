@@ -627,11 +627,23 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
+  perspective: 1400px; /* depth for the 3D flip */
 }
-.flashcard__face {
-  position: relative;
+/* Rotating container: both faces are stacked (grid) and share the cell, so the
+   card sizes to the taller face and the two faces flip together. */
+.flashcard__inner {
+  display: grid;
   width: 100%;
   max-width: 300px;
+  transform-style: preserve-3d;
+  transition: transform var(--motion-flip) var(--ease-emphasized);
+}
+.flashcard__inner.is-flipped {
+  transform: rotateY(180deg);
+}
+.flashcard__face {
+  grid-area: 1 / 1; /* stack both faces in the same cell */
+  width: 100%;
   min-height: 360px;
   box-sizing: border-box;
   background: var(--surface-card);
@@ -645,10 +657,13 @@ input {
   gap: var(--space-3);
   padding: 28px;
   text-align: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 .flashcard__face--back {
   background: var(--surface-tint);
   border-color: var(--primary-border);
+  transform: rotateY(180deg); /* pre-rotated so it reads correctly when flipped */
 }
 .flashcard__word {
   font-family: var(--font-serif);

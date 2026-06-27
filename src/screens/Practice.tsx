@@ -55,15 +55,14 @@ export function Practice({
           onClick={() => setFlipped((f) => !f)}
           aria-label="Flip card"
         >
-          {!flipped ? (
-            <div className="flashcard__face">
+          <div className={`flashcard__inner${flipped ? " is-flipped" : ""}`}>
+            <div className="flashcard__face flashcard__face--front">
               <GenderChip gender={entry.gender} />
               <div className="flashcard__word">{entry.dutch}</div>
               {entry.example && <Divider />}
               {entry.example && <div className="flashcard__example">{entry.example}</div>}
               <div className="flashcard__hint">Tap to flip</div>
             </div>
-          ) : (
             <div className="flashcard__face flashcard__face--back">
               <GenderChip gender={entry.gender} />
               <div className="flashcard__word">{entry.english}</div>
@@ -71,7 +70,7 @@ export function Practice({
               {entry.exampleEn && <div className="flashcard__example">{entry.exampleEn}</div>}
               <div className="flashcard__hint">Tap to flip</div>
             </div>
-          )}
+          </div>
         </button>
       </div>
 
