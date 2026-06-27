@@ -1,6 +1,7 @@
 import { useState } from "react";
 import type { DictionaryEntry, PracticeResult } from "../lib/types";
 import { GenderChip } from "../components/GenderChip";
+import { IconButton } from "../components/IconButton";
 
 export function Practice({
   entries,
@@ -34,14 +35,7 @@ export function Practice({
   return (
     <div className="screen pad-top">
       <div className="topbar">
-        <button
-          className="iconbtn"
-          onClick={onClose}
-          aria-label="Close practice"
-          style={{ width: 34, height: 34, borderRadius: 11, fontSize: 17 }}
-        >
-          ×
-        </button>
+        <IconButton action="close" onClick={onClose} aria-label="Close practice" />
         <div className="progress">
           <div className="progress__fill" style={{ width: `${progress}%` }} />
         </div>
