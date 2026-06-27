@@ -91,16 +91,12 @@
   --grid-tab-target: 44px;
 
   /* — Typography — */
-  --size-word-hero: 40px;
-  --size-hero-stat: 29px;
-  --size-display: 31px;
-  --size-title-serif: 27px;
-  --size-word-row: 19px;
-  --size-quote: 16.5px;
-  --size-button: 17px;
-  --size-body: 15px;
-  --size-body-sm: 13.5px;
-  --size-caption: 12.5px;
+  --size-word-hero: 28px;
+  --size-hero-stat: 26px;
+  --size-display: 22px;
+  --size-title-serif: 20px;
+  --size-word-row: 18px;
+  --size-body: 16px;
+  --size-body-sm: 14px;
   --size-label: 12px;
-  --size-wordmark: 12px;
 }
