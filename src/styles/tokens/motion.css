@@ -9,4 +9,5 @@
 
   --motion-fast: 120ms; /* taps, presses */
   --motion-base: 180ms; /* hover / colour / shadow */
+  --motion-flip: 480ms; /* flashcard 3D flip */
 }
