@@ -11,15 +11,15 @@
   --type-word-hero: 600 var(--size-word-hero)/1.1 var(--font-serif);   /* flashcard / capture word */
   --type-display:   600 var(--size-display)/1.06 var(--font-serif);    /* screen titles */
   --type-word-row:  600 var(--size-word-row)/1.15 var(--font-serif);   /* word in list */
-  --type-quote:     500 var(--size-quote)/1.5 var(--font-serif);       /* in-context example (italic) */
+  --type-quote:     500 var(--size-body)/1.5 var(--font-serif);        /* in-context example (italic) */
 
   /* UI (sans) */
-  --type-button:    700 var(--size-button)/1 var(--font-sans);
+  --type-button:    700 var(--size-body)/1 var(--font-sans);
   --type-body:      400 var(--size-body)/1.55 var(--font-sans);
   --type-body-sm:   400 var(--size-body-sm)/1.45 var(--font-sans);
-  --type-caption:   400 var(--size-caption)/1.4 var(--font-sans);
+  --type-caption:   400 var(--size-label)/1.4 var(--font-sans);
   --type-label:     700 var(--size-label)/1 var(--font-sans);          /* UPPERCASE, letter-spacing .12em */
-  --type-wordmark:  600 var(--size-wordmark)/1 var(--font-serif);      /* UPPERCASE, letter-spacing .18em */
+  --type-wordmark:  600 var(--size-label)/1 var(--font-serif);         /* UPPERCASE, letter-spacing .18em */
 
   --tracking-label: 0.12em;
   --tracking-wordmark: 0.18em;

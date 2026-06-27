@@ -1,0 +1,12 @@
+/* Woordkast — Motion tokens (hand-authored).
+   Material-inspired easing + short durations for subtle micro-interactions.
+   Motion isn't expressible as a Figma variable, so these live in code. */
+:root {
+  /* Material standard easing — decelerate into rest; good default for state change. */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  /* Emphasized easing for pressed/recover. */
+  --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+
+  --motion-fast: 120ms; /* taps, presses */
+  --motion-base: 180ms; /* hover / colour / shadow */
+}

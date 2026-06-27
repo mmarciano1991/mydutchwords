@@ -3,6 +3,7 @@
 @import "./tokens/fonts.css";
 @import "./tokens/_generated.css"; /* AUTO-GENERATED from Figma — color/spacing/radius/grid/size tokens. Run `npm run tokens`. */
 @import "./tokens/shadows.css";
+@import "./tokens/motion.css";
 @import "./tokens/typography.css";
 
 *,
@@ -121,7 +122,7 @@ input {
 .display--lg {
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 40px;
+  font-size: var(--size-word-hero);
   line-height: 1.06;
   color: var(--text-display);
   letter-spacing: -0.01em;
@@ -131,7 +132,7 @@ input {
 .title-serif {
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 27px;
+  font-size: var(--size-title-serif);
   color: var(--text-display);
   margin: 0;
 }
@@ -150,7 +151,10 @@ input {
   color: var(--text-faint);
 }
 
-/* ── Buttons ── */
+/* ── Buttons ──
+   States: default · hover · pressed (:active) · focus-visible · disabled.
+   Transitions animate background / border / shadow / colour / transform with
+   short Material-inspired easing. */
 .btn {
   width: 100%;
   border: none;
@@ -160,55 +164,87 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  transition: transform 0.08s ease, background 0.12s ease, opacity 0.12s ease;
+  gap: var(--space-2);
+  transition:
+    background var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
 }
 
-.btn:active {
-  transform: translateY(1px);
-}
-
+/* primary — contained, lifts on hover, depresses + lowers shadow on press */
 .btn--primary {
   background: var(--primary);
   color: var(--on-primary);
   box-shadow: var(--shadow-primary);
 }
+.btn--primary:hover {
+  transform: translateY(-1px);
+}
 .btn--primary:active {
+  transform: translateY(1px);
   background: var(--primary-press);
+  box-shadow: var(--shadow-pressed);
+}
+.btn--primary:focus-visible {
+  box-shadow: var(--shadow-primary), 0 0 0 3px var(--blue-100);
 }
 
+/* secondary — outlined, tints on hover/press */
 .btn--secondary {
   background: var(--surface-card);
   color: var(--primary);
-  border: 1.5px solid var(--line-blue-soft);
+  border: 1.5px solid var(--line-cool-strong);
   box-shadow: none;
-  font-size: 15.5px;
   padding: 13px;
   border-radius: var(--radius-input);
 }
+.btn--secondary:hover {
+  background: var(--surface-tint);
+}
+.btn--secondary:active {
+  background: var(--surface-tint);
+  transform: translateY(1px);
+}
 
+/* success — contained (Practice "I knew it"), side-by-side with .btn--still */
 .btn--success {
+  flex: 1;
+  padding: 15px;
+  border-radius: var(--radius-input);
   background: var(--success-solid);
   color: var(--cream-000);
   box-shadow: var(--shadow-success);
 }
+.btn--success:hover {
+  transform: translateY(-1px);
+}
+.btn--success:active {
+  transform: translateY(1px);
+  box-shadow: var(--shadow-pressed);
+}
 
-/* Flashcard "still learning" (left) button */
+/* still — outlined error (Practice "Still learning") */
 .btn--still {
   flex: 1;
-  border: 1.5px solid var(--error-border-soft);
-  background: var(--cream-000);
+  padding: 15px;
+  border-radius: var(--radius-input);
+  border: 1.5px solid var(--error-border);
+  background: var(--surface-card);
   color: var(--error-fg);
   box-shadow: none;
-  font-size: 15px;
-  padding: 15px;
-  border-radius: 15px;
 }
-.btn--success {
-  flex: 1;
-  font-size: 15px;
-  padding: 15px;
-  border-radius: 15px;
+.btn--still:hover {
+  background: var(--error-bg);
+}
+.btn--still:active {
+  background: var(--error-bg);
+  transform: translateY(1px);
 }
 
 .btn--disabled,
@@ -216,6 +252,7 @@ input {
   background: var(--bg-canvas-deep);
   color: var(--ink-disabled);
   box-shadow: none;
+  transform: none;
   cursor: not-allowed;
 }
 
@@ -259,7 +296,7 @@ input {
 
 .hero__stat {
   font-family: var(--font-serif);
-  font-size: 29px;
+  font-size: var(--size-hero-stat);
   font-weight: 600;
   margin-top: 9px;
   line-height: 1.1;
@@ -423,13 +460,21 @@ input {
 }
 
 .notice {
-  border-radius: 14px;
+  border-radius: var(--radius-input);
   padding: 14px 16px;
   display: flex;
   align-items: center;
-  gap: 11px;
-  font-size: 14px;
-  font-weight: 600;
+  gap: var(--space-3);
+  /* UI/Body Bold */
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  font-weight: 700;
+  line-height: 1.55;
+}
+.notice__icon {
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
 }
 .notice--error {
   background: var(--error-bg);
@@ -469,7 +514,14 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+  transition:
+    background var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+.icon-btn:active {
+  transform: scale(0.94);
 }
 .icon-btn svg {
   width: 24px;
@@ -558,7 +610,7 @@ input {
 .quote {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 16.5px;
+  font-size: var(--size-body);
   color: var(--ink-quote);
   line-height: 1.5;
 }
@@ -608,13 +660,13 @@ input {
 .flashcard__example {
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: var(--size-quote);
+  font-size: var(--size-body);
   line-height: 1.5;
   color: var(--text-muted);
 }
 .flashcard__hint {
   color: var(--text-faint);
-  font-size: var(--size-caption);
+  font-size: var(--size-label);
   font-weight: 600;
   letter-spacing: 0.04em;
 }
@@ -654,4 +706,51 @@ input {
   font-weight: 700;
   font-size: 13px;
   padding: 0;
+}
+
+/* ── Motion & micro-interactions ──
+   Subtle, fast, Material-inspired. Lives close to the interactive elements so
+   intent is obvious. All of it is disabled under prefers-reduced-motion below. */
+.tab {
+  transition: color var(--motion-base) var(--ease-standard);
+}
+.tab:active {
+  transform: translateY(1px);
+}
+
+.wordrow {
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
+}
+.wordrow:hover {
+  border-color: var(--line-cool-strong);
+}
+
+/* Visible keyboard focus rings (no effect on mouse/touch). */
+.icon-btn:focus-visible,
+.tab:focus-visible,
+.wordrow__content:focus-visible,
+.flashcard:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
+  border-radius: var(--radius-input);
+}
+
+/* Respect users who prefer reduced motion: keep the app static. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .btn:hover,
+  .btn:active,
+  .icon-btn:active,
+  .tab:active {
+    transform: none !important;
+  }
 }

@@ -89,18 +89,14 @@
     "Typography": [
       { "name": "font/serif", "css": "font-serif", "type": "STRING", "value": { "literal": "Spectral" } },
       { "name": "font/sans", "css": "font-sans", "type": "STRING", "value": { "literal": "Hanken Grotesk" } },
-      { "name": "size/word-hero", "css": "size-word-hero", "type": "FLOAT", "value": { "literal": 40 } },
-      { "name": "size/hero-stat", "css": "size-hero-stat", "type": "FLOAT", "value": { "literal": 29 } },
-      { "name": "size/display", "css": "size-display", "type": "FLOAT", "value": { "literal": 31 } },
-      { "name": "size/title-serif", "css": "size-title-serif", "type": "FLOAT", "value": { "literal": 27 } },
-      { "name": "size/word-row", "css": "size-word-row", "type": "FLOAT", "value": { "literal": 19 } },
-      { "name": "size/quote", "css": "size-quote", "type": "FLOAT", "value": { "literal": 16.5 } },
-      { "name": "size/button", "css": "size-button", "type": "FLOAT", "value": { "literal": 17 } },
-      { "name": "size/body", "css": "size-body", "type": "FLOAT", "value": { "literal": 15 } },
-      { "name": "size/body-sm", "css": "size-body-sm", "type": "FLOAT", "value": { "literal": 13.5 } },
-      { "name": "size/caption", "css": "size-caption", "type": "FLOAT", "value": { "literal": 12.5 } },
-      { "name": "size/label", "css": "size-label", "type": "FLOAT", "value": { "literal": 12 } },
-      { "name": "size/wordmark", "css": "size-wordmark", "type": "FLOAT", "value": { "literal": 12 } }
+      { "name": "size/word-hero", "css": "size-word-hero", "type": "FLOAT", "value": { "literal": 28 } },
+      { "name": "size/hero-stat", "css": "size-hero-stat", "type": "FLOAT", "value": { "literal": 26 } },
+      { "name": "size/display", "css": "size-display", "type": "FLOAT", "value": { "literal": 22 } },
+      { "name": "size/title-serif", "css": "size-title-serif", "type": "FLOAT", "value": { "literal": 20 } },
+      { "name": "size/word-row", "css": "size-word-row", "type": "FLOAT", "value": { "literal": 18 } },
+      { "name": "size/body", "css": "size-body", "type": "FLOAT", "value": { "literal": 16 } },
+      { "name": "size/body-sm", "css": "size-body-sm", "type": "FLOAT", "value": { "literal": 14 } },
+      { "name": "size/label", "css": "size-label", "type": "FLOAT", "value": { "literal": 12 } }
     ]
   }
 }
