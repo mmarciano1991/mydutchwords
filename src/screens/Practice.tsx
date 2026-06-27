@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { DictionaryEntry, PracticeResult } from "../lib/types";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
+import { Divider } from "../components/Divider";
 
 export function Practice({
   entries,
@@ -56,30 +57,19 @@ export function Practice({
         >
           {!flipped ? (
             <div className="flashcard__face">
-              <span className="flashcard__label">Dutch</span>
+              <GenderChip gender={entry.gender} />
               <div className="flashcard__word">{entry.dutch}</div>
-              <div className="flashcard__hint">
-                <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                  <path d="M3 9a6 6 0 1010-4.5M3 9l-1.5-2M3 9l2-1.5" stroke="#A9B2C2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-                Tap to flip
-              </div>
+              {entry.example && <Divider />}
+              {entry.example && <div className="flashcard__example">{entry.example}</div>}
+              <div className="flashcard__hint">Tap to flip</div>
             </div>
           ) : (
             <div className="flashcard__face flashcard__face--back">
               <GenderChip gender={entry.gender} />
-              <div className="flashcard__translation">{entry.english}</div>
-              {entry.example && (
-                <>
-                  <div className="flashcard__rule" />
-                  <div className="quote" style={{ fontStyle: "italic", color: "#46546F", textAlign: "center" }}>
-                    {entry.example}
-                  </div>
-                  <div className="faint" style={{ fontSize: 13, marginTop: 6, textAlign: "center" }}>
-                    {entry.exampleEn}
-                  </div>
-                </>
-              )}
+              <div className="flashcard__word">{entry.english}</div>
+              {entry.exampleEn && <Divider />}
+              {entry.exampleEn && <div className="flashcard__example">{entry.exampleEn}</div>}
+              <div className="flashcard__hint">Tap to flip</div>
             </div>
           )}
         </button>

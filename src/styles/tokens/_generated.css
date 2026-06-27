@@ -53,6 +53,8 @@
   --text-faint: var(--ink-400);
   --border-warm: var(--cream-200);
   --border-cool: var(--line-cool);
+  --inactive: var(--ink-300);
+  --primary-border: var(--blue-200);
   --line-blue-soft: #c9d3e5;
   --line-warm: #e2ddcf;
   --line-divider: #eef0f4;
