@@ -275,20 +275,19 @@ input {
 
 /* Daily-practice hero card */
 .hero {
-  position: relative;
-  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
   background: var(--primary);
   color: var(--on-primary);
-  border-radius: 22px;
+  border-radius: var(--radius-card);
   padding: 20px 21px;
 }
 
-.hero__ornament {
-  position: absolute;
-  right: -22px;
-  top: -20px;
-  opacity: 0.13;
-  pointer-events: none;
+.hero__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .hero__label {
@@ -303,38 +302,46 @@ input {
   font-family: var(--font-serif);
   font-size: var(--size-hero-stat);
   font-weight: 600;
-  margin-top: 9px;
   line-height: 1.1;
 }
 
-.hero__sub {
-  font-size: 13.5px;
-  opacity: 0.82;
-  margin-top: 4px;
-}
-
 .hero__cta {
-  margin-top: 18px;
   width: 100%;
   border: none;
-  background: var(--cream-050);
+  background: var(--surface-card);
   color: var(--primary);
   font-family: var(--font-sans);
   font-weight: 700;
-  font-size: 15.5px;
-  padding: 13px;
-  border-radius: 13px;
+  font-size: var(--size-body);
+  padding: 16px;
+  border-radius: var(--radius-input);
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 8px;
+  transition: background var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
+}
+
+.hero__cta:active {
+  background: var(--surface-tint);
+  transform: translateY(1px);
+  transition-duration: var(--motion-fast);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero__cta {
+    transition: none;
+  }
+  .hero__cta:active {
+    transform: none;
+  }
 }
 
 .hero__locked {
-  margin-top: 16px;
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 13px;
+  border-radius: var(--radius-input);
   padding: 13px 14px;
   font-size: 13.5px;
   line-height: 1.45;

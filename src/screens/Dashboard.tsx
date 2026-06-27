@@ -1,5 +1,5 @@
-import { HeroOrnament, TulipMedallion, Wordmark } from "../components/brand";
-import { ArrowRight, PlusIcon } from "../components/icons";
+import { TulipMedallion, Wordmark } from "../components/brand";
+import { PlusIcon } from "../components/icons";
 import type { DictionaryEntry } from "../lib/types";
 
 const PRACTICE_MIN = 4;
@@ -64,18 +64,16 @@ export function Dashboard({
 
       <div className="screen__body gutter" style={{ paddingBottom: 26 }}>
         <section className="hero">
-          <HeroOrnament />
-          <div className="hero__label">Daily practice</div>
-          <div className="hero__stat">
-            {count} word{count === 1 ? "" : "s"} in your deck
-          </div>
-          <div className="hero__sub">
-            {canPractice ? "Flip the cards and rate yourself." : `${PRACTICE_MIN} words unlock practice`}
+          <div className="hero__content">
+            <div className="hero__label">Daily practice</div>
+            <div className="hero__stat">
+              {count} word{count === 1 ? "" : "s"} in your deck
+            </div>
           </div>
 
           {canPractice ? (
             <button className="hero__cta" onClick={onPractice}>
-              Start practice <ArrowRight />
+              Start practice
             </button>
           ) : (
             <div className="hero__locked">
