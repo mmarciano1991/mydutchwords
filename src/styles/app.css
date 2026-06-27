@@ -310,30 +310,41 @@ input {
   text-align: left;
   background: var(--surface-card);
   border: 1px solid var(--border-warm);
-  border-radius: 16px;
+  border-radius: var(--radius-button);
   padding: 13px 16px;
   display: flex;
   align-items: center;
-  gap: 13px;
+  gap: var(--space-4);
 }
 
-.dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-  background: var(--mastery-new);
+/* content = chip · dutch · gloss on one line (gender chip leads). */
+.wordrow__content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: none;
+  border: none;
+  padding: 0;
+  text-align: left;
 }
 
 .wordrow__dutch {
+  flex: 1;
+  min-width: 0;
   font-family: var(--font-serif);
-  font-size: 19px;
+  font-size: var(--size-word-row);
   font-weight: 600;
   color: var(--text-display);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .wordrow__gloss {
-  font-size: 13.5px;
+  flex-shrink: 0;
+  font-size: var(--size-body-sm);
   color: var(--ink-500);
 }
 
@@ -512,12 +523,16 @@ input {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--space-1);
   padding: 6px 0;
-  color: var(--ink-400);
+  color: var(--inactive);
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+.tab svg {
+  width: 24px;
+  height: 24px;
 }
 .tab--active {
   color: var(--primary);
@@ -567,7 +582,7 @@ input {
   max-width: 300px;
   min-height: 360px;
   box-sizing: border-box;
-  background: var(--cream-000);
+  background: var(--surface-card);
   border: 1px solid var(--border-cool);
   border-radius: var(--radius-card-lg);
   box-shadow: var(--shadow-float);
@@ -575,50 +590,41 @@ input {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: var(--space-3);
   padding: 28px;
   text-align: center;
 }
 .flashcard__face--back {
-  background: var(--blue-050);
-  border-color: var(--blue-back-border);
-}
-.flashcard__label {
-  font-size: 11.5px;
-  color: var(--ink-hint);
-  text-transform: uppercase;
-  letter-spacing: 0.14em;
-  font-weight: 700;
-  margin-bottom: 12px;
+  background: var(--surface-tint);
+  border-color: var(--primary-border);
 }
 .flashcard__word {
   font-family: var(--font-serif);
-  font-size: 40px;
+  font-size: var(--size-word-hero);
   font-weight: 600;
   color: var(--text-display);
   line-height: 1.1;
 }
-.flashcard__hint {
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  margin-top: 24px;
-  color: var(--ink-hint);
-  font-size: 12.5px;
-  font-weight: 600;
-}
-.flashcard__translation {
+.flashcard__example {
   font-family: var(--font-serif);
-  font-size: 32px;
-  font-weight: 600;
-  color: var(--primary);
-  margin-top: 14px;
-  line-height: 1.1;
+  font-style: italic;
+  font-size: var(--size-quote);
+  line-height: 1.5;
+  color: var(--text-muted);
 }
-.flashcard__rule {
-  height: 1px;
+.flashcard__hint {
+  color: var(--text-faint);
+  font-size: var(--size-caption);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+/* Divider component (60×1 rule, blue/200) */
+.divider-rule {
   width: 60px;
-  background: var(--blue-rule);
-  margin: 18px 0;
+  height: 1px;
+  flex-shrink: 0;
+  background: var(--blue-200);
 }
 
 /* ── Misc helpers ── */

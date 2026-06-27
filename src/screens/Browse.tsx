@@ -68,18 +68,15 @@ export function Browse({
                 const open = openId === e.id;
                 return (
                   <div key={e.id}>
-                    <div className="wordrow" style={{ gap: 11 }}>
+                    <div className="wordrow">
                       <button
+                        className="wordrow__content"
                         onClick={() => setOpenId(open ? null : e.id)}
                         aria-expanded={open}
-                        style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 13, background: "none", border: "none", textAlign: "left", padding: 0 }}
                       >
-                        <span className="dot" />
-                        <span style={{ flex: 1, minWidth: 0 }}>
-                          <span className="wordrow__dutch" style={{ display: "block" }}>{e.dutch}</span>
-                          <span className="wordrow__gloss" style={{ display: "block" }}>{e.english}</span>
-                        </span>
                         <GenderChip gender={e.gender} size="sm" />
+                        <span className="wordrow__dutch">{e.dutch}</span>
+                        <span className="wordrow__gloss">{e.english}</span>
                       </button>
                       <IconButton
                         action="add"

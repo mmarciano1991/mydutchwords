@@ -1,4 +1,5 @@
-import { BookIcon, GearIcon, HomeIcon } from "./icons";
+import type { ComponentType } from "react";
+import { Book5, Build, Home, type IconProps } from "../icons";
 
 export type Tab = "dashboard" | "browse" | "settings";
 
@@ -9,16 +10,15 @@ export function TabBar({
   active: Tab;
   onChange: (t: Tab) => void;
 }) {
-  const item = (tab: Tab, label: string, icon: (c: string) => JSX.Element) => {
+  const item = (tab: Tab, label: string, Icon: ComponentType<IconProps>) => {
     const isActive = active === tab;
-    const color = isActive ? "#1B4079" : "#9AA1AF";
     return (
       <button
         className={`tab${isActive ? " tab--active" : ""}`}
         onClick={() => onChange(tab)}
         aria-current={isActive ? "page" : undefined}
       >
-        {icon(color)}
+        <Icon />
         <span>{label}</span>
       </button>
     );
@@ -26,9 +26,9 @@ export function TabBar({
 
   return (
     <nav className="tabbar">
-      {item("dashboard", "Home", (c) => <HomeIcon color={c} />)}
-      {item("browse", "Dictionary", (c) => <BookIcon color={c} />)}
-      {item("settings", "About", (c) => <GearIcon color={c} />)}
+      {item("dashboard", "Home", Home)}
+      {item("browse", "Dictionary", Book5)}
+      {item("settings", "About", Build)}
     </nav>
   );
 }
