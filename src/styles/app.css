@@ -176,6 +176,10 @@ input {
   outline: none;
   box-shadow: 0 0 0 3px var(--blue-100);
 }
+/* Snappy press: the pressed state appears quickly, then eases back on release. */
+.btn:active {
+  transition-duration: var(--motion-fast);
+}
 
 /* primary — contained, lifts on hover, depresses + lowers shadow on press */
 .btn--primary {
@@ -195,7 +199,8 @@ input {
   box-shadow: var(--shadow-primary), 0 0 0 3px var(--blue-100);
 }
 
-/* secondary — outlined, tints on hover/press */
+/* secondary — outlined. Hover lifts (keeps the white surface) so the PRESSED
+   state — a distinct surface-tint fill per the design — is clearly visible. */
 .btn--secondary {
   background: var(--surface-card);
   color: var(--primary);
@@ -205,7 +210,7 @@ input {
   border-radius: var(--radius-input);
 }
 .btn--secondary:hover {
-  background: var(--surface-tint);
+  transform: translateY(-1px);
 }
 .btn--secondary:active {
   background: var(--surface-tint);
@@ -342,6 +347,7 @@ input {
   gap: 10px;
 }
 
+/* Card holds the top row and, when opened, the in-context block below it. */
 .wordrow {
   width: 100%;
   text-align: left;
@@ -350,25 +356,37 @@ input {
   border-radius: var(--radius-button);
   padding: 13px 16px;
   display: flex;
-  align-items: center;
-  gap: var(--space-4);
+  flex-direction: column;
+  gap: var(--space-3);
 }
 
-/* content = chip · dutch · gloss on one line (gender chip leads). */
+.wordrow__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+/* content = two lines: [chip · dutch] on top, gloss indented beneath the word. */
 .wordrow__content {
   flex: 1;
   min-width: 0;
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  flex-direction: column;
+  align-items: flex-start;
   background: none;
   border: none;
   padding: 0;
   text-align: left;
 }
 
+.wordrow__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  max-width: 100%;
+}
+
 .wordrow__dutch {
-  flex: 1;
   min-width: 0;
   font-family: var(--font-serif);
   font-size: var(--size-word-row);
@@ -380,9 +398,38 @@ input {
 }
 
 .wordrow__gloss {
-  flex-shrink: 0;
+  padding-left: 46px; /* aligns the gloss under the word (chip 38 + gap 8) */
   font-size: var(--size-body-sm);
   color: var(--ink-500);
+}
+
+/* ── Opened (pressed) state: in-context example inside the same card ── */
+.wordrow__context {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.wordrow__rule {
+  align-self: stretch;
+  height: 1px;
+  background: var(--border-cool);
+}
+.wordrow__example {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.wordrow__example-nl {
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: var(--size-body);
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.wordrow__example-en {
+  font-size: var(--size-body);
+  line-height: 1.55;
+  color: var(--text-muted);
 }
 
 /* ── Input ── */

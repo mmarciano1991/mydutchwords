@@ -67,15 +67,17 @@ export function Browse({
                 const added = deckIds.has(e.id);
                 const open = openId === e.id;
                 return (
-                  <div key={e.id}>
-                    <div className="wordrow">
+                  <div key={e.id} className="wordrow">
+                    <div className="wordrow__row">
                       <button
                         className="wordrow__content"
                         onClick={() => setOpenId(open ? null : e.id)}
                         aria-expanded={open}
                       >
-                        <GenderChip gender={e.gender} size="sm" />
-                        <span className="wordrow__dutch">{e.dutch}</span>
+                        <span className="wordrow__head">
+                          <GenderChip gender={e.gender} size="sm" />
+                          <span className="wordrow__dutch">{e.dutch}</span>
+                        </span>
                         <span className="wordrow__gloss">{e.english}</span>
                       </button>
                       <IconButton
@@ -88,13 +90,14 @@ export function Browse({
                     </div>
 
                     {open && (
-                      <div className="card" style={{ marginTop: 8, padding: "14px 18px", borderRadius: 16 }}>
+                      <div className="wordrow__context">
+                        <div className="wordrow__rule" />
+                        <div className="eyebrow">In context</div>
                         {e.example ? (
-                          <>
-                            <div className="eyebrow" style={{ marginBottom: 7 }}>In context</div>
-                            <div className="quote">{e.example}</div>
-                            <div className="faint" style={{ fontSize: 13, marginTop: 5 }}>{e.exampleEn}</div>
-                          </>
+                          <div className="wordrow__example">
+                            <div className="wordrow__example-nl">{e.example}</div>
+                            <div className="wordrow__example-en">{e.exampleEn}</div>
+                          </div>
                         ) : (
                           <div className="faint" style={{ fontSize: 13 }}>
                             No example sentence yet — the flashcard shows the translation.
