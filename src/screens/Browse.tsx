@@ -3,15 +3,18 @@ import { DICTIONARY } from "../data/dictionary";
 import { Wordmark } from "../components/brand";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
+import { MasteryBar } from "../components/MasteryBar";
 import { SearchIcon } from "../components/icons";
 
 const RENDER_LIMIT = 120;
 
 export function Browse({
   deckIds,
+  recalls,
   onToggle,
 }: {
   deckIds: Set<string>;
+  recalls: Map<string, number>;
   onToggle: (entryId: string) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -77,6 +80,7 @@ export function Browse({
                         <span className="wordrow__head">
                           <GenderChip gender={e.gender} size="sm" />
                           <span className="wordrow__dutch">{e.dutch}</span>
+                          {added && <MasteryBar recalls={recalls.get(e.id) ?? 0} />}
                         </span>
                         <span className="wordrow__gloss">{e.english}</span>
                       </button>

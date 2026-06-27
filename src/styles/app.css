@@ -403,6 +403,48 @@ input {
   color: var(--ink-500);
 }
 
+/* ── Mastery bar — word confidence (Figma 59:15) ──
+   Track tint + fill colour change per level; fill width = progress to mastery. */
+.mastery {
+  flex-shrink: 0;
+  display: inline-block;
+  width: 40px;
+  height: 8px;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.mastery__fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width var(--motion-base) var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mastery__fill {
+    transition: none;
+  }
+}
+.mastery--weak {
+  background: var(--ink-400);
+}
+.mastery--weak .mastery__fill {
+  background: var(--mastery-weak);
+}
+.mastery--medium {
+  background: var(--caution-bg);
+}
+.mastery--medium .mastery__fill {
+  background: var(--caution-solid);
+}
+.mastery--mastering,
+.mastery--mastered {
+  background: var(--success-bg);
+}
+.mastery--mastering .mastery__fill,
+.mastery--mastered .mastery__fill {
+  background: var(--mastery-strong);
+}
+
 /* ── Opened (pressed) state: in-context example inside the same card ── */
 .wordrow__context {
   display: flex;
