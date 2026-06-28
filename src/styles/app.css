@@ -366,31 +366,40 @@ input {
   gap: var(--space-5);
 }
 
-/* content = two lines: [chip · dutch] on top, gloss indented beneath the word. */
+/* main = chevron toggle on the left + the word column (Figma 104:161). */
+.wordrow__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* content = chip stacked over the dutch word, gloss beneath. */
 .wordrow__content {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  background: none;
-  border: none;
-  padding: 0;
-  text-align: left;
+  gap: var(--space-1);
+  padding: var(--space-2);
 }
 
 .wordrow__head {
   display: flex;
-  align-items: center;
-  gap: var(--space-2);
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
   max-width: 100%;
 }
 
 .wordrow__dutch {
   min-width: 0;
+  max-width: 100%;
   font-family: var(--font-serif);
   font-size: var(--size-word-row);
   font-weight: 600;
+  line-height: 1.15;
   color: var(--text-display);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -398,17 +407,32 @@ input {
 }
 
 .wordrow__gloss {
-  padding-left: 46px; /* aligns the gloss under the word (chip 38 + gap 8) */
   font-size: var(--size-body-sm);
   color: var(--ink-500);
 }
 
 /* ── Mastery bar — word confidence (Figma 59:15) ──
    Track tint + fill colour change per level; fill width = progress to mastery. */
+/* Meter = bar + level label, stacked and centred (WordRow, Figma 104:161). */
+.mastery-meter {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-1);
+}
+.mastery-meter__label {
+  font-family: var(--font-sans);
+  font-size: var(--size-label);
+  font-weight: 700;
+  letter-spacing: var(--tracking-label);
+  color: var(--text-body);
+}
+
 .mastery {
   flex-shrink: 0;
   display: inline-block;
-  width: 40px;
+  width: 32px;
   height: 8px;
   border-radius: var(--radius-pill);
   overflow: hidden;
@@ -529,7 +553,7 @@ input {
 
 /* ── Gender / pos chips & notices ── */
 .chip {
-  padding: 5px 13px;
+  padding: 4px 12px; /* Figma 59:11 — space-1 / space-3 */
   border-radius: var(--radius-chip);
   font-weight: 700;
   font-size: 14px;
@@ -544,7 +568,7 @@ input {
   box-shadow: inset 0 0 0 1.6px var(--primary);
 }
 .chip--sm {
-  padding: 5px 12px;
+  padding: 4px 12px; /* Figma 59:11 — space-1 / space-3 */
   font-size: 13px;
 }
 
@@ -609,17 +633,35 @@ input {
     color var(--motion-base) var(--ease-standard),
     transform var(--motion-fast) var(--ease-emphasized);
 }
+/* Pressed (secondary): surface-tint fill, keeps the cool border. */
 .icon-btn:active {
   transform: scale(0.94);
+  background: var(--surface-tint);
 }
 .icon-btn svg {
   width: 24px;
   height: 24px;
   display: block;
 }
-/* add + close: cool border, primary glyph (default). add has a pressed tint. */
-.icon-btn--add:active {
+/* no-background variant: transparent until pressed, then surface-tint, no border. */
+.icon-btn--ghost {
+  background: none;
+  border-color: transparent;
+}
+.icon-btn--ghost:active {
   background: var(--surface-tint);
+}
+/* expand: chevron flips to point up when its row is open. */
+.icon-btn--expand svg {
+  transition: transform var(--motion-base) var(--ease-standard);
+}
+.icon-btn--expand[aria-expanded="true"] svg {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn--expand svg {
+    transition: none;
+  }
 }
 /* remove: error border, caution glyph; pressed deepens the canvas. */
 .icon-btn--remove {
@@ -834,7 +876,6 @@ input {
 /* Visible keyboard focus rings (no effect on mouse/touch). */
 .icon-btn:focus-visible,
 .tab:focus-visible,
-.wordrow__content:focus-visible,
 .flashcard:focus-visible {
   outline: none;
   box-shadow: 0 0 0 3px var(--blue-100);

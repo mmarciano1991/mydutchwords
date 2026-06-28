@@ -72,18 +72,23 @@ export function Browse({
                 return (
                   <div key={e.id} className="wordrow">
                     <div className="wordrow__row">
-                      <button
-                        className="wordrow__content"
-                        onClick={() => setOpenId(open ? null : e.id)}
-                        aria-expanded={open}
-                      >
-                        <span className="wordrow__head">
-                          <GenderChip gender={e.gender} size="sm" />
-                          <span className="wordrow__dutch">{e.dutch}</span>
-                          {added && <MasteryBar recalls={recalls.get(e.id) ?? 0} />}
-                        </span>
-                        <span className="wordrow__gloss">{e.english}</span>
-                      </button>
+                      <div className="wordrow__main">
+                        <IconButton
+                          action="expand"
+                          variant="no-background"
+                          onClick={() => setOpenId(open ? null : e.id)}
+                          aria-expanded={open}
+                          aria-label={open ? `Collapse ${e.dutch}` : `Show ${e.dutch} in context`}
+                        />
+                        <div className="wordrow__content">
+                          <span className="wordrow__head">
+                            <GenderChip gender={e.gender} size="sm" />
+                            <span className="wordrow__dutch">{e.dutch}</span>
+                          </span>
+                          <span className="wordrow__gloss">{e.english}</span>
+                        </div>
+                      </div>
+                      {added && <MasteryBar recalls={recalls.get(e.id) ?? 0} withLabel />}
                       <IconButton
                         action="add"
                         success={added}
