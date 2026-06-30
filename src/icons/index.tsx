@@ -61,6 +61,14 @@ export function Check(props: IconProps) {
   );
 }
 
+export function ChevronDown(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M12 15.375L6 9.375L7.4 7.975L12 12.575L16.6 7.975L18 9.375L12 15.375Z" />
+    </Icon>
+  );
+}
+
 export function Home(props: IconProps) {
   return (
     <Icon {...props}>
