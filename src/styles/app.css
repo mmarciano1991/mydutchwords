@@ -217,7 +217,7 @@ input {
   transform: translateY(1px);
 }
 
-/* success — contained (Practice "I knew it"), side-by-side with .btn--still */
+/* success — contained (Practice "I knew it"), side-by-side with .btn--difficult/.btn--still */
 .btn--success {
   flex: 1;
   padding: 15px;
@@ -234,8 +234,8 @@ input {
   box-shadow: var(--shadow-pressed);
 }
 
-/* still — outlined error (Practice "Still learning") */
-.btn--still {
+/* difficult — outlined error (Practice "Still learning"; Figma type=difficult) */
+.btn--difficult {
   flex: 1;
   padding: 15px;
   border-radius: var(--radius-input);
@@ -244,11 +244,29 @@ input {
   color: var(--error-fg);
   box-shadow: none;
 }
-.btn--still:hover {
+.btn--difficult:hover {
   background: var(--error-bg);
 }
-.btn--still:active {
+.btn--difficult:active {
   background: var(--error-bg);
+  transform: translateY(1px);
+}
+
+/* still — outlined caution (Figma 61:15, type=still; Practice "Hard") */
+.btn--still {
+  flex: 1;
+  padding: 15px;
+  border-radius: var(--radius-input);
+  border: 1.5px solid var(--caution-border);
+  background: var(--surface-card);
+  color: var(--caution-fg);
+  box-shadow: none;
+}
+.btn--still:hover {
+  background: var(--caution-bg);
+}
+.btn--still:active {
+  background: var(--caution-bg);
   transform: translateY(1px);
 }
 
@@ -360,6 +378,13 @@ input {
   gap: var(--space-3);
 }
 
+/* Selected (in your deck) — thick green border, both during the brief
+   "Selecting" celebration and once settled (Figma 104:161). */
+.wordrow--selected {
+  border-width: 3px;
+  border-color: var(--success-solid);
+}
+
 .wordrow__row {
   display: flex;
   align-items: center;
@@ -411,7 +436,7 @@ input {
   color: var(--ink-500);
 }
 
-/* ── Mastery bar — word confidence (Figma 59:15) ──
+/* ── Mastery bar — word confidence (Figma 114:202) ──
    Track tint + fill colour change per level; fill width = progress to mastery. */
 /* Meter = bar + level label, stacked and centred (WordRow, Figma 104:161). */
 .mastery-meter {
@@ -434,13 +459,13 @@ input {
   display: inline-block;
   width: 32px;
   height: 8px;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-chip);
   overflow: hidden;
 }
 .mastery__fill {
   display: block;
   height: 100%;
-  border-radius: var(--radius-pill);
+  border-radius: var(--radius-chip);
   transition: width var(--motion-base) var(--ease-standard);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -663,19 +688,32 @@ input {
     transition: none;
   }
 }
-/* remove: error border, caution glyph; pressed deepens the canvas. */
-.icon-btn--remove {
-  border-color: var(--error-border);
-  color: var(--caution-solid);
-}
-.icon-btn--remove:active {
-  background: var(--bg-canvas-deep);
-}
-/* success (added): solid green chip with a light check. */
+/* success (added): solid green chip with a light check, the check pops in. */
 .icon-btn--success {
   background: var(--success-solid);
   border-color: var(--success-solid);
   color: var(--success-bg);
+}
+.icon-btn--success svg {
+  animation: icon-btn-check-pop var(--motion-base) var(--ease-emphasized);
+}
+@keyframes icon-btn-check-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .icon-btn--success svg {
+    animation: none;
+  }
 }
 
 .progress {

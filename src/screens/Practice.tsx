@@ -75,11 +75,14 @@ export function Practice({
       </div>
 
       <div className="gutter" style={{ padding: "12px 22px 32px", display: "flex", gap: 12 }}>
-        <button className="btn btn--still" onClick={() => answer(false)}>
+        <button className="btn btn--difficult" onClick={() => answer(false)}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M4 4l8 8M12 4l-8 8" stroke="#B5462F" strokeWidth="2" strokeLinecap="round" />
           </svg>
           Still learning
+        </button>
+        <button className="btn btn--still" onClick={() => answer(false)}>
+          Hard
         </button>
         <button className="btn btn--success" onClick={() => answer(true)}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DICTIONARY } from "../data/dictionary";
 import { Wordmark } from "../components/brand";
 import { GenderChip } from "../components/GenderChip";
@@ -7,6 +7,9 @@ import { MasteryBar } from "../components/MasteryBar";
 import { SearchIcon } from "../components/icons";
 
 const RENDER_LIMIT = 120;
+// How long the "Selecting" check-mark celebration shows before the row
+// settles into its steady "Selected" state (Figma 104:161).
+const SELECTING_MS = 650;
 
 export function Browse({
   deckIds,
@@ -19,6 +22,44 @@ export function Browse({
 }) {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
+  const [selectingIds, setSelectingIds] = useState<Set<string>>(new Set());
+  const timers = useRef<Map<string, number>>(new Map());
+
+  useEffect(() => {
+    const active = timers.current;
+    return () => active.forEach((t) => window.clearTimeout(t));
+  }, []);
+
+  function handleToggle(entryId: string, willAdd: boolean) {
+    onToggle(entryId);
+    const pending = timers.current.get(entryId);
+    if (pending) {
+      window.clearTimeout(pending);
+      timers.current.delete(entryId);
+    }
+    if (willAdd) {
+      setSelectingIds((prev) => new Set(prev).add(entryId));
+      timers.current.set(
+        entryId,
+        window.setTimeout(() => {
+          setSelectingIds((prev) => {
+            if (!prev.has(entryId)) return prev;
+            const next = new Set(prev);
+            next.delete(entryId);
+            return next;
+          });
+          timers.current.delete(entryId);
+        }, SELECTING_MS)
+      );
+    } else {
+      setSelectingIds((prev) => {
+        if (!prev.has(entryId)) return prev;
+        const next = new Set(prev);
+        next.delete(entryId);
+        return next;
+      });
+    }
+  }
 
   // Sort the whole dictionary once; filtering keeps that order.
   const sorted = useMemo(
@@ -68,9 +109,10 @@ export function Browse({
             <div className="wordlist">
               {shown.map((e) => {
                 const added = deckIds.has(e.id);
+                const selecting = added && selectingIds.has(e.id);
                 const open = openId === e.id;
                 return (
-                  <div key={e.id} className="wordrow">
+                  <div key={e.id} className={`wordrow${added ? " wordrow--selected" : ""}`}>
                     <div className="wordrow__row">
                       <div className="wordrow__main">
                         <IconButton
@@ -90,9 +132,9 @@ export function Browse({
                       </div>
                       {added && <MasteryBar recalls={recalls.get(e.id) ?? 0} withLabel />}
                       <IconButton
-                        action="add"
-                        success={added}
-                        onClick={() => onToggle(e.id)}
+                        action={added && !selecting ? "remove" : "add"}
+                        success={selecting}
+                        onClick={() => handleToggle(e.id, !added)}
                         aria-label={added ? `Remove ${e.dutch}` : `Add ${e.dutch}`}
                         aria-pressed={added}
                       />
