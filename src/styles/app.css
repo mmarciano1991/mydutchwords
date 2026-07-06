@@ -1,7 +1,8 @@
 /* Woordkast app styles — Delft Blue.
-   Tokens are imported first; everything below consumes them. */
+   Color/spacing/radius/grid/size tokens come from tokens.json, applied as
+   CSS custom properties on :root at runtime — see src/lib/applyTokens.ts
+   (called from main.tsx, before this stylesheet's rules are ever painted). */
 @import "./tokens/fonts.css";
-@import "./tokens/_generated.css"; /* AUTO-GENERATED from Figma — color/spacing/radius/grid/size tokens. Run `npm run tokens`. */
 @import "./tokens/shadows.css";
 @import "./tokens/motion.css";
 @import "./tokens/typography.css";
@@ -183,8 +184,8 @@ input {
 
 /* primary — contained, lifts on hover, depresses + lowers shadow on press */
 .btn--primary {
-  background: var(--primary);
-  color: var(--on-primary);
+  background: var(--semantic-button-default);
+  color: var(--semantic-button-onbutton-default);
   box-shadow: var(--shadow-primary);
 }
 .btn--primary:hover {
@@ -192,7 +193,7 @@ input {
 }
 .btn--primary:active {
   transform: translateY(1px);
-  background: var(--primary-press);
+  background: var(--semantic-button-pressed-strong);
   box-shadow: var(--shadow-pressed);
 }
 .btn--primary:focus-visible {
@@ -202,8 +203,8 @@ input {
 /* secondary — outlined. Hover lifts (keeps the white surface) so the PRESSED
    state — a distinct surface-tint fill per the design — is clearly visible. */
 .btn--secondary {
-  background: var(--surface-card);
-  color: var(--primary);
+  background: var(--semantic-surface-subdle);
+  color: var(--semantic-button-outline-default);
   border: 1.5px solid var(--line-cool-strong);
   box-shadow: none;
   padding: 13px;
@@ -213,7 +214,7 @@ input {
   transform: translateY(-1px);
 }
 .btn--secondary:active {
-  background: var(--surface-tint);
+  background: var(--semantic-button-pressed-light);
   transform: translateY(1px);
 }
 
@@ -222,8 +223,8 @@ input {
   flex: 1;
   padding: 15px;
   border-radius: var(--radius-input);
-  background: var(--success-solid);
-  color: var(--cream-000);
+  background: var(--semantic-success-success-default);
+  color: var(--semantic-success-onsuccess-default);
   box-shadow: var(--shadow-success);
 }
 .btn--success:hover {
@@ -239,16 +240,16 @@ input {
   flex: 1;
   padding: 15px;
   border-radius: var(--radius-input);
-  border: 1.5px solid var(--error-border);
-  background: var(--surface-card);
-  color: var(--error-fg);
+  border: 1.5px solid var(--semantic-error-outline-default);
+  background: var(--semantic-surface-subdle);
+  color: var(--semantic-error-onerror-default);
   box-shadow: none;
 }
 .btn--difficult:hover {
-  background: var(--error-bg);
+  background: var(--semantic-error-error-default);
 }
 .btn--difficult:active {
-  background: var(--error-bg);
+  background: var(--semantic-error-error-default);
   transform: translateY(1px);
 }
 
@@ -257,16 +258,16 @@ input {
   flex: 1;
   padding: 15px;
   border-radius: var(--radius-input);
-  border: 1.5px solid var(--caution-border);
-  background: var(--surface-card);
-  color: var(--caution-fg);
+  border: 1.5px solid var(--semantic-warning-outline-default);
+  background: var(--semantic-surface-subdle);
+  color: var(--semantic-warning-onwarning-default);
   box-shadow: none;
 }
 .btn--still:hover {
-  background: var(--caution-bg);
+  background: var(--semantic-warning-warning-default);
 }
 .btn--still:active {
-  background: var(--caution-bg);
+  background: var(--semantic-warning-warning-default);
   transform: translateY(1px);
 }
 
@@ -481,10 +482,10 @@ input {
   }
 }
 .mastery--weak {
-  background: var(--ink-400);
+  background: var(--ink-300);
 }
 .mastery--weak .mastery__fill {
-  background: var(--mastery-weak);
+  background: var(--mastery-new-weak-medium);
 }
 .mastery--medium {
   background: var(--caution-bg);
@@ -498,7 +499,7 @@ input {
 }
 .mastery--mastering .mastery__fill,
 .mastery--mastered .mastery__fill {
-  background: var(--mastery-strong);
+  background: var(--mastery-masterd);
 }
 
 /* ── Opened (pressed) state: in-context example inside the same card ── */
@@ -622,19 +623,19 @@ input {
   flex-shrink: 0;
 }
 .notice--error {
-  background: var(--error-bg);
-  border: 1px solid var(--error-border);
-  color: var(--error-fg);
+  background: var(--semantic-error-error-default);
+  border: 1px solid var(--semantic-error-outline-default);
+  color: var(--semantic-error-onerror-default);
 }
 .notice--caution {
-  background: var(--caution-bg);
-  border: 1px solid var(--caution-border);
-  color: var(--caution-fg);
+  background: var(--semantic-warning-warning-default);
+  border: 1px solid var(--semantic-warning-outline-default);
+  color: var(--semantic-warning-onwarning-default);
 }
 .notice--success {
-  background: var(--success-bg);
-  border: 1px solid var(--success-border);
-  color: var(--success-fg);
+  background: var(--semantic-success-success-subdle);
+  border: 1px solid var(--semantic-success-outline-default);
+  color: var(--semantic-success-onsuccess-strong);
 }
 
 /* ── Top bar for focused flows ── */
@@ -697,9 +698,9 @@ input {
 }
 /* success (added): solid green chip with a light check, the check pops in. */
 .icon-btn--success {
-  background: var(--success-solid);
-  border-color: var(--success-solid);
-  color: var(--success-bg);
+  background: var(--semantic-success-success-default);
+  border-color: var(--semantic-success-success-default);
+  color: var(--semantic-success-onsuccess-default);
 }
 .icon-btn--success svg {
   animation: icon-btn-check-pop var(--motion-base) var(--ease-emphasized);
