@@ -21,9 +21,7 @@
   --line-cool: #e4e9f2;
   --line-cool-strong: #d7deea;
   --ink-900: #1b2638;
-  --ink-600: #5a6b86;
   --ink-500: #6b7689;
-  --ink-400: #9aa1af;
   --ink-300: #a9b0be;
   --success-fg: #2e5e40;
   --success-solid: #3e7a57;
@@ -37,9 +35,9 @@
   --error-solid: #b5462f;
   --error-bg: #f7e8e2;
   --error-border: #e7c6b8;
-  --mastery-new: #cdba86;
-  --mastery-weak: #5a6b86;
-  --mastery-strong: #3e7a57;
+  --mastery-masterd: var(--success-solid);
+  --mastery-strong: var(--caution-solid);
+  --mastery-new-weak-medium: #5a6b86;
   --bg-canvas: var(--cream-050);
   --bg-canvas-deep: var(--cream-300);
   --surface-card: var(--cream-000);
@@ -49,8 +47,8 @@
   --on-primary: var(--cream-050);
   --text-display: var(--blue-900);
   --text-body: var(--ink-900);
-  --text-muted: var(--ink-600);
-  --text-faint: var(--ink-400);
+  --text-muted: var(--ink-quote);
+  --text-faint: var(--ink-500);
   --border-warm: var(--cream-200);
   --border-cool: var(--line-cool);
   --inactive: var(--ink-300);
@@ -64,6 +62,48 @@
   --ink-hint: #a9b2c2;
   --blue-back-border: #cbd8ec;
   --blue-rule: #c2cfe4;
+
+  /* — Semantic — */
+  --semantic-surface-default: var(--bg-canvas);
+  --semantic-surface-bold: var(--bg-canvas-deep);
+  --semantic-surface-subdle: var(--surface-card);
+  --semantic-surface-inverse: var(--surface-tint);
+  --semantic-surface-onsurface-bold: var(--text-body);
+  --semantic-surface-onsurface-default: var(--text-muted);
+  --semantic-surface-onsurface-subdle: var(--text-faint);
+  --semantic-surface-outline-default: var(--border-warm);
+  --semantic-surface-outline-subdle: var(--border-cool);
+  --semantic-button-default: var(--primary);
+  --semantic-button-pressed-strong: var(--primary-press);
+  --semantic-button-pressed-light: var(--surface-tint);
+  --semantic-button-onbutton-default: var(--on-primary);
+  --semantic-button-outline-default: var(--primary);
+  --semantic-button-outline-subdle: var(--primary-border);
+  --semantic-button-inactive: var(--inactive);
+  --semantic-button-inverted: var(--cream-000);
+  --semantic-primary-default: var(--primary);
+  --semantic-primary-pressed: var(--primary-press);
+  --semantic-primary-onprimary: var(--on-primary);
+  --semantic-primary-onprimary-default: var(--text-display);
+  --semantic-primary-outline-default: var(--primary);
+  --semantic-primary-outline-subdle: var(--primary-border);
+  --semantic-success-success-default: var(--success-solid);
+  --semantic-success-success-subdle: var(--success-bg);
+  --semantic-success-outline-default: var(--success-border);
+  --semantic-success-onsuccess-default: var(--cream-000);
+  --semantic-success-onsuccess-strong: var(--success-fg);
+  --semantic-error-error-default: var(--error-bg);
+  --semantic-error-outline-default: var(--error-border);
+  --semantic-error-onerror-default: var(--error-fg);
+  --semantic-error-onprimary: var(--on-primary);
+  --semantic-error-default: var(--primary);
+  --semantic-error-pressed: var(--primary-press);
+  --semantic-warning-warning-default: var(--caution-bg);
+  --semantic-warning-outline-default: var(--caution-border);
+  --semantic-warning-onwarning-default: var(--caution-fg);
+  --semantic-warning-onprimary: var(--on-primary);
+  --semantic-warning-default: var(--primary);
+  --semantic-warning-pressed: var(--primary-press);
 
   /* — Spacing — */
   --space-1: 4px;
