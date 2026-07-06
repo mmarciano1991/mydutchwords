@@ -698,9 +698,9 @@ input {
 }
 /* success (added): solid green chip with a light check, the check pops in. */
 .icon-btn--success {
-  background: var(--success-solid);
-  border-color: var(--success-solid);
-  color: var(--success-bg);
+  background: var(--semantic-success-success-default);
+  border-color: var(--semantic-success-success-default);
+  color: var(--semantic-success-onsuccess-default);
 }
 .icon-btn--success svg {
   animation: icon-btn-check-pop var(--motion-base) var(--ease-emphasized);
