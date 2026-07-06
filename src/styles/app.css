@@ -1,7 +1,8 @@
 /* Woordkast app styles — Delft Blue.
-   Tokens are imported first; everything below consumes them. */
+   Color/spacing/radius/grid/size tokens come from tokens.json, applied as
+   CSS custom properties on :root at runtime — see src/lib/applyTokens.ts
+   (called from main.tsx, before this stylesheet's rules are ever painted). */
 @import "./tokens/fonts.css";
-@import "./tokens/_generated.css"; /* AUTO-GENERATED from Figma — color/spacing/radius/grid/size tokens. Run `npm run tokens`. */
 @import "./tokens/shadows.css";
 @import "./tokens/motion.css";
 @import "./tokens/typography.css";

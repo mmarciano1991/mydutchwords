@@ -1,26 +1,28 @@
 # Design tokens — Figma ↔ code sync
 
-This project keeps its **design-token values** in the Figma design system and
-generates the CSS from them, so design and code can't silently drift.
+This project keeps its **design-token values** in the Figma design system.
+They flow into the app as a flat JSON file, applied as CSS custom properties
+on `:root` at runtime — no CSS build step required to see a token change.
 
 ## Files
 
 | File | Role | Edit by hand? |
 |---|---|---|
-| `design/figma-tokens.json` | Snapshot of the token values exported from Figma (colors, spacing, radius, grid, font sizes). **Source of truth for values.** | Only via re-export (see below) |
-| `scripts/build-tokens.mjs` | Transforms the JSON → CSS custom properties. | Yes (it's the transform) |
-| `src/styles/tokens/_generated.css` | The generated CSS variables. | **Never** — overwritten on build |
-| `src/styles/tokens/typography.css` | Font families + `--type-*` composition (uses generated `--size-*`). | Yes |
+| `design/figma-tokens.json` | Structured snapshot of the token values exported from Figma (colors, spacing, radius, grid, font sizes), grouped by collection with aliases. **Record of what Figma has.** | Only via re-export (see below) |
+| `scripts/build-tokens.mjs` | Flattens the structured JSON → `src/styles/tokens/tokens.json`. | Yes (it's the transform) |
+| `src/styles/tokens/tokens.json` | Flat `{ "css-name": "value" }` map, imported directly by `src/lib/applyTokens.ts` and set as CSS custom properties before the app renders. **This is what the app actually reads.** | Yes — for quick manual tweaks. Vite hot-reloads JSON imports, so edits show up immediately. A future `npm run tokens` run overwrites it from `design/figma-tokens.json`, so fold any tweak you want to keep back into that file too. |
+| `src/lib/applyTokens.ts` | Runtime link: reads `tokens.json`, sets `--{name}` on `document.documentElement`. | Only if changing *how* tokens are applied, not their values |
+| `src/styles/tokens/typography.css` | Font families + `--type-*` composition (uses `--size-*` from tokens.json). | Yes |
 | `src/styles/tokens/shadows.css` | Shadow tokens (mirror of Figma effect styles). | Yes |
 | `src/styles/tokens/fonts.css` | `@font-face` / webfont import. | Yes |
 
-## Regenerate the CSS
+## Regenerate tokens.json from a fresh Figma export
 
 ```bash
 npm run tokens
 ```
 
-Reads `design/figma-tokens.json` and rewrites `src/styles/tokens/_generated.css`.
+Reads `design/figma-tokens.json` and rewrites `src/styles/tokens/tokens.json`.
 
 ## The sync loop (design → code)
 
@@ -35,10 +37,13 @@ Reads `design/figma-tokens.json` and rewrites `src/styles/tokens/_generated.css`
      /v1/files/:key/variables/local` with a Figma personal access token, then
      map each variable's `codeSyntax.WEB` → CSS name and its mode value → CSS
      value. (Requires a paid Figma seat for the Variables REST endpoint.)
-3. **Run `npm run tokens`** and commit the regenerated `_generated.css`.
+3. **Run `npm run tokens`** and commit the regenerated `tokens.json`.
 
-Because the app's components consume the variables (`var(--primary)`, …), the
-whole UI restyles automatically — no component edits needed for pure retokens.
+Because the app applies these as the same CSS custom properties every
+component already consumes (`var(--primary)`, …), the whole UI restyles
+automatically — no component edits needed for pure retokens. For a quick
+one-off tweak without touching Figma, you can also just hand-edit
+`src/styles/tokens/tokens.json` directly.
 
 ## What is NOT auto-generated (on purpose)
 
