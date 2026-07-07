@@ -71,7 +71,15 @@ export default function App() {
   }
 
   function startPractice() {
-    const session = buildSession(deck, new Date());
+    let session: Word[] = buildSession(deck, new Date());
+    if (session.length === 0) {
+      // Nothing due yet (e.g. everything was just reviewed and is due
+      // tomorrow). Rather than a dead button, practice ahead of schedule
+      // with the soonest-due words.
+      session = [...deck]
+        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+        .slice(0, 25);
+    }
     if (session.length === 0) return;
     setQueue(toPracticeCards(session));
     setReviewedIds([]);
