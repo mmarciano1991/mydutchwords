@@ -35,9 +35,19 @@ function write(key: string, value: unknown): void {
   }
 }
 
+/** Backfills spaced-repetition fields on deck items saved before they existed
+ *  (as a plain {id, dateAdded}), so old decks don't silently vanish from
+ *  buildSession's due/new filtering. */
+function migrateDeckItem(raw: DeckItem): DeckItem {
+  if (raw.state && raw.dueDate) return raw;
+  return { ...newDeckItem(raw.id, new Date(raw.dateAdded)), dateAdded: raw.dateAdded };
+}
+
 /** The user's flashcard deck, newest first. */
 export function loadDeck(): DeckItem[] {
-  return read<DeckItem[]>(DECK_KEY, []).sort((a, b) => b.dateAdded - a.dateAdded);
+  return read<DeckItem[]>(DECK_KEY, [])
+    .map(migrateDeckItem)
+    .sort((a, b) => b.dateAdded - a.dateAdded);
 }
 
 export function saveDeck(deck: DeckItem[]): void {
