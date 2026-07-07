@@ -1,26 +1,48 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import { findEntry } from "./data/dictionary";
-import { isInDeck, loadDeck, loadResults, saveDeck, saveResults } from "./lib/storage";
-import { isMastered, recallCounts } from "./lib/confidence";
+import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
+import { recallCounts } from "./lib/confidence";
+import {
+  buildNextSession,
+  buildRestudySession,
+  buildSession,
+  buildSessionReport,
+  type ReviewedCard,
+  type SessionReport as EngineSessionReport,
+  type Word,
+} from "./lib/learningEngine";
 import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
-import { Practice } from "./screens/Practice";
-import { PracticeSummary } from "./screens/PracticeSummary";
+import { Practice, type PracticeCard } from "./screens/Practice";
+import { SessionReport } from "./screens/SessionReport";
 import { Settings } from "./screens/Settings";
 import { TabBar, type Tab } from "./components/TabBar";
 
-type Route = Tab | "practice" | "summary";
+type Route = Tab | "practice" | "report";
 
-const FOCUSED: Route[] = ["practice", "summary"];
+const FOCUSED: Route[] = ["practice", "report"];
+
+/** Joins spaced-repetition Words back to their dictionary content for display. */
+function toPracticeCards(words: Word[]): PracticeCard[] {
+  return words
+    .map((word) => {
+      const entry = findEntry(word.id);
+      return entry ? { entry, word } : null;
+    })
+    .filter((c): c is PracticeCard => c !== null);
+}
 
 export default function App() {
   const [deck, setDeck] = useState<DeckItem[]>(() => loadDeck());
   const [results, setResults] = useState<PracticeResult[]>(() => loadResults());
   const [route, setRoute] = useState<Route>("dashboard");
 
-  const [queue, setQueue] = useState<DictionaryEntry[]>([]);
-  const [lastScore, setLastScore] = useState({ knew: 0, total: 0 });
+  const [queue, setQueue] = useState<PracticeCard[]>([]);
+  const [report, setReport] = useState<EngineSessionReport | null>(null);
+  // Word ids already covered earlier in the current study run (initial batch +
+  // any restudy/next-batch continuations), so buildNextSession doesn't repeat them.
+  const [reviewedIds, setReviewedIds] = useState<string[]>([]);
 
   useEffect(() => saveDeck(deck), [deck]);
   useEffect(() => saveResults(results), [results]);
@@ -44,25 +66,48 @@ export default function App() {
     setDeck((prev) =>
       isInDeck(prev, entryId)
         ? prev.filter((d) => d.id !== entryId)
-        : [{ id: entryId, dateAdded: Date.now() }, ...prev]
+        : [newDeckItem(entryId, new Date()), ...prev]
     );
   }
 
   function startPractice() {
-    // Mastered words (15+ successful recalls) are retired from practice.
-    const due = deckEntries.filter((e) => !isMastered(recalls.get(e.id) ?? 0));
-    if (due.length === 0) return;
-    setQueue(due);
+    const session = buildSession(deck, new Date());
+    if (session.length === 0) return;
+    setQueue(toPracticeCards(session));
+    setReviewedIds([]);
     setRoute("practice");
   }
 
-  function finishPractice(sessionResults: PracticeResult[]) {
-    setResults((prev) => [...prev, ...sessionResults]);
-    setLastScore({
-      knew: sessionResults.filter((r) => r.knew).length,
-      total: sessionResults.length,
+  function finishPractice(reviewedCards: ReviewedCard[]) {
+    setDeck((prev) => {
+      const updated = new Map(reviewedCards.map((c) => [c.word.id, c.word]));
+      return prev.map((d) => (updated.has(d.id) ? { ...updated.get(d.id)!, dateAdded: d.dateAdded } : d));
     });
-    setRoute("summary");
+    setResults((prev) => [
+      ...prev,
+      ...reviewedCards.map((c) => ({ entryId: c.word.id, grade: c.grade, timestamp: Date.now() })),
+    ]);
+    setReviewedIds((prev) => [...prev, ...reviewedCards.map((c) => c.word.id)]);
+    setReport(buildSessionReport(reviewedCards));
+    setRoute("report");
+  }
+
+  function restudy() {
+    if (!report) return;
+    const words = buildRestudySession(report);
+    if (words.length === 0) return;
+    setQueue(toPracticeCards(words));
+    setRoute("practice");
+  }
+
+  function continueToNext() {
+    const words = buildNextSession(deck, reviewedIds, new Date());
+    if (words.length === 0) {
+      setRoute("dashboard");
+      return;
+    }
+    setQueue(toPracticeCards(words));
+    setRoute("practice");
   }
 
   const showTabs = !FOCUSED.includes(route);
@@ -86,20 +131,11 @@ export default function App() {
           {route === "settings" && <Settings deckCount={deck.length} />}
 
           {route === "practice" && (
-            <Practice
-              entries={queue}
-              onFinish={finishPractice}
-              onClose={() => setRoute("dashboard")}
-            />
+            <Practice queue={queue} onFinish={finishPractice} onClose={() => setRoute("dashboard")} />
           )}
 
-          {route === "summary" && (
-            <PracticeSummary
-              correct={lastScore.knew}
-              total={lastScore.total}
-              onAgain={startPractice}
-              onHome={() => setRoute("dashboard")}
-            />
+          {route === "report" && report && (
+            <SessionReport report={report} onRestudy={restudy} onContinue={continueToNext} />
           )}
         </div>
 
