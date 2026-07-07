@@ -444,6 +444,74 @@ input {
   color: var(--ink-500);
 }
 
+/* ── WordRowCompact — single-line, read-only word row (Figma 154:623) ── */
+.wordrow-compact {
+  width: 100%;
+  background: var(--surface-card);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-button);
+  padding: 13px 16px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.wordrow-compact__dutch {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-word-row);
+  color: var(--text-display);
+}
+.wordrow-compact__gloss {
+  font-size: var(--size-body-sm);
+  color: var(--ink-500);
+}
+
+/* ── StatCard — big number + label tile (Figma 154:604, "Card") ── */
+.stat-card {
+  flex: 1;
+  background: var(--surface-card);
+  border: 1px solid var(--border-warm);
+  border-radius: 18px;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+.stat-card__value {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-word-hero);
+  line-height: 1.1;
+}
+.stat-card__value--success {
+  color: var(--success-fg);
+}
+.stat-card__value--error {
+  color: var(--error-fg);
+}
+.stat-card__label {
+  font-weight: 700;
+  font-size: var(--size-body);
+  color: var(--text-faint);
+}
+
+/* ── Badge — icon + label pill (Figma 155:353) ── */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 13px;
+  border-radius: 999px;
+  background: var(--semantic-success-success-subdle);
+  color: var(--semantic-success-onsuccess-strong);
+  font-weight: 700;
+  font-size: 12.5px;
+}
+.badge svg {
+  color: var(--semantic-success-onsuccess-strong);
+}
+
 /* ── Mastery bar — word confidence (Figma 114:202) ──
    Track tint + fill colour change per level; fill width = progress to mastery. */
 /* Meter = bar + level label, stacked and centred (WordRow, Figma 104:161). */

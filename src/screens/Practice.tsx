@@ -1,32 +1,39 @@
 import { useState } from "react";
-import type { DictionaryEntry, PracticeResult } from "../lib/types";
+import type { DictionaryEntry } from "../lib/types";
+import { applyGrade, type Grade, type ReviewedCard, type Word } from "../lib/learningEngine";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
 import { Divider } from "../components/Divider";
 
+export interface PracticeCard {
+  entry: DictionaryEntry;
+  word: Word;
+}
+
 export function Practice({
-  entries,
+  queue,
   onFinish,
   onClose,
 }: {
-  entries: DictionaryEntry[];
-  onFinish: (results: PracticeResult[]) => void;
+  queue: PracticeCard[];
+  onFinish: (reviewedCards: ReviewedCard[]) => void;
   onClose: () => void;
 }) {
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const [results, setResults] = useState<PracticeResult[]>([]);
+  const [reviewed, setReviewed] = useState<ReviewedCard[]>([]);
 
-  const total = entries.length;
-  const entry = entries[index];
+  const total = queue.length;
+  const { entry, word } = queue[index];
 
-  function answer(knew: boolean) {
-    const next = [...results, { entryId: entry.id, knew, timestamp: Date.now() }];
+  function grade(g: Grade) {
+    const updated = applyGrade(word, g, new Date());
+    const next = [...reviewed, { word: updated, grade: g }];
     if (index + 1 >= total) {
       onFinish(next);
       return;
     }
-    setResults(next);
+    setReviewed(next);
     setIndex(index + 1);
     setFlipped(false);
   }
@@ -75,16 +82,16 @@ export function Practice({
       </div>
 
       <div className="gutter" style={{ padding: "12px 22px 32px", display: "flex", gap: 12 }}>
-        <button className="btn btn--difficult" onClick={() => answer(false)}>
+        <button className="btn btn--difficult" onClick={() => grade("dontKnow")}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M4 4l8 8M12 4l-8 8" stroke="#B5462F" strokeWidth="2" strokeLinecap="round" />
           </svg>
           Still learning
         </button>
-        <button className="btn btn--still" onClick={() => answer(false)}>
+        <button className="btn btn--still" onClick={() => grade("hard")}>
           Hard
         </button>
-        <button className="btn btn--success" onClick={() => answer(true)}>
+        <button className="btn btn--success" onClick={() => grade("easy")}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 8.5l3.2 3.2L13 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

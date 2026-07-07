@@ -3,6 +3,21 @@ import type { DeckItem, PracticeResult } from "./types";
 const DECK_KEY = "woordkast.deck";
 const RESULTS_KEY = "woordkast.results";
 
+/** A freshly-added deck item: no spaced-repetition history yet, due immediately. */
+export function newDeckItem(entryId: string, now: Date): DeckItem {
+  return {
+    id: entryId,
+    dateAdded: now.getTime(),
+    interval: 0,
+    ease: 2.5,
+    reps: 0,
+    dueDate: now.toISOString(),
+    lapses: 0,
+    state: "new",
+    lastReviewedAt: null,
+  };
+}
+
 function read<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);

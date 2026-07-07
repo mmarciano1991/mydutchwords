@@ -1,3 +1,5 @@
+import type { Grade, Word } from "./learningEngine";
+
 /** Dutch grammatical article for nouns; null for non-nouns. */
 export type Gender = "de" | "het" | null;
 
@@ -11,16 +13,16 @@ export interface DictionaryEntry {
   exampleEn: string;
 }
 
-/** A word the user has added to their flashcard deck (references a dictionary entry). */
-export interface DeckItem {
-  id: string; // dictionary entry id
+/** A word the user has added to their flashcard deck: dictionary entry id +
+ *  its spaced-repetition state (see lib/learningEngine). */
+export interface DeckItem extends Word {
   dateAdded: number;
 }
 
 /** One flashcard answer during a practice session. */
 export interface PracticeResult {
   entryId: string;
-  knew: boolean;
+  grade: Grade;
   timestamp: number;
 }
 
