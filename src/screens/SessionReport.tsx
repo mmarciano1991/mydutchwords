@@ -8,8 +8,6 @@ import { Badge } from "../components/Badge";
 import { StatCard } from "../components/StatCard";
 import { WordRowCompact } from "../components/WordRowCompact";
 
-const VISIBLE_REVIEW_WORDS = 3;
-
 export function SessionReport({
   report,
   streak,
@@ -21,8 +19,6 @@ export function SessionReport({
   onContinue: () => void;
 }) {
   const toReview = report.dontKnowWords.length;
-  const visible = report.dontKnowWords.slice(0, VISIBLE_REVIEW_WORDS);
-  const overflow = toReview - visible.length;
 
   return (
     <div className="screen pad-top">
@@ -79,30 +75,19 @@ export function SessionReport({
                 Coming back sooner
               </span>
             </div>
+            {/* Full list — the screen body scrolls, so nothing is dead-ended. */}
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
-              {visible.map((word, i) => {
+              {report.dontKnowWords.map((word) => {
                 const entry = resolveEntry(word.id);
                 if (!entry) return null;
-                const last = i === visible.length - 1;
                 return (
-                  <div key={word.id} style={{ position: "relative" }}>
-                    <WordRowCompact dutch={entry.dutch} english={entry.english} gender={entry.gender} tricky={isLeech(word)} />
-                    {last && overflow > 0 && (
-                      <span
-                        className="faint"
-                        style={{
-                          position: "absolute",
-                          right: 16,
-                          top: "50%",
-                          transform: "translateY(-50%)",
-                          fontSize: 12,
-                          fontWeight: 700,
-                        }}
-                      >
-                        +{overflow} more
-                      </span>
-                    )}
-                  </div>
+                  <WordRowCompact
+                    key={word.id}
+                    dutch={entry.dutch}
+                    english={entry.english}
+                    gender={entry.gender}
+                    tricky={isLeech(word)}
+                  />
                 );
               })}
             </div>
