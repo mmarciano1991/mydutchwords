@@ -45,6 +45,9 @@ export default function App() {
   // Bumped per begun session so Practice remounts with fresh internal state
   // (its queue/outcomes are seeded from props on mount).
   const [sessionId, setSessionId] = useState(0);
+  // "warmup" = explicit ahead-of-schedule practice: cards are shown and
+  // retried, but grades are NOT applied — the schedule stays untouched.
+  const [sessionMode, setSessionMode] = useState<"scheduled" | "warmup">("scheduled");
   const [report, setReport] = useState<EngineSessionReport | null>(null);
   // Word ids already covered earlier in the current study run (initial batch +
   // any restudy/next-batch continuations), so buildNextSession doesn't repeat them.
@@ -113,10 +116,11 @@ export default function App() {
     return `in ${days} days`;
   }, [deck, dueSession]);
 
-  function beginSession(session: Word[], keepRun = false) {
+  function beginSession(session: Word[], keepRun = false, mode: "scheduled" | "warmup" = "scheduled") {
     if (session.length === 0) return;
     setQueue(toPracticeCards(session));
     setSessionId((s) => s + 1);
+    setSessionMode(mode);
     if (!keepRun) setReviewedIds([]);
     setRoute("practice");
   }
@@ -131,11 +135,19 @@ export default function App() {
     beginSession(
       [...deck]
         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-        .slice(0, SESSION_CAP)
+        .slice(0, SESSION_CAP),
+      false,
+      "warmup"
     );
   }
 
   function finishPractice(reviewedCards: ReviewedCard[]) {
+    if (sessionMode === "warmup") {
+      // Warm-up: informational report only — nothing is persisted.
+      setReport(buildSessionReport(reviewedCards));
+      setRoute("report");
+      return;
+    }
     setDeck((prev) => {
       const updated = new Map(reviewedCards.map((c) => [c.word.id, c.word]));
       return prev.map((d) => (updated.has(d.id) ? { ...updated.get(d.id)!, dateAdded: d.dateAdded } : d));
@@ -184,11 +196,11 @@ export default function App() {
           {route === "settings" && <Settings deckCount={deck.length} />}
 
           {route === "practice" && (
-            <Practice key={sessionId} queue={queue} onFinish={finishPractice} onClose={() => setRoute("dashboard")} />
+            <Practice key={sessionId} queue={queue} scheduling={sessionMode === "scheduled"} onFinish={finishPractice} onClose={() => setRoute("dashboard")} />
           )}
 
           {route === "report" && report && (
-            <SessionReport report={report} streak={streak} onContinue={continueToNext} />
+            <SessionReport report={report} streak={streak} warmup={sessionMode === "warmup"} onContinue={continueToNext} />
           )}
 
           {route === "capture" && (

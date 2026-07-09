@@ -26,10 +26,13 @@ interface Outcome {
 
 export function Practice({
   queue: initialQueue,
+  scheduling = true,
   onFinish,
   onClose,
 }: {
   queue: PracticeCard[];
+  /** false = warm-up (ahead-of-schedule): answers are not graded into the ladder. */
+  scheduling?: boolean;
   onFinish: (reviewedCards: ReviewedCard[]) => void;
   onClose: () => void;
 }) {
@@ -43,7 +46,7 @@ export function Practice({
   const isRepeat = outcomes.current.has(word.id);
 
   function grade(g: Grade) {
-    const updated = applyGrade(word, g, new Date());
+    const updated = scheduling ? applyGrade(word, g, new Date()) : word;
 
     const existing = outcomes.current.get(word.id);
     outcomes.current.set(word.id, {
@@ -84,7 +87,7 @@ export function Practice({
 
       <div className="screen__body gutter" style={{ padding: "14px 22px 4px", display: "flex", flexDirection: "column" }}>
         <div className="eyebrow" style={{ textAlign: "center" }}>
-          {flipped ? "Translation" : isRepeat ? "One more try" : "Do you know this word?"}
+          {flipped ? "Translation" : isRepeat ? "One more try" : scheduling ? "Do you know this word?" : "Warm-up — does not change your schedule"}
         </div>
 
         <button
