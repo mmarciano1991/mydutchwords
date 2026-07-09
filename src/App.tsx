@@ -70,20 +70,41 @@ export default function App() {
     );
   }
 
-  function startPractice() {
-    let session: Word[] = buildSession(deck, new Date());
-    if (session.length === 0) {
-      // Nothing due yet (e.g. everything was just reviewed and is due
-      // tomorrow). Rather than a dead button, practice ahead of schedule
-      // with the soonest-due words.
-      session = [...deck]
-        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-        .slice(0, 25);
-    }
+  // What the scheduler would practice right now — drives the hero's due count.
+  // Recomputed on navigation too (route dep), so words that became due while
+  // the app sat open show up when the user returns to the dashboard.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const dueSession = useMemo(() => buildSession(deck, new Date()), [deck, route]);
+
+  // When nothing is due: human label for the next unlock ("later today" / "tomorrow" / "in N days").
+  const nextDueLabel = useMemo(() => {
+    if (dueSession.length > 0 || deck.length === 0) return null;
+    const soonest = Math.min(...deck.map((d) => new Date(d.dueDate).getTime()));
+    const days = Math.ceil((soonest - Date.now()) / (24 * 60 * 60 * 1000));
+    if (days <= 0) return "later today";
+    if (days === 1) return "tomorrow";
+    return `in ${days} days`;
+  }, [deck, dueSession]);
+
+  function beginSession(session: Word[]) {
     if (session.length === 0) return;
     setQueue(toPracticeCards(session));
     setReviewedIds([]);
     setRoute("practice");
+  }
+
+  function startPractice() {
+    beginSession(dueSession);
+  }
+
+  // Explicit ahead-of-schedule practice (hero's "Practice ahead" when caught up):
+  // the soonest-due words, even though they aren't due yet.
+  function startPracticeAhead() {
+    beginSession(
+      [...deck]
+        .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
+        .slice(0, 25)
+    );
   }
 
   function finishPractice(reviewedCards: ReviewedCard[]) {
@@ -126,8 +147,11 @@ export default function App() {
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
           {route === "dashboard" && (
             <Dashboard
-              deck={deckEntries}
+              deckCount={deckEntries.length}
+              dueCount={dueSession.length}
+              nextDueLabel={nextDueLabel}
               onPractice={startPractice}
+              onPracticeAhead={startPracticeAhead}
               onBrowse={() => setRoute("browse")}
             />
           )}

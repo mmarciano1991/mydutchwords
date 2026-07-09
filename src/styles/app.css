@@ -324,6 +324,11 @@ input {
   line-height: 1.1;
 }
 
+.hero__note {
+  font-size: 13.5px;
+  opacity: 0.82;
+}
+
 .hero__cta {
   width: 100%;
   border: none;
@@ -357,13 +362,15 @@ input {
   }
 }
 
-.hero__locked {
+/* ghost CTA — for optional actions on the hero (e.g. "Practice ahead"
+   when nothing is due): translucent on the blue card, not a loud primary. */
+.hero__cta--ghost {
   background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: var(--radius-input);
-  padding: 13px 14px;
-  font-size: 13.5px;
-  line-height: 1.45;
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  color: var(--on-primary);
+}
+.hero__cta--ghost:active {
+  background: rgba(255, 255, 255, 0.22);
 }
 
 /* ── Word rows ── */
