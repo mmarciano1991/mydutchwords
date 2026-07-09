@@ -88,10 +88,7 @@ export function Practice({
           </svg>
           Still learning
         </button>
-        <button className="btn btn--still" onClick={() => grade("hard")}>
-          Hard
-        </button>
-        <button className="btn btn--success" onClick={() => grade("easy")}>
+        <button className="btn btn--success" onClick={() => grade("know")}>
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
             <path d="M3 8.5l3.2 3.2L13 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
           </svg>

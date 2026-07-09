@@ -1,32 +1,38 @@
 /* ──────────────────────────────────────────────────────────────────────────
-   learningEngine — simplified SM-2 spaced-repetition core.
+   learningEngine — level-ladder spaced repetition.
+
+   Per the product flowchart: every word sits on a level 0–6. A correct
+   answer moves it up one level; a wrong answer moves it down one (min 0)
+   and counts a lapse. The next review is scheduled at the level's fixed
+   interval on the ladder 1 → 3 → 7 → 14 → 30 → 90 days.
 
    Pure, synchronous, framework-agnostic: no UI, no storage, no I/O, no
    system-clock calls. Every function takes the data (and "now", where
-   relevant) as arguments and returns new data. Safe to unit test in
-   isolation and wire into the app's storage/UI layers separately.
+   relevant) as arguments and returns new data.
    ────────────────────────────────────────────────────────────────────────── */
 
 export type CardState = "new" | "learning" | "mature";
+
+/** Days until the next review, per level. Level 0 has no ladder entry:
+ *  a level-0 word is (re)learning and comes back after 1 day. */
+export const LADDER = [1, 3, 7, 14, 30, 90] as const;
+export const MAX_LEVEL = LADDER.length; // 6
 
 export interface Word {
   id: string;
   // ...other app fields (translation, gender, context, etc.) — not in scope here
 
   // Spaced repetition state
-  interval: number; // days until next due date
-  ease: number; // ease factor, starts at 2.5
-  reps: number; // consecutive successful (non-"I don't know") reviews
+  level: number; // 0 (new / relearning) … MAX_LEVEL (mature)
+  interval: number; // days until next due date (derived from level)
+  reps: number; // consecutive successful reviews
   dueDate: string; // ISO date string
-  lapses: number; // total times graded "I don't know" — used for leech detection
+  lapses: number; // total times answered "I don't know" — used for leech detection
   state: CardState;
   lastReviewedAt: string | null;
 }
 
-export type Grade = "dontKnow" | "hard" | "easy";
-
-const MIN_EASE = 1.3;
-const MATURE_INTERVAL_DAYS = 60;
+export type Grade = "know" | "dontKnow";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
@@ -34,60 +40,50 @@ function addDays(date: Date, days: number): Date {
   return new Date(date.getTime() + days * MS_PER_DAY);
 }
 
-function clampEase(ease: number): number {
-  return Math.max(MIN_EASE, ease);
+/** Fixed review interval (days) for a level. Level 0 → 1 day. */
+export function intervalForLevel(level: number): number {
+  if (level <= 0) return 1;
+  return LADDER[Math.min(level, MAX_LEVEL) - 1];
 }
 
-function stateFor(interval: number): CardState {
-  return interval >= MATURE_INTERVAL_DAYS ? "mature" : "learning";
+function stateFor(level: number): CardState {
+  return level >= MAX_LEVEL ? "mature" : "learning";
 }
 
 /**
- * Applies a single SM-2 grade to a word, returning a new word with updated
- * spaced-repetition state. Pure: same inputs always produce the same output.
+ * Applies a binary grade to a word, returning a new word with updated
+ * ladder state. Pure: same inputs always produce the same output.
  */
 export function applyGrade(word: Word, grade: Grade, reviewedAt: Date): Word {
+  let level = word.level;
   let reps = word.reps;
-  let interval = word.interval;
-  let ease = word.ease;
   let lapses = word.lapses;
 
-  if (grade === "dontKnow") {
-    reps = 0;
-    interval = 1;
-    ease = clampEase(word.ease - 0.2);
-    lapses = word.lapses + 1;
-  } else if (grade === "hard") {
-    interval = Math.max(1, Math.ceil(word.interval * 1.2));
-    ease = clampEase(word.ease - 0.05);
-  } else {
-    // easy
+  if (grade === "know") {
+    level = Math.min(MAX_LEVEL, level + 1);
     reps = word.reps + 1;
-    if (reps === 1) {
-      interval = 1;
-    } else if (reps === 2) {
-      interval = 6;
-    } else {
-      interval = Math.max(1, Math.round(word.interval * word.ease));
-    }
-    ease = word.ease + 0.1;
+  } else {
+    level = Math.max(0, level - 1);
+    reps = 0;
+    lapses = word.lapses + 1;
   }
 
+  const interval = intervalForLevel(level);
   return {
     ...word,
+    level,
     reps,
-    interval,
-    ease,
     lapses,
+    interval,
     dueDate: addDays(reviewedAt, interval).toISOString(),
     lastReviewedAt: reviewedAt.toISOString(),
-    state: stateFor(interval),
+    state: stateFor(level),
   };
 }
 
 const LEECH_LAPSE_THRESHOLD = 4;
 
-/** True once a word has been graded "I don't know" 4+ times. Pure derived check. */
+/** True once a word has been answered "I don't know" 4+ times. Pure derived check. */
 export function isLeech(word: Word): boolean {
   return word.lapses >= LEECH_LAPSE_THRESHOLD;
 }
@@ -95,7 +91,7 @@ export function isLeech(word: Word): boolean {
 export interface SessionConfig {
   maxNewWordsPerSession?: number; // default 10
   maxSessionMinutes?: number; // default 8
-  maxHardCap?: number; // default 25 — hard ceiling on total cards regardless of time
+  maxHardCap?: number; // default 15 — hard ceiling on total cards regardless of time
   secondsPerCard?: number; // default 12 — used to estimate time budget
 }
 
@@ -109,28 +105,33 @@ interface ResolvedSessionConfig {
 const DEFAULT_CONFIG: ResolvedSessionConfig = {
   maxNewWordsPerSession: 10,
   maxSessionMinutes: 8,
-  maxHardCap: 25,
+  maxHardCap: 15,
   secondsPerCard: 12,
 };
+
+export const SESSION_CAP = DEFAULT_CONFIG.maxHardCap;
 
 function resolveConfig(config?: SessionConfig): ResolvedSessionConfig {
   return { ...DEFAULT_CONFIG, ...config };
 }
 
-/** Selects due reviews from `words` (state !== "new", dueDate <= now). */
+/** Due reviews from `words` (state !== "new", dueDate <= now), most overdue first. */
 function dueReviews(words: Word[], now: Date): Word[] {
-  return words.filter((w) => w.state !== "new" && new Date(w.dueDate).getTime() <= now.getTime());
+  return words
+    .filter((w) => w.state !== "new" && new Date(w.dueDate).getTime() <= now.getTime())
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 }
 
-/** Selects new words from `words`, preserving caller order. */
+/** New words from `words`, preserving caller order. */
 function newWords(words: Word[]): Word[] {
   return words.filter((w) => w.state === "new");
 }
 
 /**
- * Fills a session list (due reviews first, then up to `maxNewWordsPerSession`
- * new words) and trims it to the time budget / hard cap. If due reviews alone
- * exceed the cap, only the capped due reviews are returned.
+ * Fills a session list (due reviews first — most overdue leading — then up to
+ * `maxNewWordsPerSession` new words) and trims it to the time budget / hard
+ * cap. If due reviews alone exceed the cap, only the capped due reviews are
+ * returned.
  */
 function fillSession(due: Word[], fresh: Word[], config: ResolvedSessionConfig): Word[] {
   const timeBudgetCards = Math.floor((config.maxSessionMinutes * 60) / config.secondsPerCard);
@@ -145,9 +146,9 @@ function fillSession(due: Word[], fresh: Word[], config: ResolvedSessionConfig):
 }
 
 /**
- * Builds a practice session from `allWords`: all due reviews first, then new
- * words (in the order given) up to `maxNewWordsPerSession`, capped overall by
- * whichever of the time budget or `maxHardCap` is reached first. Selection
+ * Builds a practice session from `allWords`: overdue/due reviews first, then
+ * new words (in the order given) up to `maxNewWordsPerSession`, capped overall
+ * by whichever of the time budget or `maxHardCap` is reached first. Selection
  * only — does not mutate or grade anything.
  */
 export function buildSession(allWords: Word[], now: Date, config?: SessionConfig): Word[] {
@@ -161,10 +162,10 @@ export function buildSession(allWords: Word[], now: Date, config?: SessionConfig
 export function markAsKnown(word: Word, now: Date): Word {
   return {
     ...word,
-    interval: 90,
-    ease: 2.5,
+    level: MAX_LEVEL,
+    interval: intervalForLevel(MAX_LEVEL),
     reps: 2,
-    dueDate: addDays(now, 90).toISOString(),
+    dueDate: addDays(now, intervalForLevel(MAX_LEVEL)).toISOString(),
     state: "mature",
   };
 }
@@ -176,8 +177,8 @@ export interface ReviewedCard {
 
 export interface SessionReport {
   totalReviewed: number;
-  knownCount: number; // graded "hard" or "easy"
-  dontKnowWords: Word[]; // words graded "dontKnow" this session, in review order
+  knownCount: number; // answered "know"
+  dontKnowWords: Word[]; // words answered "dontKnow" this session, in review order
 }
 
 /** Pure summary of a completed session's graded cards. Does not re-grade or mutate. */

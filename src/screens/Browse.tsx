@@ -13,11 +13,12 @@ const SELECTING_MS = 650;
 
 export function Browse({
   deckIds,
-  recalls,
+  levels,
   onToggle,
 }: {
   deckIds: Set<string>;
-  recalls: Map<string, number>;
+  /** Ladder level per deck word id (from its spaced-repetition state). */
+  levels: Map<string, number>;
   onToggle: (entryId: string) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -130,7 +131,7 @@ export function Browse({
                           <span className="wordrow__gloss">{e.english}</span>
                         </div>
                       </div>
-                      {added && <MasteryBar recalls={recalls.get(e.id) ?? 0} withLabel />}
+                      {added && <MasteryBar level={levels.get(e.id) ?? 0} withLabel />}
                       <IconButton
                         action={added && !selecting ? "remove" : "add"}
                         success={selecting}

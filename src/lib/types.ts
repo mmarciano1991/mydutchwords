@@ -25,6 +25,3 @@ export interface PracticeResult {
   grade: Grade;
   timestamp: number;
 }
-
-/** How well the user knows a word, derived from successful recalls. */
-export type ConfidenceLevel = "weak" | "medium" | "mastering" | "mastered";
