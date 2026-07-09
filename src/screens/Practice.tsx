@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
 import { applyGrade, type Grade, type ReviewedCard, type Word } from "../lib/learningEngine";
 import { GenderChip } from "../components/GenderChip";
@@ -39,6 +39,12 @@ export function Practice({
   const [queue, setQueue] = useState<PracticeCard[]>(initialQueue);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  // Transient per-answer feedback ("Next review in 3 days"), keyed so the
+  // fade animation restarts on every grade; cleared by timer (JS, not CSS,
+  // so it also disappears under prefers-reduced-motion).
+  const [feedback, setFeedback] = useState<{ text: string; key: number } | null>(null);
+  const feedbackTimer = useRef<number | undefined>(undefined);
+  useEffect(() => () => window.clearTimeout(feedbackTimer.current), []);
   const outcomes = useRef<Map<string, Outcome>>(new Map());
   const recycles = useRef<Map<string, number>>(new Map());
 
@@ -55,10 +61,24 @@ export function Practice({
     });
 
     let nextQueue = queue;
-    if (g === "dontKnow" && (recycles.current.get(word.id) ?? 0) < MAX_RECYCLES) {
+    const willRecycle = g === "dontKnow" && (recycles.current.get(word.id) ?? 0) < MAX_RECYCLES;
+    if (willRecycle) {
       recycles.current.set(word.id, (recycles.current.get(word.id) ?? 0) + 1);
       nextQueue = [...queue, { entry, word: updated }];
       setQueue(nextQueue);
+    }
+
+    // Make the schedule legible: say when this word comes back.
+    if (scheduling) {
+      const text =
+        g === "know"
+          ? `Next review in ${updated.interval} day${updated.interval === 1 ? "" : "s"}`
+          : willRecycle
+            ? "One more try coming up"
+            : "Coming back tomorrow";
+      setFeedback({ text, key: Date.now() });
+      window.clearTimeout(feedbackTimer.current);
+      feedbackTimer.current = window.setTimeout(() => setFeedback(null), 1600);
     }
 
     if (index + 1 >= nextQueue.length) {
@@ -113,6 +133,12 @@ export function Practice({
           </div>
         </button>
       </div>
+
+      {feedback && (
+        <div key={feedback.key} className="grade-toast" role="status">
+          {feedback.text}
+        </div>
+      )}
 
       <div className="gutter" style={{ padding: "12px 22px 32px", display: "flex", gap: 12 }}>
         <button className="btn btn--difficult" onClick={() => grade("dontKnow")}>
