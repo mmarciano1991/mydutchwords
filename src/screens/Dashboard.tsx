@@ -16,6 +16,7 @@ export function Dashboard({
   onPractice,
   onPracticeAhead,
   onBrowse,
+  onAddWord,
 }: {
   deckCount: number;
   /** Cards the scheduler would put in a session right now (due reviews + new). */
@@ -25,6 +26,7 @@ export function Dashboard({
   onPractice: () => void;
   onPracticeAhead: () => void;
   onBrowse: () => void;
+  onAddWord: () => void;
 }) {
   // ── Empty deck: invite to build it ──
   if (deckCount === 0) {
@@ -97,6 +99,12 @@ export function Dashboard({
           </section>
         )}
       </div>
+
+      <button className="fab" onClick={onAddWord} aria-label="Add a word">
+        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
+          <path d="M13 5v16M5 13h16" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+        </svg>
+      </button>
     </div>
   );
 }
