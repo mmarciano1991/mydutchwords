@@ -2,12 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import { findEntry } from "./data/dictionary";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
-import { recallCounts } from "./lib/confidence";
 import {
   buildNextSession,
   buildRestudySession,
   buildSession,
   buildSessionReport,
+  SESSION_CAP,
   type ReviewedCard,
   type SessionReport as EngineSessionReport,
   type Word,
@@ -54,8 +54,8 @@ export default function App() {
   );
   const deckIds = useMemo(() => new Set(deck.map((d) => d.id)), [deck]);
 
-  // Successful-recall tally per word, used for confidence bars + mastery gating.
-  const recalls = useMemo(() => recallCounts(results), [results]);
+  // Ladder level per deck word, drives the mastery bars in Browse.
+  const levels = useMemo(() => new Map(deck.map((d) => [d.id, d.level])), [deck]);
 
   const activeTab: Tab = useMemo(() => {
     if (route === "browse" || route === "settings") return route;
@@ -103,7 +103,7 @@ export default function App() {
     beginSession(
       [...deck]
         .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-        .slice(0, 25)
+        .slice(0, SESSION_CAP)
     );
   }
 
@@ -157,7 +157,7 @@ export default function App() {
           )}
 
           {route === "browse" && (
-            <Browse deckIds={deckIds} recalls={recalls} onToggle={toggleWord} />
+            <Browse deckIds={deckIds} levels={levels} onToggle={toggleWord} />
           )}
 
           {route === "settings" && <Settings deckCount={deck.length} />}

@@ -2,7 +2,7 @@
    (Figma node 133:245). Summarizes a SessionReport from the learning engine
    and offers the two continuation actions: restudy the misses, or move on
    to the next batch. */
-import type { SessionReport as EngineSessionReport } from "../lib/learningEngine";
+import { SESSION_CAP, type SessionReport as EngineSessionReport } from "../lib/learningEngine";
 import { findEntry } from "../data/dictionary";
 import { Badge } from "../components/Badge";
 import { StatCard } from "../components/StatCard";
@@ -111,7 +111,7 @@ export function SessionReport({
           </button>
         )}
         <button className="btn btn--secondary" onClick={onContinue}>
-          Continue to next 25
+          Continue to next {SESSION_CAP}
         </button>
       </div>
     </div>
