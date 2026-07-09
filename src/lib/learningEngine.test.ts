@@ -78,6 +78,14 @@ describe("applyGrade — ladder", () => {
     expect(dropped.state).toBe("learning");
   });
 
+  it("normalizes due dates to local start-of-day, so reviews unlock at midnight", () => {
+    const lateEvening = new Date(2024, 5, 1, 23, 15, 42); // local time
+    const next = applyGrade(makeWord(), "know", lateEvening); // level 1 -> +1 day
+    const due = new Date(next.dueDate);
+    expect([due.getHours(), due.getMinutes(), due.getSeconds()]).toEqual([0, 0, 0]);
+    expect(due.getDate()).toBe(2); // tomorrow's calendar day, not 23:15 tomorrow
+  });
+
   it("intervalForLevel maps level 0 to 1 day and clamps above the ladder", () => {
     expect(intervalForLevel(0)).toBe(1);
     expect(intervalForLevel(1)).toBe(1);
