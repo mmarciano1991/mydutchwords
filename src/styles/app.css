@@ -867,6 +867,131 @@ input {
   line-height: 1.5;
 }
 
+/* ── Capture ("Add a word") — Figma 130:232 + product flowchart ── */
+.capture-card {
+  margin-top: 16px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-card);
+  padding: 22px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.capture-card__word {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 34px;
+  line-height: 1.05;
+  color: var(--text-display);
+  margin-top: 4px;
+}
+.capture-card__gloss {
+  font-size: 18px;
+  color: var(--primary);
+}
+.capture-card__rule {
+  height: 1px;
+  background: var(--line-divider);
+  margin: 11px 0 4px;
+}
+.capture-card__example-en {
+  font-size: var(--size-body-sm);
+  color: var(--text-faint);
+}
+
+/* Treatment options — Save to study / I already know it / Don't add it */
+.capture-option {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  width: 100%;
+  text-align: left;
+  padding: 15px 16px;
+  border-radius: var(--radius-button);
+  background: var(--surface-card);
+  border: 1px solid var(--line-warm);
+  transition:
+    background var(--motion-base) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+.capture-option:active {
+  transform: translateY(1px);
+}
+.capture-option--primary {
+  background: var(--semantic-button-default);
+  border-color: var(--semantic-button-default);
+  box-shadow: var(--shadow-primary);
+}
+.capture-option--primary:active {
+  background: var(--semantic-button-pressed-strong);
+}
+.capture-option--known {
+  border: 1.5px solid var(--success-border);
+}
+.capture-option--known:active {
+  background: var(--semantic-success-success-subdle);
+}
+.capture-option__icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--cream-100);
+  color: var(--text-muted);
+}
+.capture-option__icon--primary {
+  background: rgba(255, 255, 255, 0.15);
+}
+.capture-option__icon--known {
+  background: var(--semantic-success-success-subdle);
+  color: var(--semantic-success-onsuccess-strong);
+}
+.capture-option__text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.capture-option__title {
+  font-weight: 700;
+  font-size: 15.5px;
+  color: var(--text-body);
+}
+.capture-option--primary .capture-option__title,
+.capture-option--primary .capture-option__sub {
+  color: var(--on-primary);
+}
+.capture-option__title--known {
+  color: var(--semantic-success-onsuccess-strong);
+}
+.capture-option__title--muted {
+  color: var(--text-muted);
+}
+.capture-option__sub {
+  font-size: 12.5px;
+  color: var(--text-faint);
+}
+
+/* Spelling suggestions */
+.suggestion-chip {
+  border: 1px solid var(--line-blue-soft);
+  background: var(--surface-card);
+  color: var(--primary);
+  font-family: var(--font-serif);
+  font-size: 15.5px;
+  padding: 8px 14px;
+  border-radius: 11px;
+  transition: background var(--motion-base) var(--ease-standard);
+}
+.suggestion-chip:active {
+  background: var(--surface-tint);
+}
+
 /* (Add / remove buttons are now the unified .icon-btn component above.) */
 
 /* ── Flashcard ── */

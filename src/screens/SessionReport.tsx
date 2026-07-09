@@ -3,7 +3,7 @@
    retried in-session (see Practice) and rescheduled sooner by the ladder;
    the one continuation action is moving on to the next batch. */
 import { SESSION_CAP, type SessionReport as EngineSessionReport } from "../lib/learningEngine";
-import { findEntry } from "../data/dictionary";
+import { resolveEntry } from "../lib/wordSources";
 import { Badge } from "../components/Badge";
 import { StatCard } from "../components/StatCard";
 import { WordRowCompact } from "../components/WordRowCompact";
@@ -73,7 +73,7 @@ export function SessionReport({
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               {visible.map((word, i) => {
-                const entry = findEntry(word.id);
+                const entry = resolveEntry(word.id);
                 if (!entry) return null;
                 const last = i === visible.length - 1;
                 return (

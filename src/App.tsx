@@ -1,11 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
-import { findEntry } from "./data/dictionary";
+import { addCustomEntry, resolveEntry } from "./lib/wordSources";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
 import {
   buildNextSession,
   buildSession,
   buildSessionReport,
+  markAsKnown,
   SESSION_CAP,
   type ReviewedCard,
   type SessionReport as EngineSessionReport,
@@ -15,18 +16,19 @@ import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
 import { Practice, type PracticeCard } from "./screens/Practice";
 import { SessionReport } from "./screens/SessionReport";
+import { Capture } from "./screens/Capture";
 import { Settings } from "./screens/Settings";
 import { TabBar, type Tab } from "./components/TabBar";
 
-type Route = Tab | "practice" | "report";
+type Route = Tab | "practice" | "report" | "capture";
 
-const FOCUSED: Route[] = ["practice", "report"];
+const FOCUSED: Route[] = ["practice", "report", "capture"];
 
 /** Joins spaced-repetition Words back to their dictionary content for display. */
 function toPracticeCards(words: Word[]): PracticeCard[] {
   return words
     .map((word) => {
-      const entry = findEntry(word.id);
+      const entry = resolveEntry(word.id);
       return entry ? { entry, word } : null;
     })
     .filter((c): c is PracticeCard => c !== null);
@@ -51,7 +53,7 @@ export default function App() {
 
   // Resolve the deck (newest first) into full dictionary entries.
   const deckEntries = useMemo(
-    () => deck.map((d) => findEntry(d.id)).filter((e): e is DictionaryEntry => Boolean(e)),
+    () => deck.map((d) => resolveEntry(d.id)).filter((e): e is DictionaryEntry => Boolean(e)),
     [deck]
   );
   const deckIds = useMemo(() => new Set(deck.map((d) => d.id)), [deck]);
@@ -70,6 +72,20 @@ export default function App() {
         ? prev.filter((d) => d.id !== entryId)
         : [newDeckItem(entryId, new Date()), ...prev]
     );
+  }
+
+  /** Save from the capture flow. Words from the online lookup aren't in the
+   *  bundled dictionary, so they're persisted as custom entries first.
+   *  `known` skips the ramp: straight to Mature (flowchart's "Already know it"). */
+  function saveCapturedWord(entry: DictionaryEntry, known: boolean) {
+    addCustomEntry(entry);
+    setDeck((prev) => {
+      if (isInDeck(prev, entry.id)) return prev;
+      const now = new Date();
+      const item = newDeckItem(entry.id, now);
+      return [known ? { ...markAsKnown(item, now), dateAdded: item.dateAdded } : item, ...prev];
+    });
+    setRoute("dashboard");
   }
 
   // What the scheduler would practice right now — drives the hero's due count.
@@ -147,6 +163,7 @@ export default function App() {
               onPractice={startPractice}
               onPracticeAhead={startPracticeAhead}
               onBrowse={() => setRoute("browse")}
+              onAddWord={() => setRoute("capture")}
             />
           )}
 
@@ -162,6 +179,10 @@ export default function App() {
 
           {route === "report" && report && (
             <SessionReport report={report} onContinue={continueToNext} />
+          )}
+
+          {route === "capture" && (
+            <Capture deckIds={deckIds} onSave={saveCapturedWord} onBack={() => setRoute("dashboard")} />
           )}
         </div>
 
