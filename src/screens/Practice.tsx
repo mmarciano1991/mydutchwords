@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
 import { applyGrade, type Grade, type ReviewedCard, type Word } from "../lib/learningEngine";
 import { GenderChip } from "../components/GenderChip";
@@ -10,8 +10,22 @@ export interface PracticeCard {
   word: Word;
 }
 
+/* In-session repeat (per the product flowchart): a missed card is re-queued
+   at the end of the session so the user retries it minutes later, until it's
+   answered correctly — capped at MAX_RECYCLES retries per card so a stubborn
+   word can't trap the session. Every attempt applies a real grade (miss −1 /
+   know +1), so a miss-then-recover nets out at the original level. */
+const MAX_RECYCLES = 2;
+
+/** Per-word outcome across attempts: first-attempt grade decides the report's
+ *  correct count; the latest word state is what gets persisted. */
+interface Outcome {
+  firstGrade: Grade;
+  word: Word;
+}
+
 export function Practice({
-  queue,
+  queue: initialQueue,
   onFinish,
   onClose,
 }: {
@@ -19,26 +33,42 @@ export function Practice({
   onFinish: (reviewedCards: ReviewedCard[]) => void;
   onClose: () => void;
 }) {
+  const [queue, setQueue] = useState<PracticeCard[]>(initialQueue);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
-  const [reviewed, setReviewed] = useState<ReviewedCard[]>([]);
+  const outcomes = useRef<Map<string, Outcome>>(new Map());
+  const recycles = useRef<Map<string, number>>(new Map());
 
-  const total = queue.length;
   const { entry, word } = queue[index];
+  const isRepeat = outcomes.current.has(word.id);
 
   function grade(g: Grade) {
     const updated = applyGrade(word, g, new Date());
-    const next = [...reviewed, { word: updated, grade: g }];
-    if (index + 1 >= total) {
-      onFinish(next);
+
+    const existing = outcomes.current.get(word.id);
+    outcomes.current.set(word.id, {
+      firstGrade: existing ? existing.firstGrade : g,
+      word: updated,
+    });
+
+    let nextQueue = queue;
+    if (g === "dontKnow" && (recycles.current.get(word.id) ?? 0) < MAX_RECYCLES) {
+      recycles.current.set(word.id, (recycles.current.get(word.id) ?? 0) + 1);
+      nextQueue = [...queue, { entry, word: updated }];
+      setQueue(nextQueue);
+    }
+
+    if (index + 1 >= nextQueue.length) {
+      onFinish(
+        Array.from(outcomes.current.values()).map((o) => ({ word: o.word, grade: o.firstGrade }))
+      );
       return;
     }
-    setReviewed(next);
     setIndex(index + 1);
     setFlipped(false);
   }
 
-  const progress = (index / total) * 100;
+  const progress = (index / queue.length) * 100;
 
   return (
     <div className="screen pad-top">
@@ -48,13 +78,13 @@ export function Practice({
           <div className="progress__fill" style={{ width: `${progress}%` }} />
         </div>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)" }}>
-          {index + 1}/{total}
+          {index + 1}/{queue.length}
         </span>
       </div>
 
       <div className="screen__body gutter" style={{ padding: "14px 22px 4px", display: "flex", flexDirection: "column" }}>
         <div className="eyebrow" style={{ textAlign: "center" }}>
-          {flipped ? "Translation" : "Do you know this word?"}
+          {flipped ? "Translation" : isRepeat ? "One more try" : "Do you know this word?"}
         </div>
 
         <button

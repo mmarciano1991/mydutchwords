@@ -1,7 +1,7 @@
 /* SessionReport — "Batch complete" check-in shown after a practice session
-   (Figma node 133:245). Summarizes a SessionReport from the learning engine
-   and offers the two continuation actions: restudy the misses, or move on
-   to the next batch. */
+   (Figma node 133:245). Purely informational: missed words were already
+   retried in-session (see Practice) and rescheduled sooner by the ladder;
+   the one continuation action is moving on to the next batch. */
 import { SESSION_CAP, type SessionReport as EngineSessionReport } from "../lib/learningEngine";
 import { findEntry } from "../data/dictionary";
 import { Badge } from "../components/Badge";
@@ -12,11 +12,9 @@ const VISIBLE_REVIEW_WORDS = 3;
 
 export function SessionReport({
   report,
-  onRestudy,
   onContinue,
 }: {
   report: EngineSessionReport;
-  onRestudy: () => void;
   onContinue: () => void;
 }) {
   const toReview = report.dontKnowWords.length;
@@ -70,7 +68,7 @@ export function SessionReport({
                 Words to review
               </span>
               <span className="faint" style={{ fontSize: 12.5 }}>
-                Shown more often
+                Coming back sooner
               </span>
             </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
@@ -105,12 +103,7 @@ export function SessionReport({
       </div>
 
       <div className="gutter" style={{ padding: "12px 22px 32px", display: "flex", flexDirection: "column", gap: 9 }}>
-        {toReview > 0 && (
-          <button className="btn btn--primary" onClick={onRestudy}>
-            Study these {toReview} again
-          </button>
-        )}
-        <button className="btn btn--secondary" onClick={onContinue}>
+        <button className="btn btn--primary" onClick={onContinue}>
           Continue to next {SESSION_CAP}
         </button>
       </div>

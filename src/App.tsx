@@ -4,7 +4,6 @@ import { findEntry } from "./data/dictionary";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
 import {
   buildNextSession,
-  buildRestudySession,
   buildSession,
   buildSessionReport,
   SESSION_CAP,
@@ -39,6 +38,9 @@ export default function App() {
   const [route, setRoute] = useState<Route>("dashboard");
 
   const [queue, setQueue] = useState<PracticeCard[]>([]);
+  // Bumped per begun session so Practice remounts with fresh internal state
+  // (its queue/outcomes are seeded from props on mount).
+  const [sessionId, setSessionId] = useState(0);
   const [report, setReport] = useState<EngineSessionReport | null>(null);
   // Word ids already covered earlier in the current study run (initial batch +
   // any restudy/next-batch continuations), so buildNextSession doesn't repeat them.
@@ -86,10 +88,11 @@ export default function App() {
     return `in ${days} days`;
   }, [deck, dueSession]);
 
-  function beginSession(session: Word[]) {
+  function beginSession(session: Word[], keepRun = false) {
     if (session.length === 0) return;
     setQueue(toPracticeCards(session));
-    setReviewedIds([]);
+    setSessionId((s) => s + 1);
+    if (!keepRun) setReviewedIds([]);
     setRoute("practice");
   }
 
@@ -121,22 +124,13 @@ export default function App() {
     setRoute("report");
   }
 
-  function restudy() {
-    if (!report) return;
-    const words = buildRestudySession(report);
-    if (words.length === 0) return;
-    setQueue(toPracticeCards(words));
-    setRoute("practice");
-  }
-
   function continueToNext() {
     const words = buildNextSession(deck, reviewedIds, new Date());
     if (words.length === 0) {
       setRoute("dashboard");
       return;
     }
-    setQueue(toPracticeCards(words));
-    setRoute("practice");
+    beginSession(words, true);
   }
 
   const showTabs = !FOCUSED.includes(route);
@@ -163,11 +157,11 @@ export default function App() {
           {route === "settings" && <Settings deckCount={deck.length} />}
 
           {route === "practice" && (
-            <Practice queue={queue} onFinish={finishPractice} onClose={() => setRoute("dashboard")} />
+            <Practice key={sessionId} queue={queue} onFinish={finishPractice} onClose={() => setRoute("dashboard")} />
           )}
 
           {route === "report" && report && (
-            <SessionReport report={report} onRestudy={restudy} onContinue={continueToNext} />
+            <SessionReport report={report} onContinue={continueToNext} />
           )}
         </div>
 
