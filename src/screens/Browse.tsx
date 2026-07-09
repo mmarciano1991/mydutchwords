@@ -14,11 +14,14 @@ const SELECTING_MS = 650;
 export function Browse({
   deckIds,
   levels,
+  tricky,
   onToggle,
 }: {
   deckIds: Set<string>;
   /** Ladder level per deck word id (from its spaced-repetition state). */
   levels: Map<string, number>;
+  /** Deck word ids flagged as leeches (4+ lapses). */
+  tricky: Set<string>;
   onToggle: (entryId: string) => void;
 }) {
   const [query, setQuery] = useState("");
@@ -127,6 +130,7 @@ export function Browse({
                           <span className="wordrow__head">
                             <GenderChip gender={e.gender} size="sm" />
                             <span className="wordrow__dutch">{e.dutch}</span>
+                            {added && tricky.has(e.id) && <span className="tricky-tag">Tricky</span>}
                           </span>
                           <span className="wordrow__gloss">{e.english}</span>
                         </div>

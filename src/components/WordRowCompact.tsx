@@ -8,16 +8,20 @@ export function WordRowCompact({
   dutch,
   english,
   gender,
+  tricky = false,
 }: {
   dutch: string;
   english: string;
   gender: Gender;
+  /** Leech word (4+ lapses) — shown with a caution tag. */
+  tricky?: boolean;
 }) {
   return (
     <div className="wordrow-compact">
       <GenderChip gender={gender} size="sm" />
       <span className="wordrow-compact__dutch">{dutch}</span>
       <span className="wordrow-compact__gloss">{english}</span>
+      {tricky && <span className="tricky-tag">Tricky</span>}
     </div>
   );
 }
