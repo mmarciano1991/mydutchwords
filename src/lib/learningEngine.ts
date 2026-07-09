@@ -36,8 +36,13 @@ export type Grade = "know" | "dontKnow";
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
-function addDays(date: Date, days: number): Date {
-  return new Date(date.getTime() + days * MS_PER_DAY);
+/** `days` after `date`, normalized to LOCAL start-of-day. Reviews unlock at
+ *  midnight, so "due today" is a calendar concept — a word reviewed at 23:00
+ *  is due tomorrow morning, not tomorrow at 23:00. */
+function dueDateAfter(date: Date, days: number): Date {
+  const d = new Date(date.getTime() + days * MS_PER_DAY);
+  d.setHours(0, 0, 0, 0);
+  return d;
 }
 
 /** Fixed review interval (days) for a level. Level 0 → 1 day. */
@@ -75,7 +80,7 @@ export function applyGrade(word: Word, grade: Grade, reviewedAt: Date): Word {
     reps,
     lapses,
     interval,
-    dueDate: addDays(reviewedAt, interval).toISOString(),
+    dueDate: dueDateAfter(reviewedAt, interval).toISOString(),
     lastReviewedAt: reviewedAt.toISOString(),
     state: stateFor(level),
   };
@@ -165,7 +170,7 @@ export function markAsKnown(word: Word, now: Date): Word {
     level: MAX_LEVEL,
     interval: intervalForLevel(MAX_LEVEL),
     reps: 2,
-    dueDate: addDays(now, intervalForLevel(MAX_LEVEL)).toISOString(),
+    dueDate: dueDateAfter(now, intervalForLevel(MAX_LEVEL)).toISOString(),
     state: "mature",
   };
 }
