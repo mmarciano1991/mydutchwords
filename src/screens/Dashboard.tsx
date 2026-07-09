@@ -1,8 +1,5 @@
 import { TulipMedallion, Wordmark } from "../components/brand";
 import { PlusIcon } from "../components/icons";
-import type { DictionaryEntry } from "../lib/types";
-
-const PRACTICE_MIN = 4;
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -13,19 +10,24 @@ function greeting(): string {
 }
 
 export function Dashboard({
-  deck,
+  deckCount,
+  dueCount,
+  nextDueLabel,
   onPractice,
+  onPracticeAhead,
   onBrowse,
 }: {
-  deck: DictionaryEntry[];
+  deckCount: number;
+  /** Cards the scheduler would put in a session right now (due reviews + new). */
+  dueCount: number;
+  /** When nothing is due: human label for the next unlock, e.g. "tomorrow". */
+  nextDueLabel: string | null;
   onPractice: () => void;
+  onPracticeAhead: () => void;
   onBrowse: () => void;
 }) {
-  const count = deck.length;
-  const canPractice = count >= PRACTICE_MIN;
-
   // ── Empty deck: invite to build it ──
-  if (count === 0) {
+  if (deckCount === 0) {
     return (
       <div className="screen pad-top">
         <div className="screen__body center-col gutter" style={{ justifyContent: "center", flex: 1, paddingBottom: 24 }}>
@@ -53,7 +55,7 @@ export function Dashboard({
     );
   }
 
-  const remaining = PRACTICE_MIN - count;
+  const caughtUp = dueCount === 0;
 
   return (
     <div className="screen pad-top">
@@ -63,24 +65,37 @@ export function Dashboard({
       </div>
 
       <div className="screen__body gutter" style={{ paddingBottom: 26 }}>
-        <section className="hero">
-          <div className="hero__content">
-            <div className="hero__label">Daily practice</div>
-            <div className="hero__stat">
-              {count} word{count === 1 ? "" : "s"} in your deck
+        {caughtUp ? (
+          // ── All caught up: calm success state; practicing ahead is optional ──
+          <section className="hero">
+            <div className="hero__content">
+              <div className="hero__label">Daily practice</div>
+              <div className="hero__stat">✓ All caught up</div>
+              <div className="hero__note">
+                {nextDueLabel ? `Next review ${nextDueLabel}.` : "Nothing scheduled."} {deckCount} word
+                {deckCount === 1 ? "" : "s"} in your deck.
+              </div>
             </div>
-          </div>
-
-          {canPractice ? (
+            <button className="hero__cta hero__cta--ghost" onClick={onPracticeAhead}>
+              Practice ahead
+            </button>
+          </section>
+        ) : (
+          <section className="hero">
+            <div className="hero__content">
+              <div className="hero__label">Daily practice</div>
+              <div className="hero__stat">
+                {dueCount} word{dueCount === 1 ? "" : "s"} due
+              </div>
+              <div className="hero__note">
+                {deckCount} word{deckCount === 1 ? "" : "s"} in your deck
+              </div>
+            </div>
             <button className="hero__cta" onClick={onPractice}>
               Start practice
             </button>
-          ) : (
-            <div className="hero__locked">
-              Add {remaining} more word{remaining === 1 ? "" : "s"} to start practising.
-            </div>
-          )}
-        </section>
+          </section>
+        )}
       </div>
     </div>
   );
