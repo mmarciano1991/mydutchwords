@@ -12,6 +12,7 @@ import {
   type SessionReport as EngineSessionReport,
   type Word,
 } from "./lib/learningEngine";
+import { streakDays } from "./lib/streak";
 import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
 import { Practice, type PracticeCard } from "./screens/Practice";
@@ -60,6 +61,10 @@ export default function App() {
 
   // Ladder level per deck word, drives the mastery bars in Browse.
   const levels = useMemo(() => new Map(deck.map((d) => [d.id, d.level])), [deck]);
+
+  // Consecutive practice days (today, or ending yesterday if today is pending).
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const streak = useMemo(() => streakDays(results, new Date()), [results, route]);
 
   const activeTab: Tab = useMemo(() => {
     if (route === "browse" || route === "settings") return route;
@@ -160,6 +165,7 @@ export default function App() {
               deckCount={deckEntries.length}
               dueCount={dueSession.length}
               nextDueLabel={nextDueLabel}
+              streak={streak}
               onPractice={startPractice}
               onPracticeAhead={startPracticeAhead}
               onBrowse={() => setRoute("browse")}
@@ -178,7 +184,7 @@ export default function App() {
           )}
 
           {route === "report" && report && (
-            <SessionReport report={report} onContinue={continueToNext} />
+            <SessionReport report={report} streak={streak} onContinue={continueToNext} />
           )}
 
           {route === "capture" && (

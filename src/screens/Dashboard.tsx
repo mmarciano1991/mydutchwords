@@ -17,12 +17,15 @@ export function Dashboard({
   onPracticeAhead,
   onBrowse,
   onAddWord,
+  streak,
 }: {
   deckCount: number;
   /** Cards the scheduler would put in a session right now (due reviews + new). */
   dueCount: number;
   /** When nothing is due: human label for the next unlock, e.g. "tomorrow". */
   nextDueLabel: string | null;
+  /** Consecutive practice days; 0 hides the streak. */
+  streak: number;
   onPractice: () => void;
   onPracticeAhead: () => void;
   onBrowse: () => void;
@@ -76,6 +79,7 @@ export function Dashboard({
               <div className="hero__note">
                 {nextDueLabel ? `Next review ${nextDueLabel}.` : "Nothing scheduled."} {deckCount} word
                 {deckCount === 1 ? "" : "s"} in your deck.
+                {streak > 1 ? ` · 🔥 ${streak}-day streak` : ""}
               </div>
             </div>
             <button className="hero__cta hero__cta--ghost" onClick={onPracticeAhead}>
@@ -91,6 +95,7 @@ export function Dashboard({
               </div>
               <div className="hero__note">
                 {deckCount} word{deckCount === 1 ? "" : "s"} in your deck
+                {streak > 1 ? ` · 🔥 ${streak}-day streak` : ""}
               </div>
             </div>
             <button className="hero__cta" onClick={onPractice}>
