@@ -11,11 +11,14 @@ import { WordRowCompact } from "../components/WordRowCompact";
 export function SessionReport({
   report,
   streak,
+  warmup = false,
   onContinue,
 }: {
   report: EngineSessionReport;
   /** Consecutive practice days including this session. */
   streak: number;
+  /** Warm-up session: nothing was persisted or rescheduled. */
+  warmup?: boolean;
   onContinue: () => void;
 }) {
   const toReview = report.dontKnowWords.length;
@@ -37,7 +40,7 @@ export function SessionReport({
             Goed bezig!
           </div>
           <p className="muted" style={{ fontSize: 14, margin: "7px 0 0" }}>
-            A quick check-in — not a grade.
+            {warmup ? "Warm-up — your schedule didn\u2019t change." : "A quick check-in — not a grade."}
           </p>
           {streak > 1 && (
             <p style={{ fontSize: 13, fontWeight: 700, color: "var(--caution-solid)", margin: "9px 0 0" }}>
@@ -72,7 +75,7 @@ export function SessionReport({
                 Words to review
               </span>
               <span className="faint" style={{ fontSize: 12.5 }}>
-                Coming back sooner
+                {warmup ? "Not rescheduled" : "Coming back sooner"}
               </span>
             </div>
             {/* Full list — the screen body scrolls, so nothing is dead-ended. */}
