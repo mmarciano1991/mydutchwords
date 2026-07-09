@@ -147,6 +147,15 @@ describe("buildSession", () => {
     expect(capBound).toHaveLength(5);
   });
 
+  it("puts leeches (4+ lapses) at the front of the due queue", () => {
+    const due = [
+      dueWord("normal", { dueDate: new Date(NOW.getTime() - 9000).toISOString() }), // most overdue
+      dueWord("leech", { lapses: 4, dueDate: new Date(NOW.getTime() - 1000).toISOString() }),
+    ];
+    const session = buildSession(due, NOW);
+    expect(session.map((w) => w.id)).toEqual(["leech", "normal"]);
+  });
+
   it("returns only due reviews (no new words) when due reviews alone exceed the cap", () => {
     const due = Array.from({ length: 8 }, (_, i) => dueWord(`d${i}`));
     const fresh = [freshWord("n1"), freshWord("n2")];

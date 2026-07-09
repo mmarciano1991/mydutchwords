@@ -6,6 +6,7 @@ import {
   buildNextSession,
   buildSession,
   buildSessionReport,
+  isLeech,
   markAsKnown,
   SESSION_CAP,
   type ReviewedCard,
@@ -61,6 +62,9 @@ export default function App() {
 
   // Ladder level per deck word, drives the mastery bars in Browse.
   const levels = useMemo(() => new Map(deck.map((d) => [d.id, d.level])), [deck]);
+
+  // Leech words (4+ lapses) — tagged "Tricky" in lists, prioritized in sessions.
+  const tricky = useMemo(() => new Set(deck.filter(isLeech).map((d) => d.id)), [deck]);
 
   // Consecutive practice days (today, or ending yesterday if today is pending).
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -174,7 +178,7 @@ export default function App() {
           )}
 
           {route === "browse" && (
-            <Browse deckIds={deckIds} levels={levels} onToggle={toggleWord} />
+            <Browse deckIds={deckIds} levels={levels} tricky={tricky} onToggle={toggleWord} />
           )}
 
           {route === "settings" && <Settings deckCount={deck.length} />}

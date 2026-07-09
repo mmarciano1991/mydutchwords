@@ -120,11 +120,17 @@ function resolveConfig(config?: SessionConfig): ResolvedSessionConfig {
   return { ...DEFAULT_CONFIG, ...config };
 }
 
-/** Due reviews from `words` (state !== "new", dueDate <= now), most overdue first. */
+/** Due reviews from `words` (state !== "new", dueDate <= now).
+ *  Leeches (4+ lapses) lead — the report's "coming back sooner" promise —
+ *  then most overdue first. */
 function dueReviews(words: Word[], now: Date): Word[] {
   return words
     .filter((w) => w.state !== "new" && new Date(w.dueDate).getTime() <= now.getTime())
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+    .sort((a, b) => {
+      const leechDelta = Number(isLeech(b)) - Number(isLeech(a));
+      if (leechDelta !== 0) return leechDelta;
+      return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+    });
 }
 
 /** New words from `words`, preserving caller order. */

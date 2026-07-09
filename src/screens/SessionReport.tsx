@@ -2,7 +2,7 @@
    (Figma node 133:245). Purely informational: missed words were already
    retried in-session (see Practice) and rescheduled sooner by the ladder;
    the one continuation action is moving on to the next batch. */
-import { SESSION_CAP, type SessionReport as EngineSessionReport } from "../lib/learningEngine";
+import { isLeech, SESSION_CAP, type SessionReport as EngineSessionReport } from "../lib/learningEngine";
 import { resolveEntry } from "../lib/wordSources";
 import { Badge } from "../components/Badge";
 import { StatCard } from "../components/StatCard";
@@ -86,7 +86,7 @@ export function SessionReport({
                 const last = i === visible.length - 1;
                 return (
                   <div key={word.id} style={{ position: "relative" }}>
-                    <WordRowCompact dutch={entry.dutch} english={entry.english} gender={entry.gender} />
+                    <WordRowCompact dutch={entry.dutch} english={entry.english} gender={entry.gender} tricky={isLeech(word)} />
                     {last && overflow > 0 && (
                       <span
                         className="faint"
