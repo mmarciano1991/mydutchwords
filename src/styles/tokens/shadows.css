@@ -7,7 +7,7 @@
   --shadow-card-sm: 0 1px 2px rgba(15, 43, 84, 0.04);
   --shadow-float: 0 16px 40px rgba(15, 43, 84, 0.13);
   --shadow-primary: 0 8px 20px rgba(27, 64, 121, 0.28);
-  --shadow-pressed: 0 4px 10px rgba(27, 64, 121, 0.28); /* lowered lift for pressed buttons (Figma: Shadow/Pressed) */
+  --shadow-pressed: 0 2px 6px rgba(27, 64, 121, 0.28); /* tight, close lift for pressed buttons (Figma: Shadow/Pressed, offset 0/2 radius 6) */
   --shadow-fab: 0 12px 26px rgba(27, 64, 121, 0.36);
   --shadow-success: 0 8px 18px rgba(62, 122, 87, 0.26);
 

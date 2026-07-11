@@ -38,6 +38,13 @@ export function Capture({
   // Live local lookup while typing (cheap, offline).
   const localHit = useMemo(() => (trimmed ? lookupLocal(trimmed) : undefined), [trimmed]);
 
+  // Spelling suggestions computed live, so a typo surfaces near-misses
+  // automatically — no need to press Enter first.
+  const liveSuggestions = useMemo(
+    () => (!localHit && trimmed.length >= 2 ? suggestWords(trimmed) : []),
+    [localHit, trimmed]
+  );
+
   // A local hit always wins; otherwise show whatever the async flow produced.
   // (edit() resets `phase` on every keystroke, so it can never be stale.)
   const shown: Phase = localHit
@@ -158,10 +165,29 @@ export function Capture({
           </>
         )}
 
-        {shown.kind === "idle" && trimmed.length > 0 && !localHit && (
-          <p className="muted" style={{ fontSize: 14, margin: "16px 2px 0" }}>
-            Not in the built-in dictionary. Press Enter to search online.
-          </p>
+        {/* Not in the local dictionary yet — offer the online lookup as a
+            button (no Enter needed) and surface spelling suggestions live. */}
+        {!localHit && shown.kind === "idle" && trimmed.length >= 2 && (
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <Notice type="caution">
+              &ldquo;{trimmed}&rdquo; isn&rsquo;t in your local dictionary yet.
+            </Notice>
+            <button className="btn btn--primary" onClick={() => void searchOnline()}>
+              Add from online dictionary
+            </button>
+            {liveSuggestions.length > 0 && (
+              <>
+                <div className="eyebrow" style={{ margin: "4px 2px 0" }}>Did you mean</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                  {liveSuggestions.map((s) => (
+                    <button key={s.id} className="suggestion-chip" onClick={() => edit(s.dutch)}>
+                      {s.dutch}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         )}
 
         {shown.kind === "searching" && (
@@ -173,7 +199,7 @@ export function Capture({
         {shown.kind === "notFound" && (
           <div style={{ marginTop: 16 }}>
             <Notice type="caution">
-              No translation found. Check the spelling{shown.suggestions.length > 0 ? " — or did you mean:" : "."}
+              No translation found online. Check the spelling{shown.suggestions.length > 0 ? " — or did you mean:" : "."}
             </Notice>
             {shown.suggestions.length > 0 && (
               <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
