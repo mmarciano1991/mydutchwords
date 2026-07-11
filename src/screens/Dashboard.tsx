@@ -1,5 +1,6 @@
 import { TulipMedallion, Wordmark } from "../components/brand";
-import { PlusIcon } from "../components/icons";
+import { AddWordCard } from "../components/AddWordCard";
+import { CheckCircle } from "../icons";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -13,11 +14,10 @@ export function Dashboard({
   deckCount,
   dueCount,
   nextDueLabel,
+  streak,
   onPractice,
   onPracticeAhead,
-  onBrowse,
   onAddWord,
-  streak,
 }: {
   deckCount: number;
   /** Cards the scheduler would put in a session right now (due reviews + new). */
@@ -28,7 +28,6 @@ export function Dashboard({
   streak: number;
   onPractice: () => void;
   onPracticeAhead: () => void;
-  onBrowse: () => void;
   onAddWord: () => void;
 }) {
   // ── Empty deck: invite to build it ──
@@ -44,13 +43,12 @@ export function Dashboard({
             Dutch words, kept like fine&nbsp;china.
           </p>
           <p className="muted" style={{ fontSize: 15.5, margin: "18px 0 0", lineHeight: 1.6, maxWidth: 286 }}>
-            Pick the words you want to learn from the built-in dictionary, then
-            practise them as flashcards.
+            Capture the Dutch words you meet, then practise them as flashcards.
           </p>
         </div>
         <div className="gutter" style={{ paddingBottom: 30 }}>
-          <button className="btn btn--primary" onClick={onBrowse}>
-            <PlusIcon color="#FBF8F1" /> Build your deck
+          <button className="btn btn--primary" onClick={onAddWord}>
+            Add your first word
           </button>
           <p className="faint" style={{ textAlign: "center", fontSize: 12.5, margin: "13px 0 0" }}>
             No account · works offline
@@ -61,6 +59,7 @@ export function Dashboard({
   }
 
   const caughtUp = dueCount === 0;
+  const streakSuffix = streak > 1 ? ` · 🔥 ${streak}-day streak` : "";
 
   return (
     <div className="screen pad-top">
@@ -69,21 +68,23 @@ export function Dashboard({
         <h1 className="title-serif" style={{ marginTop: 7 }}>{greeting()}</h1>
       </div>
 
-      <div className="screen__body gutter" style={{ paddingBottom: 26 }}>
+      <div className="screen__body gutter" style={{ paddingBottom: 26, display: "flex", flexDirection: "column", gap: 20 }}>
         {caughtUp ? (
-          // ── All caught up: calm success state; practicing ahead is optional ──
-          <section className="hero">
+          // ── All caught up: calm cream card; practising ahead is optional (Figma 163:334) ──
+          <section className="hero hero--calm">
             <div className="hero__content">
-              <div className="hero__label">Daily practice</div>
-              <div className="hero__stat">✓ All caught up</div>
-              <div className="hero__note">
-                {nextDueLabel ? `Next review ${nextDueLabel}.` : "Nothing scheduled."} {deckCount} word
-                {deckCount === 1 ? "" : "s"} in your deck.
-                {streak > 1 ? ` · 🔥 ${streak}-day streak` : ""}
+              <div className="hero__label hero__label--ink">Daily practice</div>
+              <div className="hero__stat hero__stat--ink hero__stat--set">
+                <CheckCircle size={26} className="hero__check" />
+                You&rsquo;re all set!
+              </div>
+              <div className="hero__note hero__note--ink">
+                {nextDueLabel ? `Your next review is ${nextDueLabel}.` : "Nothing scheduled."} You have{" "}
+                {deckCount} word{deckCount === 1 ? "" : "s"} ready to go.{streakSuffix}
               </div>
             </div>
-            <button className="hero__cta hero__cta--ghost" onClick={onPracticeAhead}>
-              Practice ahead
+            <button className="btn btn--secondary" onClick={onPracticeAhead}>
+              Prepare in advance
             </button>
           </section>
         ) : (
@@ -91,25 +92,18 @@ export function Dashboard({
             <div className="hero__content">
               <div className="hero__label">Daily practice</div>
               <div className="hero__stat">
-                {dueCount} word{dueCount === 1 ? "" : "s"} due
+                You have {dueCount} word{dueCount === 1 ? "" : "s"} ready to review in your deck.
               </div>
-              <div className="hero__note">
-                {deckCount} word{deckCount === 1 ? "" : "s"} in your deck
-                {streak > 1 ? ` · 🔥 ${streak}-day streak` : ""}
-              </div>
+              {streakSuffix && <div className="hero__note">{streakSuffix.replace(" · ", "")}</div>}
             </div>
             <button className="hero__cta" onClick={onPractice}>
               Start practice
             </button>
           </section>
         )}
-      </div>
 
-      <button className="fab" onClick={onAddWord} aria-label="Add a word">
-        <svg width="26" height="26" viewBox="0 0 26 26" fill="none">
-          <path d="M13 5v16M5 13h16" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
-        </svg>
-      </button>
+        <AddWordCard onAddWord={onAddWord} />
+      </div>
     </div>
   );
 }

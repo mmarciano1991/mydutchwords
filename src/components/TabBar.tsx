@@ -27,7 +27,7 @@ export function TabBar({
   return (
     <nav className="tabbar">
       {item("dashboard", "Home", Home)}
-      {item("browse", "Dictionary", Book5)}
+      {item("browse", "Deck", Book5)}
       {item("settings", "About", Build)}
     </nav>
   );

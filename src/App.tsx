@@ -184,13 +184,18 @@ export default function App() {
               streak={streak}
               onPractice={startPractice}
               onPracticeAhead={startPracticeAhead}
-              onBrowse={() => setRoute("browse")}
               onAddWord={() => setRoute("capture")}
             />
           )}
 
           {route === "browse" && (
-            <Browse deckIds={deckIds} levels={levels} tricky={tricky} onToggle={toggleWord} />
+            <Browse
+              entries={deckEntries}
+              levels={levels}
+              tricky={tricky}
+              onRemove={toggleWord}
+              onAddWord={() => setRoute("capture")}
+            />
           )}
 
           {route === "settings" && <Settings deckCount={deck.length} />}

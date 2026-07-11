@@ -329,6 +329,35 @@ input {
   opacity: 0.82;
 }
 
+/* Calm variant — the "all caught up" state: cream card with primary outline
+   and dark text, so it reads as a rest state rather than a call to act
+   (Figma 163:334). */
+.hero--calm {
+  background: var(--semantic-surface-default);
+  color: var(--text-body);
+  border: 1px solid var(--primary);
+}
+.hero__label--ink {
+  color: var(--primary);
+  opacity: 1;
+}
+.hero__stat--ink {
+  color: var(--text-display);
+}
+.hero__stat--set {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.hero__check {
+  color: var(--success-solid);
+  flex-shrink: 0;
+}
+.hero__note--ink {
+  color: var(--text-muted);
+  opacity: 1;
+}
+
 .hero__cta {
   width: 100%;
   border: none;
@@ -371,6 +400,43 @@ input {
 }
 .hero__cta--ghost:active {
   background: rgba(255, 255, 255, 0.22);
+}
+
+/* ── Add-word promo card (Figma 171:491) — "Expand the deck" ── */
+.add-word-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  background: var(--semantic-surface-default);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-card);
+  padding: 20px 21px;
+}
+.add-word-card__content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.add-word-card__label {
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--primary);
+}
+.add-word-card__title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-hero-stat);
+  line-height: 1.1;
+  color: var(--primary);
+}
+.add-word-card__body {
+  margin: 0;
+  font-size: var(--size-body);
+  line-height: 1.55;
+  color: var(--text-muted);
 }
 
 /* ── Word rows ── */
