@@ -173,7 +173,7 @@ export function Capture({
               &ldquo;{trimmed}&rdquo; isn&rsquo;t in your local dictionary yet.
             </Notice>
             <button className="btn btn--primary" onClick={() => void searchOnline()}>
-              Add from online dictionary
+              Add to your dictionary
             </button>
             {liveSuggestions.length > 0 && (
               <>
