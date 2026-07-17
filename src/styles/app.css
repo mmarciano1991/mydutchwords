@@ -459,13 +459,6 @@ input {
   gap: var(--space-3);
 }
 
-/* Selected (in your deck) — thick green border, both during the brief
-   "Selecting" celebration and once settled (Figma 104:161). */
-.wordrow--selected {
-  border-width: 3px;
-  border-color: var(--success-solid);
-}
-
 .wordrow__row {
   display: flex;
   align-items: center;
@@ -1228,8 +1221,6 @@ input {
 }
 .wordrow:hover {
   background: var(--bg-canvas);
-}
-.wordrow:not(.wordrow--selected):hover {
   border-color: var(--line-cool-strong);
 }
 
