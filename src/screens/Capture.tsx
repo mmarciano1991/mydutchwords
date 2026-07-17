@@ -1,8 +1,8 @@
 /* Capture — "Add a word" flow (product flowchart + Figma 130:232).
    Type a Dutch word → instant lookup in the bundled dictionary → if absent,
    search Wiktionary online → if still absent, spelling suggestions.
-   A found word shows the three treatment choices: save to study, mark as
-   already known (skips the ramp, straight to Mature), or don't add. */
+   A found word shows the two treatment choices: save to study, or mark as
+   already known (skips the ramp, straight to Mature). Figma 161:334. */
 import { useMemo, useRef, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
 import { lookupLocal, suggestWords } from "../lib/wordSources";
@@ -11,7 +11,7 @@ import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
 import { Notice } from "../components/Notice";
 import { SearchIcon } from "../components/icons";
-import { Check, Close } from "../icons";
+import { Check } from "../icons";
 
 type Phase =
   | { kind: "idle" }
@@ -149,16 +149,6 @@ export function Capture({
                 <span className="capture-option__text">
                   <span className="capture-option__title capture-option__title--known">I already know it</span>
                   <span className="capture-option__sub">Goes straight to Mature · resurfaces rarely</span>
-                </span>
-              </button>
-
-              <button className="capture-option" onClick={onBack}>
-                <span className="capture-option__icon">
-                  <Close size={18} />
-                </span>
-                <span className="capture-option__text">
-                  <span className="capture-option__title capture-option__title--muted">Don&rsquo;t add it</span>
-                  <span className="capture-option__sub">Never enters practice — not the same as known</span>
                 </span>
               </button>
             </div>

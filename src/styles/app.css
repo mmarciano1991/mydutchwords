@@ -459,13 +459,6 @@ input {
   gap: var(--space-3);
 }
 
-/* Selected (in your deck) — thick green border, both during the brief
-   "Selecting" celebration and once settled (Figma 104:161). */
-.wordrow--selected {
-  border-width: 3px;
-  border-color: var(--success-solid);
-}
-
 .wordrow__row {
   display: flex;
   align-items: center;
@@ -967,7 +960,7 @@ input {
   color: var(--text-faint);
 }
 
-/* Treatment options — Save to study / I already know it / Don't add it */
+/* Treatment options — Save to study / I already know it (Figma 161:334) */
 .capture-option {
   display: flex;
   align-items: center;
@@ -1034,9 +1027,6 @@ input {
 }
 .capture-option__title--known {
   color: var(--semantic-success-onsuccess-strong);
-}
-.capture-option__title--muted {
-  color: var(--text-muted);
 }
 .capture-option__sub {
   font-size: 12.5px;
@@ -1228,8 +1218,6 @@ input {
 }
 .wordrow:hover {
   background: var(--bg-canvas);
-}
-.wordrow:not(.wordrow--selected):hover {
   border-color: var(--line-cool-strong);
 }
 

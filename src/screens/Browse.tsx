@@ -74,7 +74,7 @@ export function Browse({
             {results.map((e) => {
               const open = openId === e.id;
               return (
-                <div key={e.id} className="wordrow wordrow--selected">
+                <div key={e.id} className="wordrow">
                   <div className="wordrow__row">
                     <div className="wordrow__main">
                       <IconButton
