@@ -4,6 +4,7 @@ import { addCustomEntry, resolveEntry } from "./lib/wordSources";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
 import {
   buildNextSession,
+  buildRestudySession,
   buildSession,
   buildSessionReport,
   isLeech,
@@ -161,6 +162,13 @@ export default function App() {
     setRoute("report");
   }
 
+  // Size of the batch "Continue to next N" would actually build right now —
+  // drives the report screen's dynamic button label and its empty state.
+  const nextSessionCount = useMemo(
+    () => buildNextSession(deck, reviewedIds, new Date()).length,
+    [deck, reviewedIds]
+  );
+
   function continueToNext() {
     const words = buildNextSession(deck, reviewedIds, new Date());
     if (words.length === 0) {
@@ -168,6 +176,14 @@ export default function App() {
       return;
     }
     beginSession(words, true);
+  }
+
+  // Drill the words missed this session again, right now. An ungraded
+  // warm-up: they were already rescheduled sooner by the ladder when the
+  // session was graded, so this repeat doesn't touch the schedule again.
+  function reviewMissed() {
+    if (!report) return;
+    beginSession(buildRestudySession(report), true, "warmup");
   }
 
   const showTabs = !FOCUSED.includes(route);
@@ -205,7 +221,15 @@ export default function App() {
           )}
 
           {route === "report" && report && (
-            <SessionReport report={report} streak={streak} warmup={sessionMode === "warmup"} onContinue={continueToNext} />
+            <SessionReport
+              report={report}
+              streak={streak}
+              warmup={sessionMode === "warmup"}
+              nextCount={nextSessionCount}
+              onContinue={continueToNext}
+              onReviewMissed={reviewMissed}
+              onBackToDashboard={() => setRoute("dashboard")}
+            />
           )}
 
           {route === "capture" && (

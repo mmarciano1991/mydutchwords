@@ -1,8 +1,10 @@
 /* SessionReport — "Batch complete" check-in shown after a practice session
-   (Figma node 133:245). Purely informational: missed words were already
-   retried in-session (see Practice) and rescheduled sooner by the ladder;
-   the one continuation action is moving on to the next batch. */
-import { isLeech, SESSION_CAP, type SessionReport as EngineSessionReport } from "../lib/learningEngine";
+   (Figma node 133:245). Missed words were already retried in-session (see
+   Practice) and rescheduled sooner by the ladder; from here the user can
+   move on to the next batch and/or drill the missed words again right now.
+   The footer adapts to what's actually left: both actions, just one, or —
+   once the deck is fully caught up — a way back to the dashboard. */
+import { isLeech, type SessionReport as EngineSessionReport } from "../lib/learningEngine";
 import { resolveEntry } from "../lib/wordSources";
 import { Badge } from "../components/Badge";
 import { StatCard } from "../components/StatCard";
@@ -12,16 +14,25 @@ export function SessionReport({
   report,
   streak,
   warmup = false,
+  nextCount,
   onContinue,
+  onReviewMissed,
+  onBackToDashboard,
 }: {
   report: EngineSessionReport;
   /** Consecutive practice days including this session. */
   streak: number;
   /** Warm-up session: nothing was persisted or rescheduled. */
   warmup?: boolean;
+  /** Size of the next batch the scheduler would build right now (0 = none left). */
+  nextCount: number;
   onContinue: () => void;
+  onReviewMissed: () => void;
+  onBackToDashboard: () => void;
 }) {
   const toReview = report.dontKnowWords.length;
+  const hasNext = nextCount > 0;
+  const hasReview = toReview > 0;
 
   return (
     <div className="screen pad-top">
@@ -99,9 +110,21 @@ export function SessionReport({
       </div>
 
       <div className="gutter" style={{ padding: "12px 22px 32px", display: "flex", flexDirection: "column", gap: 9 }}>
-        <button className="btn btn--primary" onClick={onContinue}>
-          Continue to next {SESSION_CAP}
-        </button>
+        {hasNext && (
+          <button className="btn btn--primary" onClick={onContinue}>
+            Continue to next {nextCount}
+          </button>
+        )}
+        {hasReview && (
+          <button className={`btn ${hasNext ? "btn--secondary" : "btn--primary"}`} onClick={onReviewMissed}>
+            Review missed words
+          </button>
+        )}
+        {!hasNext && !hasReview && (
+          <button className="btn btn--primary" onClick={onBackToDashboard}>
+            Back to dashboard
+          </button>
+        )}
       </div>
     </div>
   );
