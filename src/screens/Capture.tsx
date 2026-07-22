@@ -1,23 +1,33 @@
 /* Capture — "Add a word" flow (product flowchart + Figma 130:232).
-   Type a Dutch word → instant lookup in the bundled dictionary → if absent,
-   search Wiktionary online → if still absent, spelling suggestions.
+   Type a Dutch word → instant lookup in the bundled dictionary. If it isn't
+   there, after a 300ms typing pause a notice offers the online lookup as a
+   button and spelling suggestions appear for close misses. The online
+   request is abortable and latest-only (useLatestSearch): editing the query
+   cancels it, a spinner shows only when the response is slow, "not found"
+   renders only after a completed empty response, and network failures get
+   their own retry state instead of masquerading as "not found".
    A found word shows the two treatment choices: save to study, or mark as
    already known (skips the ramp, straight to Mature). Figma 161:334. */
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
 import { lookupLocal, suggestWords } from "../lib/wordSources";
 import { lookupWiktionary } from "../lib/wiktionary";
+import { useDebouncedValue } from "../lib/useDebouncedValue";
+import { useLatestSearch } from "../lib/useLatestSearch";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
 import { Notice } from "../components/Notice";
 import { SearchIcon } from "../components/icons";
 import { Check } from "../icons";
 
-type Phase =
-  | { kind: "idle" }
-  | { kind: "found"; entry: DictionaryEntry; duplicate: boolean }
-  | { kind: "searching" }
-  | { kind: "notFound"; suggestions: DictionaryEntry[] };
+/** No lookups (suggestions or online) below this many characters. */
+const MIN_QUERY = 3;
+/** Typing pause before suggestions/notice appear. */
+const DEBOUNCE_MS = 300;
+
+function fetchOnline(query: string, signal: AbortSignal) {
+  return lookupWiktionary(query, { signal });
+}
 
 export function Capture({
   deckIds,
@@ -30,47 +40,62 @@ export function Capture({
   onBack: () => void;
 }) {
   const [query, setQuery] = useState("");
-  const [phase, setPhase] = useState<Phase>({ kind: "idle" });
-  const searchSeq = useRef(0);
+  const online = useLatestSearch(fetchOnline, { slowAfterMs: 180 });
 
   const trimmed = query.trim();
 
-  // Live local lookup while typing (cheap, offline).
+  // Live local lookup while typing (a Map get — cheap enough per keystroke).
   const localHit = useMemo(() => (trimmed ? lookupLocal(trimmed) : undefined), [trimmed]);
 
-  // Spelling suggestions computed live, so a typo surfaces near-misses
-  // automatically — no need to press Enter first.
-  const liveSuggestions = useMemo(
-    () => (!localHit && trimmed.length >= 2 ? suggestWords(trimmed) : []),
-    [localHit, trimmed]
-  );
+  // The debounce gate: suggestions, the "not in your dictionary" notice and
+  // the online CTA appear only once typing has paused for DEBOUNCE_MS.
+  const debounced = useDebouncedValue(trimmed, DEBOUNCE_MS);
+  const settled = debounced === trimmed;
 
-  // A local hit always wins; otherwise show whatever the async flow produced.
-  // (edit() resets `phase` on every keystroke, so it can never be stale.)
-  const shown: Phase = localHit
-    ? { kind: "found", entry: localHit, duplicate: deckIds.has(localHit.id) }
-    : phase;
+  // Spelling suggestions are an edit-distance scan over the whole bundled
+  // dictionary — too heavy per keystroke, so they compute only once settled.
+  const suggestions = useMemo(
+    () => (settled && !localHit && trimmed.length >= MIN_QUERY ? suggestWords(trimmed) : []),
+    [settled, localHit, trimmed]
+  );
 
   function edit(value: string) {
     setQuery(value);
-    searchSeq.current++; // invalidate any in-flight online search
-    setPhase({ kind: "idle" });
+    online.reset(); // abort any in-flight lookup; spinner disappears at once
   }
 
-  async function searchOnline() {
-    if (!trimmed || localHit) return;
-    const seq = ++searchSeq.current;
-    setPhase({ kind: "searching" });
-    const entry = await lookupWiktionary(trimmed);
-    if (seq !== searchSeq.current) return; // stale response — query changed
-    if (entry) {
-      setPhase({ kind: "found", entry, duplicate: deckIds.has(entry.id) });
-    } else {
-      setPhase({ kind: "notFound", suggestions: suggestWords(trimmed) });
-    }
+  function searchOnline() {
+    if (localHit || trimmed.length < MIN_QUERY) return;
+    online.search(trimmed);
   }
 
-  const found = shown.kind === "found" ? shown : null;
+  // Online state is only trusted when it belongs to the current query.
+  const onlineState = online.state;
+  const current = "query" in onlineState && onlineState.query === trimmed ? onlineState : null;
+
+  const foundEntry =
+    localHit ?? (current?.status === "success" ? current.data ?? undefined : undefined);
+  const found = foundEntry
+    ? { entry: foundEntry, duplicate: deckIds.has(foundEntry.id) }
+    : null;
+
+  const searching = current?.status === "pending";
+  const notFoundOnline = !localHit && current?.status === "success" && current.data === null;
+  const failed = current?.status === "error";
+
+  // The idle prompt (notice + CTA + suggestions) waits for the debounce to
+  // settle and hides while a request is pending or resolved — no flicker.
+  const showPrompt = settled && !localHit && trimmed.length >= MIN_QUERY && !current;
+
+  const suggestionChips = (list: DictionaryEntry[]) => (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
+      {list.map((s) => (
+        <button key={s.id} className="suggestion-chip" onClick={() => edit(s.dutch)}>
+          {s.dutch}
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <div className="screen pad-top">
@@ -83,7 +108,7 @@ export function Capture({
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            void searchOnline();
+            searchOnline();
           }}
         >
           <label className="field">
@@ -155,51 +180,49 @@ export function Capture({
           </>
         )}
 
-        {/* Not in the local dictionary yet — offer the online lookup as a
-            button (no Enter needed) and surface spelling suggestions live. */}
-        {!localHit && shown.kind === "idle" && trimmed.length >= 2 && (
+        {showPrompt && (
           <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
             <Notice type="caution">
               &ldquo;{trimmed}&rdquo; isn&rsquo;t in your local dictionary yet.
             </Notice>
-            <button className="btn btn--primary" onClick={() => void searchOnline()}>
+            <button className="btn btn--primary" onClick={searchOnline}>
               Add to your dictionary
             </button>
-            {liveSuggestions.length > 0 && (
+            {suggestions.length > 0 && (
               <>
                 <div className="eyebrow" style={{ margin: "4px 2px 0" }}>Did you mean</div>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {liveSuggestions.map((s) => (
-                    <button key={s.id} className="suggestion-chip" onClick={() => edit(s.dutch)}>
-                      {s.dutch}
-                    </button>
-                  ))}
-                </div>
+                {suggestionChips(suggestions)}
               </>
             )}
           </div>
         )}
 
-        {shown.kind === "searching" && (
-          <p className="muted" style={{ fontSize: 14, margin: "16px 2px 0" }}>
-            Searching online…
+        {/* Spinner only for genuinely slow responses (>180ms) — fast ones
+            resolve before it ever appears, so there's no flash. */}
+        {searching && current.slow && (
+          <p className="muted" role="status" style={{ fontSize: 14, margin: "16px 2px 0" }}>
+            Searching the online dictionary…
           </p>
         )}
 
-        {shown.kind === "notFound" && (
+        {notFoundOnline && (
           <div style={{ marginTop: 16 }}>
             <Notice type="caution">
-              No translation found online. Check the spelling{shown.suggestions.length > 0 ? " — or did you mean:" : "."}
+              We couldn&rsquo;t find &ldquo;{trimmed}&rdquo; online either. Check the spelling
+              {suggestions.length > 0 ? " — or did you mean:" : "."}
             </Notice>
-            {shown.suggestions.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-                {shown.suggestions.map((s) => (
-                  <button key={s.id} className="suggestion-chip" onClick={() => edit(s.dutch)}>
-                    {s.dutch}
-                  </button>
-                ))}
-              </div>
-            )}
+            {suggestions.length > 0 && suggestionChips(suggestions)}
+          </div>
+        )}
+
+        {failed && (
+          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+            <Notice type="error">
+              The online dictionary didn&rsquo;t respond. Check your connection and try again.
+            </Notice>
+            <button className="btn btn--secondary" onClick={() => online.search(trimmed)}>
+              Try again
+            </button>
           </div>
         )}
       </div>
