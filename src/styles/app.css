@@ -771,6 +771,12 @@ input {
   border: 1px solid var(--semantic-success-outline-default);
   color: var(--semantic-success-onsuccess-strong);
 }
+/* info — neutral fact, not an alarm (e.g. word already in the deck) */
+.notice--info {
+  background: var(--surface-tint);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+}
 
 /* ── Top bar for focused flows ── */
 .topbar {

@@ -126,9 +126,10 @@ export function Capture({
           </label>
         </form>
 
+        {/* Already in the deck — a neutral fact, so an info notice, not an error. */}
         {found && found.duplicate && (
           <div style={{ marginTop: 16 }}>
-            <Notice type="error">You already have this word in Woordkast.</Notice>
+            <Notice type="info">You already have this word in Woordkast.</Notice>
           </div>
         )}
 
