@@ -1,0 +1,21 @@
+# Supabase project config — used by the CLI and the GitHub integration.
+# `project_id` is a local identifier only; the integration binds this repo to
+# your dashboard project. Anything omitted here falls back to Supabase defaults.
+project_id = "woordkast"
+
+[db]
+# Match your project's Postgres major version (Supabase projects default to 17).
+major_version = 17
+
+[auth]
+# The site users are sent back to after email confirmation / OAuth. Override
+# per environment in the dashboard (Authentication → URL Configuration).
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:5173"]
+
+[auth.external.google]
+# Google (Gmail) sign-in. The actual client id/secret live in the dashboard
+# (or env), never in the repo.
+enabled = true
+client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"

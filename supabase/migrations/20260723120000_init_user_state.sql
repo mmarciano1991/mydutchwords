@@ -1,5 +1,6 @@
--- Woordkast cloud sync — run once in your Supabase project.
--- Dashboard → SQL Editor → paste → Run.
+-- Woordkast cloud sync — initial schema.
+-- Applied automatically by the Supabase GitHub integration (or via
+-- `supabase db push`); can also be pasted into the SQL Editor as a fallback.
 --
 -- One row per user holds their whole progress snapshot (deck + practice
 -- results + custom words) as JSON. Row-Level Security restricts every row to

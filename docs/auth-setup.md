@@ -20,11 +20,17 @@ behaves exactly as before.
    (The anon key is meant to live in frontend code — Row-Level Security is
    what protects the data.)
 
-## 2. Create the database table (~1 min)
+## 2. Create the database table
 
-Open **SQL Editor**, paste the contents of [`supabase/schema.sql`](../supabase/schema.sql),
-and click **Run**. This creates the `user_state` table and its per-user
-security policies.
+The schema lives as a migration in [`supabase/migrations/`](../supabase/migrations/)
+(`user_state` table + per-user security policies), so you have two options:
+
+- **Automatic (recommended):** with the **Supabase GitHub integration**
+  connected to this repo, the migration is applied for you — to a preview
+  branch on each PR, and to production when it merges to your production
+  branch. Nothing to run by hand.
+- **Manual fallback:** open **SQL Editor**, paste the contents of the
+  migration file, and click **Run** (or run `supabase db push` with the CLI).
 
 ## 3. Enable Google sign-in (~5 min)
 
