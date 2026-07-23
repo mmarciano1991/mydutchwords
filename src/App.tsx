@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import { addCustomEntry, resolveEntry } from "./lib/wordSources";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
@@ -15,17 +15,23 @@ import {
   type Word,
 } from "./lib/learningEngine";
 import { streakDays } from "./lib/streak";
+import { useAuth } from "./lib/useAuth";
+import { useCloudSync } from "./lib/useCloudSync";
+import { setCustomEntries } from "./lib/wordSources";
+import { signOut } from "./lib/auth";
+import type { AppState } from "./lib/cloudState";
 import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
 import { Practice, type PracticeCard } from "./screens/Practice";
 import { SessionReport } from "./screens/SessionReport";
 import { Capture } from "./screens/Capture";
 import { Settings } from "./screens/Settings";
+import { Auth } from "./screens/Auth";
 import { TabBar, type Tab } from "./components/TabBar";
 
-type Route = Tab | "practice" | "report" | "capture";
+type Route = Tab | "practice" | "report" | "capture" | "auth";
 
-const FOCUSED: Route[] = ["practice", "report", "capture"];
+const FOCUSED: Route[] = ["practice", "report", "capture", "auth"];
 
 /** Joins spaced-repetition Words back to their dictionary content for display. */
 function toPracticeCards(words: Word[]): PracticeCard[] {
@@ -56,6 +62,33 @@ export default function App() {
 
   useEffect(() => saveDeck(deck), [deck]);
   useEffect(() => saveResults(results), [results]);
+
+  // ── Accounts + cloud sync (optional; no-ops when Supabase isn't configured) ──
+  const { user, configured } = useAuth();
+
+  // Applies a merged remote+local snapshot after login (custom words are set
+  // by the sync hook before this runs).
+  const applyMerged = useCallback((state: AppState) => {
+    setDeck(state.deck);
+    setResults(state.results);
+  }, []);
+
+  useCloudSync({ userId: user?.id ?? null, deck, results, applyMerged });
+
+  // Leave the auth screen automatically once a session arrives.
+  useEffect(() => {
+    if (user && route === "auth") setRoute("dashboard");
+  }, [user, route]);
+
+  async function handleSignOut() {
+    await signOut();
+    // Start the local session clean so the next account doesn't inherit this
+    // deck; the signed-out user can still practise offline from here.
+    setDeck([]);
+    setResults([]);
+    setCustomEntries([]);
+    setRoute("dashboard");
+  }
 
   // Resolve the deck (newest first) into full dictionary entries.
   const deckEntries = useMemo(
@@ -214,7 +247,15 @@ export default function App() {
             />
           )}
 
-          {route === "settings" && <Settings deckCount={deck.length} />}
+          {route === "settings" && (
+            <Settings
+              deckCount={deck.length}
+              configured={configured}
+              email={user?.email ?? null}
+              onSignIn={() => setRoute("auth")}
+              onSignOut={handleSignOut}
+            />
+          )}
 
           {route === "practice" && (
             <Practice key={sessionId} queue={queue} scheduling={sessionMode === "scheduled"} onFinish={finishPractice} onClose={() => setRoute("dashboard")} />
@@ -235,6 +276,8 @@ export default function App() {
           {route === "capture" && (
             <Capture deckIds={deckIds} onSave={saveCapturedWord} onBack={() => setRoute("dashboard")} />
           )}
+
+          {route === "auth" && <Auth onBack={() => setRoute("settings")} />}
         </div>
 
         {showTabs && <TabBar active={activeTab} onChange={(t) => setRoute(t)} />}

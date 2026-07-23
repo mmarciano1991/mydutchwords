@@ -24,16 +24,35 @@ export function resolveEntry(id: string): DictionaryEntry | undefined {
   return findEntry(id) ?? custom.get(id);
 }
 
+function persistCustom(): void {
+  try {
+    localStorage.setItem(CUSTOM_KEY, JSON.stringify(Array.from(custom.values())));
+  } catch {
+    /* storage unavailable — the words still work for this session */
+  }
+}
+
 /** Persists a word captured from the online lookup so the deck can resolve it.
  *  Bundled dictionary words resolve natively and are not duplicated here. */
 export function addCustomEntry(entry: DictionaryEntry): void {
   if (findEntry(entry.id)) return;
   custom.set(entry.id, entry);
-  try {
-    localStorage.setItem(CUSTOM_KEY, JSON.stringify(Array.from(custom.values())));
-  } catch {
-    /* storage unavailable — the word still works for this session */
+  persistCustom();
+}
+
+/** All user-captured custom words — for cloud sync (see lib/cloudState). */
+export function getCustomEntries(): DictionaryEntry[] {
+  return Array.from(custom.values());
+}
+
+/** Replaces the custom-word cache (used when merging remote + local on login).
+ *  Bundled dictionary words are skipped — they resolve natively. */
+export function setCustomEntries(entries: DictionaryEntry[]): void {
+  custom.clear();
+  for (const e of entries) {
+    if (!findEntry(e.id)) custom.set(e.id, e);
   }
+  persistCustom();
 }
 
 /** Exact lookup by typed Dutch word (dictionary ids are the lowercased word). */

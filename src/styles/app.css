@@ -718,6 +718,64 @@ input {
   border-color: var(--primary);
 }
 
+/* ── Auth (sign in / create account) ── */
+.auth-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.auth-field__label {
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--text-faint);
+  margin-left: 2px;
+}
+.auth-field .text-input {
+  font-family: var(--font-sans);
+  font-size: 16px;
+}
+/* "or" rule between email and Google sign-in */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 20px 0;
+  color: var(--text-faint);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--line-divider);
+}
+
+/* Signed-in account row in Settings */
+.account-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.account-avatar {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--primary);
+  color: var(--cream-000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 18px;
+}
+
 /* ── Gender / pos chips & notices ── */
 .chip {
   padding: 4px 12px; /* Figma 59:11 — space-1 / space-3 */

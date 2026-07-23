@@ -1,24 +1,75 @@
 import { Wordmark } from "../components/brand";
 import { DICTIONARY, RICH_COUNT } from "../data/dictionary";
 
-export function Settings({ deckCount }: { deckCount: number }) {
+export function Settings({
+  deckCount,
+  configured,
+  email,
+  onSignIn,
+  onSignOut,
+}: {
+  deckCount: number;
+  /** Whether cloud sync (Supabase) is configured for this build. */
+  configured: boolean;
+  /** The signed-in user's email, or null when logged out. */
+  email: string | null;
+  onSignIn: () => void;
+  onSignOut: () => void;
+}) {
   return (
     <div className="screen pad-top">
       <div className="gutter" style={{ padding: "4px 22px 14px" }}>
         <Wordmark />
-        <h1 className="title-serif" style={{ marginTop: 7 }}>About</h1>
+        <h1 className="title-serif" style={{ marginTop: 7 }}>Settings</h1>
       </div>
 
       <div className="screen__body gutter" style={{ paddingBottom: 26 }}>
+        {/* Account — only shown when cloud sync is set up for this build. */}
+        {configured && (
+          <div className="card card--warm" style={{ padding: 20, marginBottom: 14 }}>
+            {email ? (
+              <>
+                <div className="account-row">
+                  <span className="account-avatar">{email[0]?.toUpperCase() ?? "?"}</span>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {email}
+                    </div>
+                    <div className="faint" style={{ fontSize: 12.5 }}>Progress syncs to your profile</div>
+                  </div>
+                </div>
+                <button className="btn btn--secondary" style={{ marginTop: 16 }} onClick={onSignOut}>
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <>
+                <div style={{ fontFamily: "var(--font-serif)", fontSize: 19, fontWeight: 600, color: "var(--text-display)" }}>
+                  Save your progress
+                </div>
+                <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.55, margin: "8px 0 0" }}>
+                  Create a profile to keep your deck and progress backed up and synced across
+                  devices. Optional — the app works fully offline without one.
+                </p>
+                <button className="btn btn--primary" style={{ marginTop: 16 }} onClick={onSignIn}>
+                  Sign in or create account
+                </button>
+              </>
+            )}
+          </div>
+        )}
+
         <div className="card card--warm" style={{ padding: 20 }}>
           <div style={{ fontFamily: "var(--font-serif)", fontSize: 19, fontWeight: 600, color: "var(--text-display)" }}>
-            Fully offline
+            {configured ? "Works offline too" : "Fully offline"}
           </div>
           <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.55, margin: "8px 0 0" }}>
             Woordkast ships with a built-in Dutch→English dictionary of{" "}
             {DICTIONARY.length.toLocaleString()} words. A curated core of {RICH_COUNT} common
             words also has <em>de/het</em> gender and an example sentence.
-            Everything runs on your device; no account, no internet, nothing to pay for.
+            {configured
+              ? " Everything runs on your device; an account only adds cross-device sync."
+              : " Everything runs on your device; no account, no internet, nothing to pay for."}
           </p>
         </div>
 
