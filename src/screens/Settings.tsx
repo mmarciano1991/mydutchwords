@@ -1,5 +1,5 @@
 import { Wordmark } from "../components/brand";
-import { DICTIONARY, RICH_COUNT } from "../data/dictionary";
+import { DICTIONARY } from "../data/dictionary";
 
 export function Settings({
   deckCount,
@@ -60,20 +60,6 @@ export function Settings({
         )}
 
         <div className="card card--warm" style={{ padding: 20 }}>
-          <div style={{ fontFamily: "var(--font-serif)", fontSize: 19, fontWeight: 600, color: "var(--text-display)" }}>
-            {configured ? "Works offline too" : "Fully offline"}
-          </div>
-          <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.55, margin: "8px 0 0" }}>
-            Woordkast ships with a built-in Dutch→English dictionary of{" "}
-            {DICTIONARY.length.toLocaleString()} words. A curated core of {RICH_COUNT} common
-            words also has <em>de/het</em> gender and an example sentence.
-            {configured
-              ? " Everything runs on your device; an account only adds cross-device sync."
-              : " Everything runs on your device; no account, no internet, nothing to pay for."}
-          </p>
-        </div>
-
-        <div className="card card--warm" style={{ padding: 20, marginTop: 14 }}>
           <div className="spread">
             <span className="muted" style={{ fontSize: 14 }}>Words in the dictionary</span>
             <span style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: "var(--text-display)" }}>{DICTIONARY.length}</span>
