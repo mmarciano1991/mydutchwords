@@ -14,11 +14,17 @@ behaves exactly as before.
 
 1. Sign up at <https://supabase.com> and create a new project (any region;
    the free tier is plenty).
-2. When it's ready, go to **Project Settings → API** and copy:
-   - **Project URL** → `VITE_SUPABASE_URL`
-   - **anon public** key → `VITE_SUPABASE_ANON_KEY`
-   (The anon key is meant to live in frontend code — Row-Level Security is
-   what protects the data.)
+2. On the project dashboard, click the green **Connect** button (top of the
+   page) → **App Frameworks** tab. It shows your **Project URL** and a
+   public key (named **anon** or **publishable**, `sb_publishable_…`,
+   depending on when your project was created — either works).
+   - This panel defaults to a **Next.js** quickstart (`.env.local`,
+     `NEXT_PUBLIC_…` vars, `@supabase/ssr`, server/middleware files).
+     **Ignore all of that** — Woordkast is a Vite app with no server, so
+     none of it applies. All you need from that screen are the two values
+     below.
+   - (Alternatively: **Project Settings → API Keys** shows the same two
+     values without the framework-specific scaffolding.)
 
 ## 2. Create the database table
 
@@ -59,12 +65,17 @@ This is required so Google sign-in is allowed to return to your site.
 
 ## 5. Add the env values and build
 
-Create a `.env` file at the repo root (copy `.env.example`):
+Create a `.env` file at the repo root (copy `.env.example`). Using your
+project's actual values (example shape — yours will differ):
 
 ```bash
-VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
-VITE_SUPABASE_ANON_KEY=<your-anon-public-key>
+VITE_SUPABASE_URL=https://dohptzehphakvphgkbtp.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_aeqgTbAx4o9PwPHP7JWwLg_LjeTvv1w
 ```
+
+Note the **`VITE_`** prefix, not `NEXT_PUBLIC_` — that Next.js naming from
+the Connect panel doesn't apply here. `VITE_SUPABASE_ANON_KEY` also works if
+your project shows an "anon" key instead of "publishable".
 
 Then build:
 

@@ -6,13 +6,17 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
 const url = import.meta.env.VITE_SUPABASE_URL?.trim();
-const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY?.trim();
+// Accept either the classic anon key or Supabase's newer publishable key
+// (sb_publishable_…) — both are browser-safe public keys.
+const publicKey = (
+  import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY
+)?.trim();
 
-export const isSupabaseConfigured = Boolean(url && anonKey);
+export const isSupabaseConfigured = Boolean(url && publicKey);
 
 /** The shared client, or null when no project is configured. */
 export const supabase: SupabaseClient | null = isSupabaseConfigured
-  ? createClient(url!, anonKey!, {
+  ? createClient(url!, publicKey!, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
