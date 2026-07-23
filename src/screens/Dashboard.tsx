@@ -1,14 +1,6 @@
-import { TulipMedallion, Wordmark } from "../components/brand";
+import { TulipMedallion } from "../components/brand";
 import { AddWordCard } from "../components/AddWordCard";
 import { CheckCircle } from "../icons";
-
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 6) return "Goedenacht";
-  if (h < 12) return "Goedemorgen";
-  if (h < 18) return "Goedemiddag";
-  return "Goedenavond";
-}
 
 export function Dashboard({
   deckCount,
@@ -50,9 +42,6 @@ export function Dashboard({
           <button className="btn btn--primary" onClick={onAddWord}>
             Add your first word
           </button>
-          <p className="faint" style={{ textAlign: "center", fontSize: 12.5, margin: "13px 0 0" }}>
-            No account · works offline
-          </p>
         </div>
       </div>
     );
@@ -63,12 +52,7 @@ export function Dashboard({
 
   return (
     <div className="screen pad-top">
-      <div className="gutter" style={{ padding: "4px 22px 14px" }}>
-        <Wordmark />
-        <h1 className="title-serif" style={{ marginTop: 7 }}>{greeting()}</h1>
-      </div>
-
-      <div className="screen__body gutter" style={{ paddingBottom: 26, display: "flex", flexDirection: "column", gap: 20 }}>
+      <div className="screen__body gutter" style={{ paddingTop: 18, paddingBottom: 26, display: "flex", flexDirection: "column", gap: 20 }}>
         {caughtUp ? (
           // ── All caught up: calm cream card; practising ahead is optional (Figma 163:334) ──
           <section className="hero hero--calm">
