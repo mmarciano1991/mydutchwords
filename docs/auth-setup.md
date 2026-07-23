@@ -88,16 +88,29 @@ time, so **rebuild after changing them**.
 
 ## 6. Deploy to Hostinger
 
-Woordkast is a static site — nothing server-side runs on Hostinger.
+Woordkast is a static site — nothing server-side runs on Hostinger. Two ways
+to get the build there:
 
-1. `npm run build` produces a `dist/` folder.
-2. Upload the **contents of `dist/`** into `public_html` (via hPanel File
-   Manager or FTP).
-3. Make sure your domain has SSL enabled (Hostinger → SSL) — Google sign-in
-   requires HTTPS.
+**Automatic (this repo's setup):** [`.github/workflows/manual-deploy.yml`](../.github/workflows/manual-deploy.yml)
+builds the app and FTP-uploads `dist/` to Hostinger — triggered from the
+**Actions** tab (Run workflow), not on every push. It needs these repo
+secrets (**Settings → Secrets and variables → Actions**):
 
-That's it. The browser talks to Supabase directly over HTTPS; Hostinger just
-serves the files.
+| Secret | What it is |
+|---|---|
+| `FTP_SERVER`, `FTP_USERNAME`, `FTP_PASSWORD` | Hostinger FTP account (hPanel → Files → FTP Accounts) |
+| `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY` | Same two values as step 5, so the deployed build has cloud sync enabled |
+
+Leaving the two `VITE_…` secrets unset still produces a working build — just
+offline-only, with no account UI (same as running `npm run build` locally
+without an `.env`).
+
+**Manual:** `npm run build` produces a `dist/` folder — upload its contents
+into `public_html` via hPanel File Manager or FTP.
+
+Either way, make sure your domain has SSL enabled (Hostinger → SSL) — Google
+sign-in requires HTTPS. The browser talks to Supabase directly over HTTPS;
+Hostinger just serves the files.
 
 ---
 

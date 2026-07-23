@@ -20,6 +20,12 @@ jobs:
 
       - name: Build
         run: npm run build
+        env:
+          # Optional cloud sync (accounts + saved progress). Baked into the
+          # static bundle at build time — see docs/auth-setup.md. Leaving
+          # these secrets unset still produces a working, fully offline build.
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
 
       - name: Upload to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5
