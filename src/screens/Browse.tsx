@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
-import { Wordmark } from "../components/brand";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
 import { MasteryBar } from "../components/MasteryBar";
@@ -39,8 +38,7 @@ export function Browse({
   return (
     <div className="screen pad-top">
       <div className="gutter" style={{ padding: "4px 22px 12px" }}>
-        <Wordmark />
-        <h1 className="title-serif" style={{ marginTop: 7 }}>Your deck</h1>
+        <h1 className="title-serif">Your deck</h1>
         <p className="muted" style={{ fontSize: 13.5, margin: "4px 0 0" }}>
           {entries.length.toLocaleString()} word{entries.length === 1 ? "" : "s"} · tap a word to see it in context
         </p>
