@@ -1,7 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import { addCustomEntry, resolveEntry } from "./lib/wordSources";
-import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
+import {
+  hasSeenAuthGate,
+  isInDeck,
+  loadDeck,
+  loadResults,
+  markAuthGateSeen,
+  newDeckItem,
+  saveDeck,
+  saveResults,
+} from "./lib/storage";
 import {
   buildNextSession,
   buildRestudySession,
@@ -64,7 +73,23 @@ export default function App() {
   useEffect(() => saveResults(results), [results]);
 
   // ── Accounts + cloud sync (optional; no-ops when Supabase isn't configured) ──
-  const { user, configured } = useAuth();
+  const { user, configured, ready } = useAuth();
+
+  // Where the auth screen was opened from — decides where its X returns to.
+  const [authOrigin, setAuthOrigin] = useState<"gate" | "settings">("gate");
+
+  // Access flow (Figma 228:1789): after the splash, a first-time or
+  // signed-out visitor lands on Sign in. The X ("try the app without an
+  // account") is remembered, so the gate only ever asks once per device.
+  const gateChecked = useRef(false);
+  useEffect(() => {
+    if (!ready || gateChecked.current) return;
+    gateChecked.current = true;
+    if (configured && !user && !hasSeenAuthGate()) {
+      setAuthOrigin("gate");
+      setRoute("auth");
+    }
+  }, [ready, configured, user]);
 
   // Applies a merged remote+local snapshot after login (custom words are set
   // by the sync hook before this runs).
@@ -77,11 +102,23 @@ export default function App() {
 
   // Leave the auth screen automatically once a session arrives.
   useEffect(() => {
-    if (user && route === "auth") setRoute("dashboard");
+    if (user && route === "auth") {
+      markAuthGateSeen();
+      setRoute("dashboard");
+    }
   }, [user, route]);
+
+  // X on the auth screen: from the gate it means "try the app without an
+  // account" (remembered); from Settings it just goes back.
+  function closeAuth() {
+    markAuthGateSeen();
+    setRoute(authOrigin === "settings" ? "settings" : "dashboard");
+  }
 
   async function handleSignOut() {
     await signOut();
+    // A deliberate sign-out shouldn't re-trigger the opening gate.
+    markAuthGateSeen();
     // Start the local session clean so the next account doesn't inherit this
     // deck; the signed-out user can still practise offline from here.
     setDeck([]);
@@ -252,7 +289,10 @@ export default function App() {
               deckCount={deck.length}
               configured={configured}
               email={user?.email ?? null}
-              onSignIn={() => setRoute("auth")}
+              onSignIn={() => {
+                setAuthOrigin("settings");
+                setRoute("auth");
+              }}
               onSignOut={handleSignOut}
             />
           )}
@@ -277,7 +317,7 @@ export default function App() {
             <Capture deckIds={deckIds} onSave={saveCapturedWord} onBack={() => setRoute("dashboard")} />
           )}
 
-          {route === "auth" && <Auth onBack={() => setRoute("settings")} />}
+          {route === "auth" && <Auth onClose={closeAuth} />}
         </div>
 
         {showTabs && <TabBar active={activeTab} onChange={(t) => setRoute(t)} />}
