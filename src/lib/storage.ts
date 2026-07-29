@@ -3,6 +3,26 @@ import type { DeckItem, PracticeResult } from "./types";
 
 const DECK_KEY = "woordkast.deck";
 const RESULTS_KEY = "woordkast.results";
+const AUTH_GATE_KEY = "woordkast.authGateSeen";
+
+/** Whether the opening sign-in gate was already answered on this device
+ *  (signed in, skipped with "try without account", or signed out on purpose).
+ *  Once seen, the app opens straight into home; sign-in stays in Settings. */
+export function hasSeenAuthGate(): boolean {
+  try {
+    return localStorage.getItem(AUTH_GATE_KEY) === "1";
+  } catch {
+    return true; // storage unavailable — never trap the user behind the gate
+  }
+}
+
+export function markAuthGateSeen(): void {
+  try {
+    localStorage.setItem(AUTH_GATE_KEY, "1");
+  } catch {
+    /* storage unavailable — the gate may show again next launch */
+  }
+}
 
 /** A freshly-added deck item: no spaced-repetition history yet, due immediately. */
 export function newDeckItem(entryId: string, now: Date): DeckItem {

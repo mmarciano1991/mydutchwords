@@ -72,6 +72,51 @@ input {
   }
 }
 
+/* ── Splash — the branded opening beat (Access flow, Figma 228:1789) ──
+   A full-screen copy of the app shell stacked above the app; the medallion
+   and wordmark rise-and-fade in, then the whole overlay fades out to reveal
+   whatever the app shows first (sign-in gate or home). */
+.splash-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  transition: opacity 450ms var(--ease-standard);
+}
+.splash-overlay--out {
+  opacity: 0;
+  pointer-events: none;
+}
+.splash-phone {
+  align-items: center;
+  justify-content: center;
+}
+.splash-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+.splash-medallion {
+  animation: splash-rise 700ms var(--ease-standard) both;
+}
+.splash-wordmark {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 22px;
+  color: var(--text-display);
+  animation: splash-rise 700ms var(--ease-standard) 180ms both;
+}
+@keyframes splash-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* The scrolling content region of a screen. */
 .screen {
   display: flex;
