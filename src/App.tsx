@@ -1,16 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import { addCustomEntry, resolveEntry } from "./lib/wordSources";
-import {
-  hasSeenAuthGate,
-  isInDeck,
-  loadDeck,
-  loadResults,
-  markAuthGateSeen,
-  newDeckItem,
-  saveDeck,
-  saveResults,
-} from "./lib/storage";
+import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
 import {
   buildNextSession,
   buildRestudySession,
@@ -38,9 +29,9 @@ import { Settings } from "./screens/Settings";
 import { Auth } from "./screens/Auth";
 import { TabBar, type Tab } from "./components/TabBar";
 
-type Route = Tab | "practice" | "report" | "capture" | "auth";
+type Route = Tab | "practice" | "report" | "capture";
 
-const FOCUSED: Route[] = ["practice", "report", "capture", "auth"];
+const FOCUSED: Route[] = ["practice", "report", "capture"];
 
 /** Joins spaced-repetition Words back to their dictionary content for display. */
 function toPracticeCards(words: Word[]): PracticeCard[] {
@@ -75,21 +66,12 @@ export default function App() {
   // ── Accounts + cloud sync (optional; no-ops when Supabase isn't configured) ──
   const { user, configured, ready } = useAuth();
 
-  // Where the auth screen was opened from — decides where its X returns to.
-  const [authOrigin, setAuthOrigin] = useState<"gate" | "settings">("gate");
-
-  // Access flow (Figma 228:1789): after the splash, a first-time or
-  // signed-out visitor lands on Sign in. The X ("try the app without an
-  // account") is remembered, so the gate only ever asks once per device.
-  const gateChecked = useRef(false);
-  useEffect(() => {
-    if (!ready || gateChecked.current) return;
-    gateChecked.current = true;
-    if (configured && !user && !hasSeenAuthGate()) {
-      setAuthOrigin("gate");
-      setRoute("auth");
-    }
-  }, [ready, configured, user]);
+  // Hard access gate (Figma 228:1789): signed-out visitors can't reach any
+  // part of the app — no offline browsing, no "continue without an
+  // account" skip. Only takes effect when Supabase is configured; an
+  // unconfigured build has no accounts to gate behind, so it stays fully
+  // offline as before.
+  const locked = configured && !user;
 
   // Applies a merged remote+local snapshot after login (custom words are set
   // by the sync hook before this runs).
@@ -100,20 +82,12 @@ export default function App() {
 
   useCloudSync({ userId: user?.id ?? null, deck, results, applyMerged });
 
-  // Leave the auth screen automatically once a session arrives.
+  // Whenever the gate (re)closes — sign-out, or a session expiring — drop
+  // back to the dashboard so the next sign-in doesn't resume a stale
+  // mid-flow screen (e.g. a cleared practice queue).
   useEffect(() => {
-    if (user && route === "auth") {
-      markAuthGateSeen();
-      setRoute("dashboard");
-    }
-  }, [user, route]);
-
-  // X on the auth screen: from the gate it means "try the app without an
-  // account" (remembered); from Settings it just goes back.
-  function closeAuth() {
-    markAuthGateSeen();
-    setRoute(authOrigin === "settings" ? "settings" : "dashboard");
-  }
+    if (locked) setRoute("dashboard");
+  }, [locked]);
 
   async function handleSignOut() {
     await signOut();
@@ -122,10 +96,6 @@ export default function App() {
     setDeck([]);
     setResults([]);
     setCustomEntries([]);
-    // Sign-out returns to Sign in (Figma 228:1789); its X still offers
-    // "try the app without an account" via closeAuth's gate-origin path.
-    setAuthOrigin("gate");
-    setRoute("auth");
   }
 
   // Resolve the deck (newest first) into full dictionary entries.
@@ -257,68 +227,70 @@ export default function App() {
     beginSession(buildRestudySession(report), true, "warmup");
   }
 
-  const showTabs = !FOCUSED.includes(route);
+  const showTabs = !locked && !FOCUSED.includes(route);
 
   return (
     <div className="app-shell">
       <div className="phone">
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-          {route === "dashboard" && (
-            <Dashboard
-              deckCount={deckEntries.length}
-              dueCount={dueSession.length}
-              nextDueLabel={nextDueLabel}
-              streak={streak}
-              onPractice={startPractice}
-              onPracticeAhead={startPracticeAhead}
-              onAddWord={() => setRoute("capture")}
-            />
-          )}
+          {configured && !ready ? null : locked ? (
+            // The boot splash (main.tsx) covers this in practice — Supabase's
+            // local-storage session read resolves well within its hold time.
+            <Auth />
+          ) : (
+            <>
+              {route === "dashboard" && (
+                <Dashboard
+                  deckCount={deckEntries.length}
+                  dueCount={dueSession.length}
+                  nextDueLabel={nextDueLabel}
+                  streak={streak}
+                  onPractice={startPractice}
+                  onPracticeAhead={startPracticeAhead}
+                  onAddWord={() => setRoute("capture")}
+                />
+              )}
 
-          {route === "browse" && (
-            <Browse
-              entries={deckEntries}
-              levels={levels}
-              tricky={tricky}
-              onRemove={toggleWord}
-              onAddWord={() => setRoute("capture")}
-            />
-          )}
+              {route === "browse" && (
+                <Browse
+                  entries={deckEntries}
+                  levels={levels}
+                  tricky={tricky}
+                  onRemove={toggleWord}
+                  onAddWord={() => setRoute("capture")}
+                />
+              )}
 
-          {route === "settings" && (
-            <Settings
-              deckCount={deck.length}
-              configured={configured}
-              email={user?.email ?? null}
-              onSignIn={() => {
-                setAuthOrigin("settings");
-                setRoute("auth");
-              }}
-              onSignOut={handleSignOut}
-            />
-          )}
+              {route === "settings" && (
+                <Settings
+                  deckCount={deck.length}
+                  configured={configured}
+                  email={user?.email ?? null}
+                  onSignOut={handleSignOut}
+                />
+              )}
 
-          {route === "practice" && (
-            <Practice key={sessionId} queue={queue} scheduling={sessionMode === "scheduled"} onFinish={finishPractice} onClose={() => setRoute("dashboard")} />
-          )}
+              {route === "practice" && (
+                <Practice key={sessionId} queue={queue} scheduling={sessionMode === "scheduled"} onFinish={finishPractice} onClose={() => setRoute("dashboard")} />
+              )}
 
-          {route === "report" && report && (
-            <SessionReport
-              report={report}
-              streak={streak}
-              warmup={sessionMode === "warmup"}
-              nextCount={nextSessionCount}
-              onContinue={continueToNext}
-              onReviewMissed={reviewMissed}
-              onBackToDashboard={() => setRoute("dashboard")}
-            />
-          )}
+              {route === "report" && report && (
+                <SessionReport
+                  report={report}
+                  streak={streak}
+                  warmup={sessionMode === "warmup"}
+                  nextCount={nextSessionCount}
+                  onContinue={continueToNext}
+                  onReviewMissed={reviewMissed}
+                  onBackToDashboard={() => setRoute("dashboard")}
+                />
+              )}
 
-          {route === "capture" && (
-            <Capture deckIds={deckIds} onSave={saveCapturedWord} onBack={() => setRoute("dashboard")} />
+              {route === "capture" && (
+                <Capture deckIds={deckIds} onSave={saveCapturedWord} onBack={() => setRoute("dashboard")} />
+              )}
+            </>
           )}
-
-          {route === "auth" && <Auth onClose={closeAuth} />}
         </div>
 
         {showTabs && <TabBar active={activeTab} onChange={(t) => setRoute(t)} />}
