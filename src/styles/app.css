@@ -1018,7 +1018,8 @@ input {
 .bottomnav {
   display: flex;
   align-items: center;
-  gap: var(--space-2);
+  /* No `gap` — the FAB owns its own leading margin, so that space can
+     collapse with it when it hides (see .fab--hidden). */
   padding: var(--space-5);
   padding-bottom: max(var(--space-5), env(safe-area-inset-bottom));
 }
@@ -1057,11 +1058,17 @@ input {
   color: var(--primary);
 }
 
-/* ── Floating add button ── */
+/* ── Floating add button ──
+   Width/margin animate so the pill beside it (flex:1) grows and shrinks in
+   step; the icon is clipped rather than squashed while that happens. */
 .fab {
   flex-shrink: 0;
   width: 60px;
   height: 60px;
+  /* Zeroed so `width: 0` can actually reach 0 when hidden — border-box
+     clamps width up to the padding sum otherwise. */
+  padding: 0;
+  margin-left: var(--space-2);
   border-radius: 50%;
   background: var(--primary);
   color: var(--on-primary);
@@ -1070,13 +1077,45 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
   transition:
-    background var(--motion-base) var(--ease-standard),
-    transform var(--motion-fast) var(--ease-emphasized);
+    width var(--motion-nav) var(--ease-standard),
+    margin-left var(--motion-nav) var(--ease-standard),
+    opacity var(--motion-nav) var(--ease-standard),
+    transform var(--motion-nav) var(--ease-emphasized),
+    background var(--motion-base) var(--ease-standard);
 }
 .fab:active {
   background: var(--primary-press);
-  transform: translateY(1px);
+  transform: scale(0.94);
+  transition-duration: var(--motion-fast);
+}
+.fab svg {
+  flex-shrink: 0;
+  transition: transform var(--motion-nav) var(--ease-emphasized);
+}
+
+.fab--hidden {
+  width: 0;
+  margin-left: 0;
+  opacity: 0;
+  transform: scale(0.4);
+  box-shadow: none;
+  pointer-events: none;
+}
+/* The + spins away as it goes, so the exit reads as deliberate. */
+.fab--hidden svg {
+  transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab,
+  .fab svg {
+    transition: none;
+  }
+  .fab--hidden svg {
+    transform: none;
+  }
 }
 
 .quote {

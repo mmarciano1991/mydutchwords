@@ -1,7 +1,11 @@
 /* Bottom navigation (Figma 251:3389) — a floating pill holding the three
    tabs, with an optional FAB beside it that opens the Add-a-word flow. The
    FAB is switched off on screens where adding a word isn't the next thing
-   the user would want (Settings). */
+   the user would want (Settings).
+
+   It stays mounted either way so showing/hiding animates: the FAB collapses
+   its own width and the pill, being flex:1, grows into the space it frees.
+   Hidden, it's inert — untabbable and hidden from assistive tech. */
 import type { ComponentType } from "react";
 import { Add, Book5, Build, Home, type IconProps } from "../icons";
 
@@ -38,11 +42,15 @@ export function TabBar({
         {item("browse", "Deck", Book5)}
         {item("settings", "Settings", Build)}
       </nav>
-      {onAddWord && (
-        <button className="fab" onClick={onAddWord} aria-label="Add a word">
-          <Add />
-        </button>
-      )}
+      <button
+        className={`fab${onAddWord ? "" : " fab--hidden"}`}
+        onClick={onAddWord}
+        aria-label="Add a word"
+        aria-hidden={onAddWord ? undefined : true}
+        tabIndex={onAddWord ? undefined : -1}
+      >
+        <Add />
+      </button>
     </div>
   );
 }

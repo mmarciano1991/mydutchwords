@@ -9,5 +9,6 @@
 
   --motion-fast: 120ms; /* taps, presses */
   --motion-base: 180ms; /* hover / colour / shadow */
+  --motion-nav: 260ms; /* layout changes — the bottom nav growing past the FAB */
   --motion-flip: 480ms; /* flashcard 3D flip */
 }
