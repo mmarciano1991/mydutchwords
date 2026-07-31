@@ -5,15 +5,15 @@ export function Settings({
   deckCount,
   configured,
   email,
-  onSignIn,
   onSignOut,
 }: {
   deckCount: number;
   /** Whether cloud sync (Supabase) is configured for this build. */
   configured: boolean;
-  /** The signed-in user's email, or null when logged out. */
+  /** The signed-in user's email — Settings is only reachable while signed
+   *  in (App.tsx gates everything else behind Auth), so this is always
+   *  set whenever `configured` is true. */
   email: string | null;
-  onSignIn: () => void;
   onSignOut: () => void;
 }) {
   return (
@@ -27,35 +27,18 @@ export function Settings({
         {/* Account — only shown when cloud sync is set up for this build. */}
         {configured && (
           <div className="card card--warm" style={{ padding: 20, marginBottom: 14 }}>
-            {email ? (
-              <>
-                <div className="account-row">
-                  <span className="account-avatar">{email[0]?.toUpperCase() ?? "?"}</span>
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis" }}>
-                      {email}
-                    </div>
-                    <div className="faint" style={{ fontSize: 12.5 }}>Progress syncs to your profile</div>
-                  </div>
+            <div className="account-row">
+              <span className="account-avatar">{email?.[0]?.toUpperCase() ?? "?"}</span>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {email}
                 </div>
-                <button className="btn btn--secondary" style={{ marginTop: 16 }} onClick={onSignOut}>
-                  Sign out
-                </button>
-              </>
-            ) : (
-              <>
-                <div style={{ fontFamily: "var(--font-serif)", fontSize: 19, fontWeight: 600, color: "var(--text-display)" }}>
-                  Save your progress
-                </div>
-                <p className="muted" style={{ fontSize: 13.5, lineHeight: 1.55, margin: "8px 0 0" }}>
-                  Create a profile to keep your deck and progress backed up and synced across
-                  devices. Optional — the app works fully offline without one.
-                </p>
-                <button className="btn btn--primary" style={{ marginTop: 16 }} onClick={onSignIn}>
-                  Sign in or create account
-                </button>
-              </>
-            )}
+                <div className="faint" style={{ fontSize: 12.5 }}>Progress syncs to your profile</div>
+              </div>
+            </div>
+            <button className="btn btn--secondary" style={{ marginTop: 16 }} onClick={onSignOut}>
+              Sign out
+            </button>
           </div>
         )}
 

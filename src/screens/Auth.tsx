@@ -1,10 +1,11 @@
-/* Auth — the simple account screen: email + password (sign in / create
-   account), and "Continue with Google". Offline-first, so it's reachable
-   from Settings but never forced. On success the session change (watched in
-   App) navigates away; sign-up may instead ask the user to confirm by email. */
+/* Auth — the account screen: email + password (sign in / create account),
+   and "Continue with Google". The app is a hard gate behind this screen
+   (App.tsx renders it in place of everything else while signed out), so
+   there's no back/close affordance — signing in is the only way through.
+   On success the session change (watched in App) navigates away; sign-up
+   may instead ask the user to confirm by email. */
 import { useState } from "react";
 import { signInEmail, signInWithGoogle, signUpEmail } from "../lib/auth";
-import { IconButton } from "../components/IconButton";
 import { Notice } from "../components/Notice";
 
 function GoogleGlyph() {
@@ -20,12 +21,7 @@ function GoogleGlyph() {
 
 type Mode = "signin" | "signup";
 
-export function Auth({ onClose }: {
-  /** Back chevron and X in the topbar both dismiss the screen — from the
-   *  opening gate this means "try the app without an account"; from
-   *  Settings it simply goes back. */
-  onClose: () => void;
-}) {
+export function Auth() {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,11 +61,9 @@ export function Auth({ onClose }: {
   return (
     <div className="screen pad-top">
       <div className="topbar">
-        <IconButton action="back" onClick={onClose} aria-label="Back" />
-        <span className="title-serif" style={{ fontSize: 21, flex: 1 }}>
+        <span className="title-serif" style={{ fontSize: 21 }}>
           {isSignup ? "Create account" : "Sign in"}
         </span>
-        <IconButton action="close" onClick={onClose} aria-label="Continue without an account" />
       </div>
 
       <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
