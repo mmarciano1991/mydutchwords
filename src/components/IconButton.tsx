@@ -1,15 +1,15 @@
 /* ──────────────────────────────────────────────────────────────────────────
    IconButton — merged from the former IconButton + AddButton (Figma node 61:22).
-   Actions: add | close | remove | expand.  States: default · pressed (CSS
+   Actions: add | close | remove | expand | back.  States: default · pressed (CSS
    :active) · success (add → check on a solid-green chip).
    Variants (`variant`): secondary (default — surface card + cool border) and
    no-background (transparent, tints on press). 38×38, radius-input; all colours
    driven by design tokens. See src/styles/app.css → ".icon-btn".
    ────────────────────────────────────────────────────────────────────────── */
 import type { ButtonHTMLAttributes } from "react";
-import { Add, Check, ChevronDown, Close, Remove } from "../icons";
+import { Add, Check, ChevronBackward, ChevronDown, Close, Remove } from "../icons";
 
-export type IconButtonAction = "add" | "close" | "remove" | "expand";
+export type IconButtonAction = "add" | "close" | "remove" | "expand" | "back";
 export type IconButtonVariant = "secondary" | "no-background";
 
 type IconButtonProps = {
@@ -24,6 +24,7 @@ const GLYPH = {
   close: Close,
   remove: Remove,
   expand: ChevronDown,
+  back: ChevronBackward,
 } as const;
 
 export function IconButton({
