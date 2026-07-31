@@ -13,6 +13,7 @@ import {
   type SessionReport as EngineSessionReport,
   type Word,
 } from "./lib/learningEngine";
+import { loadExamples, onExamplesLoaded } from "./data/examples";
 import { expandOriginFrom, type ExpandOrigin } from "./lib/expandOrigin";
 import { streakDays } from "./lib/streak";
 import { useAuth } from "./lib/useAuth";
@@ -66,6 +67,17 @@ export default function App() {
   useEffect(() => saveDeck(deck), [deck]);
   useEffect(() => saveResults(results), [results]);
 
+  // Example sentences are a separate chunk (they're most of the dictionary's
+  // weight and none of what the first screen needs). Fetch them as soon as
+  // the app is interactive, and re-render when they land so anything already
+  // on screen picks up its sentence.
+  const [examplesVersion, setExamplesVersion] = useState(0);
+  useEffect(() => {
+    const unsubscribe = onExamplesLoaded(() => setExamplesVersion((v) => v + 1));
+    void loadExamples();
+    return unsubscribe;
+  }, []);
+
   // ── Accounts + cloud sync (optional; no-ops when Supabase isn't configured) ──
   const { user, configured, ready } = useAuth();
 
@@ -101,10 +113,11 @@ export default function App() {
     setCustomEntries([]);
   }
 
-  // Resolve the deck (newest first) into full dictionary entries.
+  // Resolve the deck (newest first) into full dictionary entries. Recomputed
+  // when the examples chunk lands, so rows pick up their sentence.
   const deckEntries = useMemo(
     () => deck.map((d) => resolveEntry(d.id)).filter((e): e is DictionaryEntry => Boolean(e)),
-    [deck]
+    [deck, examplesVersion]
   );
   const deckIds = useMemo(() => new Set(deck.map((d) => d.id)), [deck]);
 
