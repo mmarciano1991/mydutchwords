@@ -69,6 +69,14 @@ export function ChevronDown(props: IconProps) {
   );
 }
 
+export function ChevronBackward(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M8.625 12L14.625 6L16.025 7.4L11.425 12L16.025 16.6L14.625 18L8.625 12Z" />
+    </Icon>
+  );
+}
+
 export function Home(props: IconProps) {
   return (
     <Icon {...props}>

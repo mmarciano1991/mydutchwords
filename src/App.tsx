@@ -117,14 +117,15 @@ export default function App() {
 
   async function handleSignOut() {
     await signOut();
-    // A deliberate sign-out shouldn't re-trigger the opening gate.
-    markAuthGateSeen();
     // Start the local session clean so the next account doesn't inherit this
-    // deck; the signed-out user can still practise offline from here.
+    // deck.
     setDeck([]);
     setResults([]);
     setCustomEntries([]);
-    setRoute("dashboard");
+    // Sign-out returns to Sign in (Figma 228:1789); its X still offers
+    // "try the app without an account" via closeAuth's gate-origin path.
+    setAuthOrigin("gate");
+    setRoute("auth");
   }
 
   // Resolve the deck (newest first) into full dictionary entries.

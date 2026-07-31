@@ -21,8 +21,9 @@ function GoogleGlyph() {
 type Mode = "signin" | "signup";
 
 export function Auth({ onClose }: {
-  /** X in the topbar — from the opening gate this means "try the app
-   *  without an account"; from Settings it simply goes back. */
+  /** Back chevron and X in the topbar both dismiss the screen — from the
+   *  opening gate this means "try the app without an account"; from
+   *  Settings it simply goes back. */
   onClose: () => void;
 }) {
   const [mode, setMode] = useState<Mode>("signin");
@@ -64,10 +65,10 @@ export function Auth({ onClose }: {
   return (
     <div className="screen pad-top">
       <div className="topbar">
-        <span className="title-serif" style={{ fontSize: 21 }}>
+        <IconButton action="back" onClick={onClose} aria-label="Back" />
+        <span className="title-serif" style={{ fontSize: 21, flex: 1 }}>
           {isSignup ? "Create account" : "Sign in"}
         </span>
-        <span style={{ flex: 1 }} />
         <IconButton action="close" onClick={onClose} aria-label="Continue without an account" />
       </div>
 
