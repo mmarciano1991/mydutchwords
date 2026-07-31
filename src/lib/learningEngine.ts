@@ -34,14 +34,17 @@ export interface Word {
 
 export type Grade = "know" | "dontKnow";
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
-
 /** `days` after `date`, normalized to LOCAL start-of-day. Reviews unlock at
  *  midnight, so "due today" is a calendar concept — a word reviewed at 23:00
- *  is due tomorrow morning, not tomorrow at 23:00. */
+ *  is due tomorrow morning, not tomorrow at 23:00.
+ *
+ *  Steps the calendar rather than adding 24h per day: clock days are 23 or
+ *  25 hours long across a DST change, which shifted the result onto the
+ *  wrong date for reviews within an hour of midnight. */
 function dueDateAfter(date: Date, days: number): Date {
-  const d = new Date(date.getTime() + days * MS_PER_DAY);
+  const d = new Date(date);
   d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
   return d;
 }
 

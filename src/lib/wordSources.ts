@@ -11,8 +11,12 @@ function loadCustom(): Map<string, DictionaryEntry> {
   try {
     const raw = localStorage.getItem(CUSTOM_KEY);
     const list = raw ? (JSON.parse(raw) as DictionaryEntry[]) : [];
+    // Guard the shape: a non-array here would throw on .map and take the
+    // whole module down at import time, white-screening the app.
+    if (!Array.isArray(list)) return new Map();
     return new Map(list.map((e) => [e.id, e]));
-  } catch {
+  } catch (err) {
+    console.warn("[woordkast] could not read captured words — starting empty", err);
     return new Map();
   }
 }
@@ -27,8 +31,8 @@ export function resolveEntry(id: string): DictionaryEntry | undefined {
 function persistCustom(): void {
   try {
     localStorage.setItem(CUSTOM_KEY, JSON.stringify(Array.from(custom.values())));
-  } catch {
-    /* storage unavailable — the words still work for this session */
+  } catch (err) {
+    console.warn("[woordkast] could not save captured words — kept for this session only", err);
   }
 }
 

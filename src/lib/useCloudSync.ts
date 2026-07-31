@@ -35,6 +35,13 @@ export function useCloudSync({
   const hydratedFor = useRef<string | null>(null);
   const pushTimer = useRef<number | undefined>(undefined);
 
+  // Always the current local state. The merge below reads it *after* awaiting
+  // the network, so anything added while that request was in flight is
+  // merged rather than overwritten — capturing deck/results in the effect
+  // closure silently discarded those edits.
+  const localRef = useRef({ deck, results });
+  localRef.current = { deck, results };
+
   // Pull + merge + push once per login.
   useEffect(() => {
     if (!supabase || !userId || hydratedFor.current === userId) return;
@@ -42,7 +49,7 @@ export function useCloudSync({
     (async () => {
       const remote = await fetchRemoteState(userId);
       if (cancelled) return;
-      const local: AppState = { deck, results, customWords: getCustomEntries() };
+      const local: AppState = { ...localRef.current, customWords: getCustomEntries() };
       const merged = remote ? mergeState(local, remote) : local;
       setCustomEntries(merged.customWords);
       applyMerged(merged);
@@ -52,8 +59,8 @@ export function useCloudSync({
     return () => {
       cancelled = true;
     };
-    // Intentionally keyed on userId only: deck/results are read as the login
-    // snapshot; ongoing changes are handled by the push effect below.
+    // Intentionally keyed on userId only: the local snapshot is read through
+    // localRef at merge time, and ongoing changes go through the push effect.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
 

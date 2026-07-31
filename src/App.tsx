@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
-import { addCustomEntry, resolveEntry } from "./lib/wordSources";
+import { addCustomEntry, resolveEntry, setCustomEntries } from "./lib/wordSources";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
 import {
   buildNextSession,
@@ -17,7 +17,6 @@ import { expandOriginFrom, type ExpandOrigin } from "./lib/expandOrigin";
 import { streakDays } from "./lib/streak";
 import { useAuth } from "./lib/useAuth";
 import { useCloudSync } from "./lib/useCloudSync";
-import { setCustomEntries } from "./lib/wordSources";
 import { signOut } from "./lib/auth";
 import type { AppState } from "./lib/cloudState";
 import { Dashboard } from "./screens/Dashboard";

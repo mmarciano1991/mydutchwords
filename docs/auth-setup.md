@@ -69,8 +69,8 @@ Create a `.env` file at the repo root (copy `.env.example`). Using your
 project's actual values (example shape — yours will differ):
 
 ```bash
-VITE_SUPABASE_URL=https://dohptzehphakvphgkbtp.supabase.co
-VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_aeqgTbAx4o9PwPHP7JWwLg_LjeTvv1w
+VITE_SUPABASE_URL=https://<your-project-ref>.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=sb_publishable_<your-key>
 ```
 
 Note the **`VITE_`** prefix, not `NEXT_PUBLIC_` — that Next.js naming from

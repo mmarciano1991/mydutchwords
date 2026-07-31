@@ -30,9 +30,45 @@ function makeWord(overrides: Partial<Word> = {}): Word {
 
 const NOW = new Date("2024-06-01T12:00:00.000Z");
 
+/** Whole calendar days from `b` to `a`. Both ends are normalized to local
+ *  midnight first: due dates are midnight-anchored, so a raw millisecond
+ *  difference measured from an afternoon `b` rounds down a day — which made
+ *  these assertions pass or fail depending on the runner's timezone. */
 function daysBetween(a: string, b: Date): number {
-  return Math.round((new Date(a).getTime() - b.getTime()) / (24 * 60 * 60 * 1000));
+  const from = new Date(b);
+  from.setHours(0, 0, 0, 0);
+  const to = new Date(a);
+  to.setHours(0, 0, 0, 0);
+  return Math.round((to.getTime() - from.getTime()) / (24 * 60 * 60 * 1000));
 }
+
+describe("due dates are calendar-anchored", () => {
+  // Regression: scheduling used to add `days * 24h` and then snap to local
+  // midnight, so the result depended on the time of day it was reviewed —
+  // and landed on the wrong date across a DST change. Stepping the calendar
+  // makes it exact for every review time, in every timezone.
+  const times = [0, 1, 9, 12, 23];
+
+  it("lands on local midnight whatever time the review happened", () => {
+    for (const hour of times) {
+      const at = new Date(2024, 2, 30, hour, 37, 12, 500);
+      const due = new Date(applyGrade(makeWord(), "know", at).dueDate);
+      expect([due.getHours(), due.getMinutes(), due.getSeconds()]).toEqual([0, 0, 0]);
+    }
+  });
+
+  it("is exactly `interval` calendar days out, independent of review time", () => {
+    for (const hour of times) {
+      // Spans the European DST change (31 March 2024) at every rung.
+      const at = new Date(2024, 2, 30, hour, 37, 12, 500);
+      let word = makeWord();
+      for (let level = 0; level < MAX_LEVEL; level++) {
+        word = applyGrade(word, "know", at);
+        expect(daysBetween(word.dueDate, at)).toBe(word.interval);
+      }
+    }
+  });
+});
 
 describe("applyGrade — ladder", () => {
   it("climbs the full ladder 1-3-7-14-30-90 on consecutive correct answers", () => {
