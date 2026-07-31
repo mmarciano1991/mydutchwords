@@ -1,5 +1,4 @@
 import { TulipMedallion } from "../components/brand";
-import { AddWordCard } from "../components/AddWordCard";
 import { CheckCircle } from "../icons";
 
 export function Dashboard({
@@ -85,8 +84,6 @@ export function Dashboard({
             </button>
           </section>
         )}
-
-        <AddWordCard onAddWord={onAddWord} />
       </div>
     </div>
   );

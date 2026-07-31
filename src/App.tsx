@@ -8,7 +8,6 @@ import {
   buildSession,
   buildSessionReport,
   isLeech,
-  markAsKnown,
   SESSION_CAP,
   type ReviewedCard,
   type SessionReport as EngineSessionReport,
@@ -129,17 +128,13 @@ export default function App() {
   }
 
   /** Save from the capture flow. Words from the online lookup aren't in the
-   *  bundled dictionary, so they're persisted as custom entries first.
-   *  `known` skips the ramp: straight to Mature (flowchart's "Already know it"). */
-  function saveCapturedWord(entry: DictionaryEntry, known: boolean) {
+   *  bundled dictionary, so they're persisted as custom entries first. */
+  function saveCapturedWord(entry: DictionaryEntry) {
     addCustomEntry(entry);
-    setDeck((prev) => {
-      if (isInDeck(prev, entry.id)) return prev;
-      const now = new Date();
-      const item = newDeckItem(entry.id, now);
-      return [known ? { ...markAsKnown(item, now), dateAdded: item.dateAdded } : item, ...prev];
-    });
-    setRoute("dashboard");
+    setDeck((prev) =>
+      isInDeck(prev, entry.id) ? prev : [newDeckItem(entry.id, new Date()), ...prev]
+    );
+    setRoute("browse");
   }
 
   // What the scheduler would practice right now — drives the hero's due count.
@@ -252,13 +247,7 @@ export default function App() {
               )}
 
               {route === "browse" && (
-                <Browse
-                  entries={deckEntries}
-                  levels={levels}
-                  tricky={tricky}
-                  onRemove={toggleWord}
-                  onAddWord={() => setRoute("capture")}
-                />
+                <Browse entries={deckEntries} levels={levels} tricky={tricky} onRemove={toggleWord} />
               )}
 
               {route === "settings" && (
@@ -287,13 +276,25 @@ export default function App() {
               )}
 
               {route === "capture" && (
-                <Capture deckIds={deckIds} onSave={saveCapturedWord} onBack={() => setRoute("dashboard")} />
+                <Capture
+                  deckIds={deckIds}
+                  levels={levels}
+                  onSave={saveCapturedWord}
+                  onBack={() => setRoute("dashboard")}
+                />
               )}
             </>
           )}
         </div>
 
-        {showTabs && <TabBar active={activeTab} onChange={(t) => setRoute(t)} />}
+        {showTabs && (
+          <TabBar
+            active={activeTab}
+            onChange={(t) => setRoute(t)}
+            // Adding a word isn't the next thing anyone wants from Settings.
+            onAddWord={activeTab === "settings" ? undefined : () => setRoute("capture")}
+          />
+        )}
       </div>
     </div>
   );

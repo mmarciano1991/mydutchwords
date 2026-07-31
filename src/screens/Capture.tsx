@@ -1,28 +1,32 @@
-/* Capture — "Add a word" flow (product flowchart + Figma 130:232).
-   Type a Dutch word → instant lookup in the bundled dictionary. If it isn't
-   there, after a 300ms typing pause a notice offers the online lookup as a
-   button and spelling suggestions appear for close misses. The online
-   request is abortable and latest-only (useLatestSearch): editing the query
-   cancels it, a spinner shows only when the response is slow, "not found"
-   renders only after a completed empty response, and network failures get
-   their own retry state instead of masquerading as "not found".
-   A found word shows the two treatment choices: save to study, or mark as
-   already known (skips the ramp, straight to Mature). Figma 161:334. */
-import { useMemo, useState } from "react";
+/* Capture — "Add a word" (Figma 252:3612). The search lives in the appbar,
+   and the body renders whichever state the flowchart lands on:
+
+     1. Start           — nothing typed yet
+     2. Suggestions     — no exact match, but close spellings to offer
+     3a. Found          — the word, ready to add
+     3b. Not found      — neither locally nor online
+     3c. Already in deck — the existing row, so the user can see its progress
+
+   Once typing pauses (DEBOUNCE_MS) a miss goes straight to the online
+   dictionary — no extra tap. That request is abortable and latest-only
+   (useLatestSearch): editing cancels it, the spinner shows only when the
+   response is slow, and network failures get a retry instead of
+   masquerading as "not found". */
+import { useEffect, useMemo, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
 import { lookupLocal, suggestWords } from "../lib/wordSources";
 import { lookupWiktionary } from "../lib/wiktionary";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { useLatestSearch } from "../lib/useLatestSearch";
+import { Appbar } from "../components/Appbar";
 import { GenderChip } from "../components/GenderChip";
-import { IconButton } from "../components/IconButton";
+import { MasteryBar } from "../components/MasteryBar";
 import { Notice } from "../components/Notice";
-import { SearchIcon } from "../components/icons";
-import { Check } from "../icons";
+import { WordCard } from "../components/WordCard";
 
 /** No lookups (suggestions or online) below this many characters. */
 const MIN_QUERY = 3;
-/** Typing pause before suggestions/notice appear. */
+/** Typing pause before suggestions and the online lookup kick in. */
 const DEBOUNCE_MS = 300;
 
 function fetchOnline(query: string, signal: AbortSignal) {
@@ -31,12 +35,14 @@ function fetchOnline(query: string, signal: AbortSignal) {
 
 export function Capture({
   deckIds,
+  levels,
   onSave,
   onBack,
 }: {
   deckIds: Set<string>;
-  /** Adds the word to the deck; `known` skips the ramp (straight to Mature). */
-  onSave: (entry: DictionaryEntry, known: boolean) => void;
+  /** Ladder level per deck word id — drives the mastery bar on state 3c. */
+  levels: Map<string, number>;
+  onSave: (entry: DictionaryEntry) => void;
   onBack: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -47,181 +53,144 @@ export function Capture({
   // Live local lookup while typing (a Map get — cheap enough per keystroke).
   const localHit = useMemo(() => (trimmed ? lookupLocal(trimmed) : undefined), [trimmed]);
 
-  // The debounce gate: suggestions, the "not in your dictionary" notice and
-  // the online CTA appear only once typing has paused for DEBOUNCE_MS.
   const debounced = useDebouncedValue(trimmed, DEBOUNCE_MS);
   const settled = debounced === trimmed;
+  const missed = settled && !localHit && trimmed.length >= MIN_QUERY;
 
   // Spelling suggestions are an edit-distance scan over the whole bundled
   // dictionary — too heavy per keystroke, so they compute only once settled.
-  const suggestions = useMemo(
-    () => (settled && !localHit && trimmed.length >= MIN_QUERY ? suggestWords(trimmed) : []),
-    [settled, localHit, trimmed]
-  );
+  const suggestions = useMemo(() => (missed ? suggestWords(trimmed) : []), [missed, trimmed]);
+
+  const { search, reset } = online;
+
+  // A miss with near-matches rests on those (state 2) — a typo is far more
+  // likely than a word the bundled dictionary has never heard of, and it
+  // costs no round-trip. Only a miss with nothing close goes online.
+  const searchable = missed && suggestions.length === 0;
+
+  useEffect(() => {
+    if (searchable) search(trimmed);
+  }, [searchable, trimmed, search]);
 
   function edit(value: string) {
     setQuery(value);
-    online.reset(); // abort any in-flight lookup; spinner disappears at once
-  }
-
-  function searchOnline() {
-    if (localHit || trimmed.length < MIN_QUERY) return;
-    online.search(trimmed);
+    reset(); // abort any in-flight lookup; the spinner disappears at once
   }
 
   // Online state is only trusted when it belongs to the current query.
   const onlineState = online.state;
   const current = "query" in onlineState && onlineState.query === trimmed ? onlineState : null;
 
-  const foundEntry =
+  const entry =
     localHit ?? (current?.status === "success" ? current.data ?? undefined : undefined);
-  const found = foundEntry
-    ? { entry: foundEntry, duplicate: deckIds.has(foundEntry.id) }
-    : null;
+  const inDeck = entry ? deckIds.has(entry.id) : false;
 
   const searching = current?.status === "pending";
-  const notFoundOnline = !localHit && current?.status === "success" && current.data === null;
+  const notFound = !localHit && current?.status === "success" && current.data === null;
   const failed = current?.status === "error";
 
-  // The idle prompt (notice + CTA + suggestions) waits for the debounce to
-  // settle and hides while a request is pending or resolved — no flicker.
-  const showPrompt = settled && !localHit && trimmed.length >= MIN_QUERY && !current;
-
-  const suggestionChips = (list: DictionaryEntry[]) => (
-    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 12 }}>
-      {list.map((s) => (
-        <button key={s.id} className="suggestion-chip" onClick={() => edit(s.dutch)}>
-          {s.dutch}
-        </button>
-      ))}
-    </div>
-  );
+  // State 2: close spellings to offer while nothing definite has resolved.
+  const showSuggestions = !entry && !notFound && !failed && suggestions.length > 0;
+  const hasBody = Boolean(entry || notFound || failed || showSuggestions || searching);
 
   return (
-    <div className="screen pad-top">
-      <div className="topbar">
-        <IconButton action="close" onClick={onBack} aria-label="Back" />
-        <span className="title-serif" style={{ fontSize: 21 }}>Add a word</span>
-      </div>
+    <div className="screen">
+      <Appbar
+        title="Add a word"
+        onBack={onBack}
+        divider={hasBody}
+        search={{
+          value: query,
+          onChange: edit,
+          placeholder: "Search your word",
+          autoFocus: true,
+          // Escape hatch out of state 2: look it up online anyway.
+          onSubmit: () => missed && search(trimmed),
+        }}
+      />
 
-      <div className="screen__body gutter" style={{ paddingTop: 4, paddingBottom: 16 }}>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            searchOnline();
-          }}
-        >
-          <label className="field">
-            <SearchIcon />
-            <input
-              value={query}
-              onChange={(e) => edit(e.target.value)}
-              placeholder="Type a Dutch word…"
-              autoFocus
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              style={{ fontFamily: "var(--font-sans)", fontSize: 16 }}
-            />
-          </label>
-        </form>
-
-        {/* Already in the deck — a neutral fact, so an info notice, not an error. */}
-        {found && found.duplicate && (
-          <div style={{ marginTop: 16 }}>
-            <Notice type="info">You already have this word in Woordkast.</Notice>
-          </div>
-        )}
-
-        {found && (
-          <div className="capture-card" style={found.duplicate ? { opacity: 0.62 } : undefined}>
-            <div style={{ display: "flex", alignItems: "center", gap: 11 }}>
-              <GenderChip gender={found.entry.gender} />
-              <span className="eyebrow">{found.entry.gender ? "noun" : "word"}</span>
+      <div className="screen__body gutter" style={{ paddingTop: 16, paddingBottom: 16 }}>
+        {/* ── 2. Suggestions ── */}
+        {showSuggestions && (
+          <div className="addword__block">
+            <div className="eyebrow">Did you mean</div>
+            <div className="suggestion-row">
+              {suggestions.map((s) => (
+                <button key={s.id} className="btn btn--secondary" onClick={() => edit(s.dutch)}>
+                  {s.dutch}
+                </button>
+              ))}
             </div>
-            <div className="capture-card__word">{found.entry.dutch}</div>
-            <div className="capture-card__gloss">{found.entry.english}</div>
-            {found.entry.example && (
-              <>
-                <div className="capture-card__rule" />
-                <div className="eyebrow">In context</div>
-                <div className="quote">{found.entry.example}</div>
-                <div className="capture-card__example-en">{found.entry.exampleEn}</div>
-              </>
-            )}
-          </div>
-        )}
-
-        {found && !found.duplicate && (
-          <>
-            <div className="eyebrow" style={{ margin: "16px 2px 0" }}>How should we treat it?</div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 11, marginTop: 11 }}>
-              <button className="capture-option capture-option--primary" onClick={() => onSave(found.entry, false)}>
-                <span className="capture-option__icon capture-option__icon--primary">
-                  <svg width="20" height="16" viewBox="0 0 22 18" fill="none">
-                    <path d="M3 5.5A2.5 2.5 0 015.5 3H16l3 3v7A2.5 2.5 0 0116.5 15.5h-11A2.5 2.5 0 013 13V5.5z" stroke="#fff" strokeWidth="1.6" />
-                  </svg>
-                </span>
-                <span className="capture-option__text">
-                  <span className="capture-option__title">Save to study</span>
-                  <span className="capture-option__sub">Starts in New, ramps up with practice</span>
-                </span>
-              </button>
-
-              <button className="capture-option capture-option--known" onClick={() => onSave(found.entry, true)}>
-                <span className="capture-option__icon capture-option__icon--known">
-                  <Check size={20} />
-                </span>
-                <span className="capture-option__text">
-                  <span className="capture-option__title capture-option__title--known">I already know it</span>
-                  <span className="capture-option__sub">Goes straight to Mature · resurfaces rarely</span>
-                </span>
-              </button>
-            </div>
-          </>
-        )}
-
-        {showPrompt && (
-          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
-            <Notice type="caution">
-              &ldquo;{trimmed}&rdquo; isn&rsquo;t in your local dictionary yet.
-            </Notice>
-            <button className="btn btn--primary" onClick={searchOnline}>
-              Add to your dictionary
+            <button className="link-btn" onClick={() => search(trimmed)}>
+              No — look up &ldquo;{trimmed}&rdquo; online
             </button>
-            {suggestions.length > 0 && (
-              <>
-                <div className="eyebrow" style={{ margin: "4px 2px 0" }}>Did you mean</div>
-                {suggestionChips(suggestions)}
-              </>
-            )}
           </div>
         )}
 
         {/* Spinner only for genuinely slow responses (>180ms) — fast ones
             resolve before it ever appears, so there's no flash. */}
         {searching && current.slow && (
-          <p className="muted" role="status" style={{ fontSize: 14, margin: "16px 2px 0" }}>
+          <p className="muted" role="status" style={{ fontSize: 14, margin: "4px 2px" }}>
             Searching the online dictionary…
           </p>
         )}
 
-        {notFoundOnline && (
-          <div style={{ marginTop: 16 }}>
-            <Notice type="caution">
-              We couldn&rsquo;t find &ldquo;{trimmed}&rdquo; online either. Check the spelling
-              {suggestions.length > 0 ? " — or did you mean:" : "."}
-            </Notice>
-            {suggestions.length > 0 && suggestionChips(suggestions)}
+        {/* ── 3a. Found ── */}
+        {entry && !inDeck && (
+          <div className="addword__block">
+            <WordCard entry={entry} />
+            <button className="btn btn--primary" onClick={() => onSave(entry)}>
+              Add to deck
+            </button>
+          </div>
+        )}
+
+        {/* ── 3c. Already in deck ── */}
+        {entry && inDeck && (
+          <div className="addword__block">
+            <div className="wordrow">
+              <div className="wordrow__row">
+                <div className="wordrow__main">
+                  <div className="wordrow__content">
+                    <span className="wordrow__head">
+                      <GenderChip gender={entry.gender} size="sm" />
+                      <span className="wordrow__dutch">{entry.dutch}</span>
+                    </span>
+                    <span className="wordrow__gloss">{entry.english}</span>
+                  </div>
+                </div>
+                <MasteryBar level={levels.get(entry.id) ?? 0} withLabel />
+              </div>
+            </div>
+            <Notice type="info">You already have this word in your deck</Notice>
+          </div>
+        )}
+
+        {/* ── 3b. Not found ── */}
+        {notFound && (
+          <div className="addword__block">
+            <Notice type="caution">We couldn&rsquo;t find &ldquo;{trimmed}&rdquo;</Notice>
+            {suggestions.length > 0 && (
+              <>
+                <div className="eyebrow">Did you mean</div>
+                <div className="suggestion-chips">
+                  {suggestions.map((s) => (
+                    <button key={s.id} className="suggestion-chip" onClick={() => edit(s.dutch)}>
+                      {s.dutch}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         )}
 
         {failed && (
-          <div style={{ marginTop: 16, display: "flex", flexDirection: "column", gap: 12 }}>
+          <div className="addword__block">
             <Notice type="error">
               The online dictionary didn&rsquo;t respond. Check your connection and try again.
             </Notice>
-            <button className="btn btn--secondary" onClick={() => online.search(trimmed)}>
+            <button className="btn btn--secondary" onClick={() => search(trimmed)}>
               Try again
             </button>
           </div>

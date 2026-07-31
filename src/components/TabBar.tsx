@@ -1,14 +1,21 @@
+/* Bottom navigation (Figma 251:3389) — a floating pill holding the three
+   tabs, with an optional FAB beside it that opens the Add-a-word flow. The
+   FAB is switched off on screens where adding a word isn't the next thing
+   the user would want (Settings). */
 import type { ComponentType } from "react";
-import { Book5, Build, Home, type IconProps } from "../icons";
+import { Add, Book5, Build, Home, type IconProps } from "../icons";
 
 export type Tab = "dashboard" | "browse" | "settings";
 
 export function TabBar({
   active,
   onChange,
+  onAddWord,
 }: {
   active: Tab;
   onChange: (t: Tab) => void;
+  /** Omit to hide the FAB. */
+  onAddWord?: () => void;
 }) {
   const item = (tab: Tab, label: string, Icon: ComponentType<IconProps>) => {
     const isActive = active === tab;
@@ -25,10 +32,17 @@ export function TabBar({
   };
 
   return (
-    <nav className="tabbar">
-      {item("dashboard", "Home", Home)}
-      {item("browse", "Deck", Book5)}
-      {item("settings", "Settings", Build)}
-    </nav>
+    <div className="bottomnav">
+      <nav className="bottomnav__pill">
+        {item("dashboard", "Home", Home)}
+        {item("browse", "Deck", Book5)}
+        {item("settings", "Settings", Build)}
+      </nav>
+      {onAddWord && (
+        <button className="fab" onClick={onAddWord} aria-label="Add a word">
+          <Add />
+        </button>
+      )}
+    </div>
   );
 }
