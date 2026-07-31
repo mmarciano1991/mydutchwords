@@ -10,5 +10,6 @@
   --motion-fast: 120ms; /* taps, presses */
   --motion-base: 180ms; /* hover / colour / shadow */
   --motion-nav: 260ms; /* layout changes — the bottom nav growing past the FAB */
+  --motion-expand: 340ms; /* container transform — a screen opening from a button */
   --motion-flip: 480ms; /* flashcard 3D flip */
 }

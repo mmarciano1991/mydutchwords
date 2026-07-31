@@ -18,8 +18,9 @@ export function TabBar({
 }: {
   active: Tab;
   onChange: (t: Tab) => void;
-  /** Omit to hide the FAB. */
-  onAddWord?: () => void;
+  /** Omit to hide the FAB. Receives the button, so the Add-a-word screen
+   *  can expand out of it. */
+  onAddWord?: (origin: HTMLElement) => void;
 }) {
   const item = (tab: Tab, label: string, Icon: ComponentType<IconProps>) => {
     const isActive = active === tab;
@@ -44,7 +45,7 @@ export function TabBar({
       </nav>
       <button
         className={`fab${onAddWord ? "" : " fab--hidden"}`}
-        onClick={onAddWord}
+        onClick={(e) => onAddWord?.(e.currentTarget)}
         aria-label="Add a word"
         aria-hidden={onAddWord ? undefined : true}
         tabIndex={onAddWord ? undefined : -1}

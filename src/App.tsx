@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import { addCustomEntry, resolveEntry } from "./lib/wordSources";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
@@ -13,6 +13,7 @@ import {
   type SessionReport as EngineSessionReport,
   type Word,
 } from "./lib/learningEngine";
+import { expandOriginFrom, type ExpandOrigin } from "./lib/expandOrigin";
 import { streakDays } from "./lib/streak";
 import { useAuth } from "./lib/useAuth";
 import { useCloudSync } from "./lib/useCloudSync";
@@ -46,6 +47,10 @@ export default function App() {
   const [deck, setDeck] = useState<DeckItem[]>(() => loadDeck());
   const [results, setResults] = useState<PracticeResult[]>(() => loadResults());
   const [route, setRoute] = useState<Route>("dashboard");
+
+  // Where the Add-a-word screen should expand from (Material's container
+  // transform). Null when it was opened some other way — then it just appears.
+  const [expandFrom, setExpandFrom] = useState<ExpandOrigin | null>(null);
 
   const [queue, setQueue] = useState<PracticeCard[]>([]);
   // Bumped per begun session so Practice remounts with fresh internal state
@@ -118,6 +123,11 @@ export default function App() {
     if (route === "browse" || route === "settings") return route;
     return "dashboard";
   }, [route]);
+
+  function openCapture(origin: HTMLElement) {
+    setExpandFrom(expandOriginFrom(origin));
+    setRoute("capture");
+  }
 
   function toggleWord(entryId: string) {
     setDeck((prev) =>
@@ -224,6 +234,12 @@ export default function App() {
 
   const showTabs = !locked && !FOCUSED.includes(route);
 
+  // The FAB is the shortcut to Add-a-word — so it's dropped wherever the
+  // screen already puts that action in front of the user (the empty
+  // dashboard's "Add your first word"), and on Settings, where it's moot.
+  const emptyDashboard = route === "dashboard" && deckEntries.length === 0;
+  const showFab = activeTab !== "settings" && !emptyDashboard;
+
   return (
     <div className="app-shell">
       <div className="phone">
@@ -242,7 +258,7 @@ export default function App() {
                   streak={streak}
                   onPractice={startPractice}
                   onPracticeAhead={startPracticeAhead}
-                  onAddWord={() => setRoute("capture")}
+                  onAddWord={openCapture}
                 />
               )}
 
@@ -276,24 +292,32 @@ export default function App() {
               )}
 
               {route === "capture" && (
-                <Capture
-                  deckIds={deckIds}
-                  levels={levels}
-                  onSave={saveCapturedWord}
-                  onBack={() => setRoute("dashboard")}
-                />
+                <div
+                  className={expandFrom ? "screen-expand" : undefined}
+                  style={
+                    expandFrom
+                      ? ({
+                          "--expand-x": `${expandFrom.x}px`,
+                          "--expand-y": `${expandFrom.y}px`,
+                          "--expand-r": `${expandFrom.r}px`,
+                        } as CSSProperties)
+                      : undefined
+                  }
+                >
+                  <Capture
+                    deckIds={deckIds}
+                    levels={levels}
+                    onSave={saveCapturedWord}
+                    onBack={() => setRoute("dashboard")}
+                  />
+                </div>
               )}
             </>
           )}
         </div>
 
         {showTabs && (
-          <TabBar
-            active={activeTab}
-            onChange={(t) => setRoute(t)}
-            // Adding a word isn't the next thing anyone wants from Settings.
-            onAddWord={activeTab === "settings" ? undefined : () => setRoute("capture")}
-          />
+          <TabBar active={activeTab} onChange={(t) => setRoute(t)} onAddWord={showFab ? openCapture : undefined} />
         )}
       </div>
     </div>

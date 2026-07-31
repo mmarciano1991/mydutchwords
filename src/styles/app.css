@@ -133,6 +133,60 @@ input {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── Container transform (Material) — the button's container grows into the
+   screen it opens. The wrapper carries the button's blue and is revealed by
+   a circle expanding from where it was tapped (measured at click time, see
+   lib/expandOrigin); the page then cross-fades in on top of that blue.
+
+   The blue matters: both screens sit on the same cream, so a plain clip
+   reveal would be invisible. Growing the container's colour is what makes
+   the motion legible — and it's what Material actually does.
+
+   Easing is deliberately not the decelerate used elsewhere: that curve is
+   ~40% expanded within a few frames, which skips the growing shape almost
+   entirely. The symmetric curve lets it be seen. ── */
+.screen-expand {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--primary);
+  animation: screen-expand var(--motion-expand) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+/* The page is opaque, so as it fades up it hides the blue beneath — one
+   clean cross-fade rather than two stacked translucent layers. */
+.screen-expand > * {
+  animation: screen-expand-content var(--motion-expand) var(--ease-standard) both;
+}
+
+@keyframes screen-expand {
+  from {
+    clip-path: circle(30px at var(--expand-x) var(--expand-y));
+  }
+  to {
+    clip-path: circle(var(--expand-r) at var(--expand-x) var(--expand-y));
+  }
+}
+@keyframes screen-expand-content {
+  0%,
+  25% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-expand,
+  .screen-expand > * {
+    animation: none;
+  }
+  .screen-expand {
+    background: none;
+  }
+}
+
 .pad-top {
   padding-top: max(54px, env(safe-area-inset-top));
 }

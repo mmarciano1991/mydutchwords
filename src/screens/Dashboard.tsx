@@ -19,7 +19,8 @@ export function Dashboard({
   streak: number;
   onPractice: () => void;
   onPracticeAhead: () => void;
-  onAddWord: () => void;
+  /** Receives the button, so the Add-a-word screen can expand out of it. */
+  onAddWord: (origin: HTMLElement) => void;
 }) {
   // ── Empty deck: invite to build it ──
   if (deckCount === 0) {
@@ -38,7 +39,7 @@ export function Dashboard({
           </p>
         </div>
         <div className="gutter" style={{ paddingBottom: 30 }}>
-          <button className="btn btn--primary" onClick={onAddWord}>
+          <button className="btn btn--primary" onClick={(e) => onAddWord(e.currentTarget)}>
             Add your first word
           </button>
         </div>
