@@ -2,7 +2,8 @@
    Most deck words reference the bundled dictionary; words captured via the
    online lookup (Add a word) don't exist there, so they're stored as custom
    entries in localStorage and resolved from a module cache here. */
-import { DICTIONARY, findEntry } from "../data/dictionary";
+import { DICTIONARY, findEntry, indexOfEntry } from "../data/dictionary";
+import { exampleAt } from "../data/examples";
 import type { DictionaryEntry } from "./types";
 
 const CUSTOM_KEY = "woordkast.customWords";
@@ -23,9 +24,18 @@ function loadCustom(): Map<string, DictionaryEntry> {
 
 const custom = loadCustom();
 
-/** Bundled dictionary first, then user-captured custom words. */
+/** Bundled dictionary first, then user-captured custom words.
+ *
+ *  Bundled entries carry no example sentence of their own — those load
+ *  separately (see data/examples) — so one is attached here if it has
+ *  arrived. Before then the entry reads exactly as a word without one, which
+ *  every screen already handles. Custom (online-captured) words never have
+ *  examples, so they pass straight through. */
 export function resolveEntry(id: string): DictionaryEntry | undefined {
-  return findEntry(id) ?? custom.get(id);
+  const entry = findEntry(id);
+  if (!entry) return custom.get(id);
+  const example = exampleAt(indexOfEntry(id));
+  return example ? { ...entry, ...example } : entry;
 }
 
 function persistCustom(): void {

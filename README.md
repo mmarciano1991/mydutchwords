@@ -20,17 +20,42 @@ picking the words you want to learn.
 
 ## The dictionary
 
-~22,700 Dutch→English words, fully bundled and offline, in two layers:
+14,193 Dutch→English words, fully bundled and offline.
 
-- **Curated core** (`src/data/dictionary.ts`) — ~158 common words hand-authored
-  with `{ dutch, english, gender, example, exampleEn }`, i.e. correct `de/het`
-  gender and a natural example sentence. Add more by appending to that array.
-- **Full base** (`src/data/freedict.generated.ts`) — the rest of the dictionary,
-  generated from the open **FreeDict nld-eng** dataset (CC-BY-SA). These have
-  real English translations but no gender/example. Regenerate with
-  `node scripts/gen-freedict.mjs` (reads the FreeDict TEI).
+### Authoring
 
-`dictionary.ts` merges the two (curated entries win) into one `DICTIONARY`.
+Sources live in `data/` and are **build inputs — never shipped as-is**:
+
+- **`data/curated.ts`** — the hand-authored core: 14,075 words with
+  `{ dutch, english, gender, example, exampleEn }`, i.e. correct `de/het`
+  gender and a natural example sentence. Add words by appending here.
+- **`data/freedict.source.ts`** — the open **FreeDict nld-eng** dataset
+  (CC-BY-SA), translations only. Regenerate with `node scripts/gen-freedict.mjs`
+  (reads the FreeDict TEI).
+
+After editing either, run:
+
+```bash
+npm run dictionary
+```
+
+### What actually ships
+
+That script writes two modules into `src/data/`, and the split is the point:
+
+- **`core.generated.ts`** — every word, gloss and gender. Loaded up front,
+  because search, suggestions and the deck all need the whole list.
+- **`examples.generated.ts`** — the example sentences, ~68% of the data but
+  only ever read one word at a time. Loaded as a **separate chunk** once the
+  app is interactive, which keeps ~370 kB gzip off the critical path. Until it
+  arrives (or if it fails) words simply show without their sentence; nothing
+  blocks on it.
+
+The script also drops the ~9,900 FreeDict entries the curated list already
+covers — they contributed 118 new words for 111 kB gzip — and encodes both
+files as delimited strings rather than object literals, which roughly halves
+the bytes and parses far faster than 14k object literals.
+
 Flashcards work for every word (Dutch ⇄ translation); the example sentence and
 gender chip show only where present (the curated core).
 
