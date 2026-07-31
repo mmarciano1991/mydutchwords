@@ -1,19 +1,18 @@
 import { useMemo, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
+import { Appbar } from "../components/Appbar";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
 import { MasteryBar } from "../components/MasteryBar";
-import { SearchIcon } from "../components/icons";
 
 /* Deck screen — the words the user has added, only. Search filters the deck;
-   the foot button opens the Add-a-word flow. (Browsing the full 14k bundled
-   dictionary is gone: words enter the deck via capture now.) */
+   the FAB in the bottom navigation opens the Add-a-word flow. (Browsing the
+   full 14k bundled dictionary is gone: words enter the deck via capture now.) */
 export function Browse({
   entries,
   levels,
   tricky,
   onRemove,
-  onAddWord,
 }: {
   /** The user's deck words, resolved to dictionary content (newest first). */
   entries: DictionaryEntry[];
@@ -22,7 +21,6 @@ export function Browse({
   /** Deck word ids flagged as leeches (4+ lapses). */
   tricky: Set<string>;
   onRemove: (entryId: string) => void;
-  onAddWord: () => void;
 }) {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -36,29 +34,17 @@ export function Browse({
   }, [query, entries]);
 
   return (
-    <div className="screen pad-top">
-      <div className="gutter" style={{ padding: "4px 22px 12px" }}>
-        <h1 className="title-serif">Your deck</h1>
-        <p className="muted" style={{ fontSize: 13.5, margin: "4px 0 0" }}>
-          {entries.length.toLocaleString()} word{entries.length === 1 ? "" : "s"} · tap a word to see it in context
-        </p>
-        {entries.length > 0 && (
-          <label className="field" style={{ marginTop: 14 }}>
-            <SearchIcon />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search your deck…"
-              autoComplete="off"
-              autoCapitalize="off"
-              spellCheck={false}
-              style={{ fontFamily: "var(--font-sans)", fontSize: 16 }}
-            />
-          </label>
-        )}
-      </div>
+    <div className="screen">
+      <Appbar
+        title="Your deck"
+        search={
+          entries.length > 0
+            ? { value: query, onChange: setQuery, placeholder: "Search Dutch or English…" }
+            : undefined
+        }
+      />
 
-      <div className="screen__body gutter" style={{ paddingBottom: 20 }}>
+      <div className="screen__body gutter" style={{ paddingTop: 14, paddingBottom: 20 }}>
         {entries.length === 0 ? (
           <p className="muted" style={{ fontSize: 15, padding: "30px 4px", textAlign: "center" }}>
             Your deck is empty. Add a word to start.
@@ -120,12 +106,6 @@ export function Browse({
             })}
           </div>
         )}
-      </div>
-
-      <div className="gutter" style={{ padding: "10px 22px 24px" }}>
-        <button className="btn btn--primary" onClick={onAddWord}>
-          Add a new word to deck
-        </button>
       </div>
     </div>
   );

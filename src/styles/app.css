@@ -133,6 +133,60 @@ input {
   -webkit-overflow-scrolling: touch;
 }
 
+/* ── Container transform (Material) — the button's container grows into the
+   screen it opens. The wrapper carries the button's blue and is revealed by
+   a circle expanding from where it was tapped (measured at click time, see
+   lib/expandOrigin); the page then cross-fades in on top of that blue.
+
+   The blue matters: both screens sit on the same cream, so a plain clip
+   reveal would be invisible. Growing the container's colour is what makes
+   the motion legible — and it's what Material actually does.
+
+   Easing is deliberately not the decelerate used elsewhere: that curve is
+   ~40% expanded within a few frames, which skips the growing shape almost
+   entirely. The symmetric curve lets it be seen. ── */
+.screen-expand {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--primary);
+  animation: screen-expand var(--motion-expand) cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+/* The page is opaque, so as it fades up it hides the blue beneath — one
+   clean cross-fade rather than two stacked translucent layers. */
+.screen-expand > * {
+  animation: screen-expand-content var(--motion-expand) var(--ease-standard) both;
+}
+
+@keyframes screen-expand {
+  from {
+    clip-path: circle(30px at var(--expand-x) var(--expand-y));
+  }
+  to {
+    clip-path: circle(var(--expand-r) at var(--expand-x) var(--expand-y));
+  }
+}
+@keyframes screen-expand-content {
+  0%,
+  25% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .screen-expand,
+  .screen-expand > * {
+    animation: none;
+  }
+  .screen-expand {
+    background: none;
+  }
+}
+
 .pad-top {
   padding-top: max(54px, env(safe-area-inset-top));
 }
@@ -447,42 +501,7 @@ input {
   background: rgba(255, 255, 255, 0.22);
 }
 
-/* ── Add-word promo card (Figma 171:491) — "Expand the deck" ── */
-.add-word-card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-5);
-  background: var(--semantic-surface-default);
-  border: 1px solid var(--primary);
-  border-radius: var(--radius-card);
-  padding: 20px 21px;
-}
-.add-word-card__content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-.add-word-card__label {
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--primary);
-}
-.add-word-card__title {
-  margin: 0;
-  font-family: var(--font-serif);
-  font-weight: 600;
-  font-size: var(--size-hero-stat);
-  line-height: 1.1;
-  color: var(--primary);
-}
-.add-word-card__body {
-  margin: 0;
-  font-size: var(--size-body);
-  line-height: 1.55;
-  color: var(--text-muted);
-}
+
 
 /* ── Word rows ── */
 .wordlist {
@@ -889,6 +908,73 @@ input {
   padding: 4px 20px 4px;
 }
 
+/* ── Appbar (Figma 250:2597) — title row plus an optional search field. The
+   search slot only renders when a screen asks for it. ── */
+.appbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  padding-top: max(var(--space-7), env(safe-area-inset-top));
+  background: var(--bg-canvas);
+}
+.appbar--divider {
+  border-bottom: 1px solid var(--border-warm);
+}
+.appbar__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.appbar__title {
+  flex: 1;
+  min-width: 0;
+  text-align: center;
+  font-size: var(--size-hero-stat);
+  line-height: 1.1;
+}
+/* Balances a lone back button so the title stays optically centred. */
+.appbar__spacer {
+  width: 38px;
+  flex-shrink: 0;
+}
+.appbar__search {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  background: var(--surface-card);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-button);
+  padding: var(--space-3) var(--space-4);
+  box-shadow: var(--shadow-field);
+  transition: border-color 0.12s ease;
+}
+.appbar__search--active,
+.appbar__search:focus-within {
+  border-color: var(--primary-border);
+}
+.appbar__search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: var(--size-body);
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.appbar__search input::placeholder {
+  color: var(--text-faint);
+}
+.appbar__clear {
+  flex-shrink: 0;
+  display: flex;
+  border: none;
+  background: transparent;
+  padding: 0;
+  color: var(--primary);
+}
+
 /* ── IconButton (add · close · remove) — default / pressed / success ──
    Merged from the former IconButton + AddButton (Figma node 61:22). */
 .icon-btn {
@@ -981,15 +1067,31 @@ input {
   transition: width 0.25s ease;
 }
 
-/* ── Bottom tab bar ── */
-.tabbar {
+/* ── Bottom navigation (Figma 251:3389) — a floating pill of tabs, with an
+   optional FAB alongside it that opens the Add-a-word flow. ── */
+.bottomnav {
   display: flex;
-  border-top: 1px solid var(--cream-200);
-  background: var(--bg-canvas);
-  padding: 8px 10px max(10px, env(safe-area-inset-bottom));
+  align-items: center;
+  /* No `gap` — the FAB owns its own leading margin, so that space can
+     collapse with it when it hides (see .fab--hidden). */
+  padding: var(--space-5);
+  padding-bottom: max(var(--space-5), env(safe-area-inset-bottom));
+}
+.bottomnav__pill {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  background: var(--surface-card);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-card);
+  padding: var(--space-2) var(--space-6);
 }
 .tab {
   flex: 1;
+  min-width: 56px;
   border: none;
   background: transparent;
   display: flex;
@@ -998,9 +1100,9 @@ input {
   gap: var(--space-1);
   padding: 6px 0;
   color: var(--inactive);
-  font-size: 11px;
+  font-size: var(--size-label);
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: var(--tracking-label);
 }
 .tab svg {
   width: 24px;
@@ -1010,21 +1112,64 @@ input {
   color: var(--primary);
 }
 
-/* ── Floating add button ── */
+/* ── Floating add button ──
+   Width/margin animate so the pill beside it (flex:1) grows and shrinks in
+   step; the icon is clipped rather than squashed while that happens. */
 .fab {
-  position: absolute;
-  right: 20px;
-  bottom: 92px;
+  flex-shrink: 0;
   width: 60px;
   height: 60px;
-  border-radius: var(--radius-fab);
+  /* Zeroed so `width: 0` can actually reach 0 when hidden — border-box
+     clamps width up to the padding sum otherwise. */
+  padding: 0;
+  margin-left: var(--space-2);
+  border-radius: 50%;
   background: var(--primary);
-  color: var(--cream-000);
+  color: var(--on-primary);
   border: none;
   box-shadow: var(--shadow-fab);
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  transition:
+    width var(--motion-nav) var(--ease-standard),
+    margin-left var(--motion-nav) var(--ease-standard),
+    opacity var(--motion-nav) var(--ease-standard),
+    transform var(--motion-nav) var(--ease-emphasized),
+    background var(--motion-base) var(--ease-standard);
+}
+.fab:active {
+  background: var(--primary-press);
+  transform: scale(0.94);
+  transition-duration: var(--motion-fast);
+}
+.fab svg {
+  flex-shrink: 0;
+  transition: transform var(--motion-nav) var(--ease-emphasized);
+}
+
+.fab--hidden {
+  width: 0;
+  margin-left: 0;
+  opacity: 0;
+  transform: scale(0.4);
+  box-shadow: none;
+  pointer-events: none;
+}
+/* The + spins away as it goes, so the exit reads as deliberate. */
+.fab--hidden svg {
+  transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fab,
+  .fab svg {
+    transition: none;
+  }
+  .fab--hidden svg {
+    transform: none;
+  }
 }
 
 .quote {
@@ -1035,9 +1180,8 @@ input {
   line-height: 1.5;
 }
 
-/* ── Capture ("Add a word") — Figma 130:232 + product flowchart ── */
-.capture-card {
-  margin-top: 16px;
+/* ── WordCard — a looked-up word awaiting "Add to deck" (Figma 249:2276) ── */
+.wordcard {
   background: var(--surface-card);
   border: 1px solid var(--border-cool);
   border-radius: var(--radius-card);
@@ -1045,9 +1189,10 @@ input {
   box-shadow: var(--shadow-card);
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 7px;
 }
-.capture-card__word {
+.wordcard__word {
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: 34px;
@@ -1055,91 +1200,45 @@ input {
   color: var(--text-display);
   margin-top: 4px;
 }
-.capture-card__gloss {
+.wordcard__gloss {
   font-size: 18px;
   color: var(--primary);
 }
-.capture-card__rule {
+.wordcard__rule {
   height: 1px;
+  width: 100%;
   background: var(--line-divider);
   margin: 11px 0 4px;
 }
-.capture-card__example-en {
+.wordcard__example-en {
   font-size: var(--size-body-sm);
   color: var(--text-faint);
 }
 
-/* Treatment options — Save to study / I already know it (Figma 161:334) */
-.capture-option {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  width: 100%;
-  text-align: left;
-  padding: 15px 16px;
-  border-radius: var(--radius-button);
-  background: var(--surface-card);
-  border: 1px solid var(--line-warm);
-  transition:
-    background var(--motion-base) var(--ease-standard),
-    transform var(--motion-fast) var(--ease-emphasized);
-}
-.capture-option:active {
-  transform: translateY(1px);
-}
-.capture-option--primary {
-  background: var(--semantic-button-default);
-  border-color: var(--semantic-button-default);
-  box-shadow: var(--shadow-primary);
-}
-.capture-option--primary:active {
-  background: var(--semantic-button-pressed-strong);
-}
-.capture-option--known {
-  border: 1.5px solid var(--success-border);
-}
-.capture-option--known:active {
-  background: var(--semantic-success-success-subdle);
-}
-.capture-option__icon {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--cream-100);
-  color: var(--text-muted);
-}
-.capture-option__icon--primary {
-  background: rgba(255, 255, 255, 0.15);
-}
-.capture-option__icon--known {
-  background: var(--semantic-success-success-subdle);
-  color: var(--semantic-success-onsuccess-strong);
-}
-.capture-option__text {
+/* ── Add-a-word flow states (Figma 252:3612) ── */
+.addword__block {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: var(--space-4);
+}
+.addword__block + .addword__block {
+  margin-top: var(--space-4);
+}
+/* State 2 — full-width choices, sized to share the row evenly. */
+.suggestion-row {
+  display: flex;
+  gap: var(--space-4);
+}
+.suggestion-row .btn {
+  flex: 1;
   min-width: 0;
+  padding: 16px 8px;
 }
-.capture-option__title {
-  font-weight: 700;
-  font-size: 15.5px;
-  color: var(--text-body);
-}
-.capture-option--primary .capture-option__title,
-.capture-option--primary .capture-option__sub {
-  color: var(--on-primary);
-}
-.capture-option__title--known {
-  color: var(--semantic-success-onsuccess-strong);
-}
-.capture-option__sub {
-  font-size: 12.5px;
-  color: var(--text-faint);
+/* State 3b — the same words, offered more quietly beneath a "not found". */
+.suggestion-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
 }
 
 /* Grade feedback toast — transient "Next review in N days" after answering.

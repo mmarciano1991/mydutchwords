@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import { addCustomEntry, resolveEntry } from "./lib/wordSources";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
@@ -8,12 +8,12 @@ import {
   buildSession,
   buildSessionReport,
   isLeech,
-  markAsKnown,
   SESSION_CAP,
   type ReviewedCard,
   type SessionReport as EngineSessionReport,
   type Word,
 } from "./lib/learningEngine";
+import { expandOriginFrom, type ExpandOrigin } from "./lib/expandOrigin";
 import { streakDays } from "./lib/streak";
 import { useAuth } from "./lib/useAuth";
 import { useCloudSync } from "./lib/useCloudSync";
@@ -47,6 +47,10 @@ export default function App() {
   const [deck, setDeck] = useState<DeckItem[]>(() => loadDeck());
   const [results, setResults] = useState<PracticeResult[]>(() => loadResults());
   const [route, setRoute] = useState<Route>("dashboard");
+
+  // Where the Add-a-word screen should expand from (Material's container
+  // transform). Null when it was opened some other way — then it just appears.
+  const [expandFrom, setExpandFrom] = useState<ExpandOrigin | null>(null);
 
   const [queue, setQueue] = useState<PracticeCard[]>([]);
   // Bumped per begun session so Practice remounts with fresh internal state
@@ -120,6 +124,11 @@ export default function App() {
     return "dashboard";
   }, [route]);
 
+  function openCapture(origin: HTMLElement) {
+    setExpandFrom(expandOriginFrom(origin));
+    setRoute("capture");
+  }
+
   function toggleWord(entryId: string) {
     setDeck((prev) =>
       isInDeck(prev, entryId)
@@ -129,17 +138,13 @@ export default function App() {
   }
 
   /** Save from the capture flow. Words from the online lookup aren't in the
-   *  bundled dictionary, so they're persisted as custom entries first.
-   *  `known` skips the ramp: straight to Mature (flowchart's "Already know it"). */
-  function saveCapturedWord(entry: DictionaryEntry, known: boolean) {
+   *  bundled dictionary, so they're persisted as custom entries first. */
+  function saveCapturedWord(entry: DictionaryEntry) {
     addCustomEntry(entry);
-    setDeck((prev) => {
-      if (isInDeck(prev, entry.id)) return prev;
-      const now = new Date();
-      const item = newDeckItem(entry.id, now);
-      return [known ? { ...markAsKnown(item, now), dateAdded: item.dateAdded } : item, ...prev];
-    });
-    setRoute("dashboard");
+    setDeck((prev) =>
+      isInDeck(prev, entry.id) ? prev : [newDeckItem(entry.id, new Date()), ...prev]
+    );
+    setRoute("browse");
   }
 
   // What the scheduler would practice right now — drives the hero's due count.
@@ -229,6 +234,12 @@ export default function App() {
 
   const showTabs = !locked && !FOCUSED.includes(route);
 
+  // The FAB is the shortcut to Add-a-word — so it's dropped wherever the
+  // screen already puts that action in front of the user (the empty
+  // dashboard's "Add your first word"), and on Settings, where it's moot.
+  const emptyDashboard = route === "dashboard" && deckEntries.length === 0;
+  const showFab = activeTab !== "settings" && !emptyDashboard;
+
   return (
     <div className="app-shell">
       <div className="phone">
@@ -247,18 +258,12 @@ export default function App() {
                   streak={streak}
                   onPractice={startPractice}
                   onPracticeAhead={startPracticeAhead}
-                  onAddWord={() => setRoute("capture")}
+                  onAddWord={openCapture}
                 />
               )}
 
               {route === "browse" && (
-                <Browse
-                  entries={deckEntries}
-                  levels={levels}
-                  tricky={tricky}
-                  onRemove={toggleWord}
-                  onAddWord={() => setRoute("capture")}
-                />
+                <Browse entries={deckEntries} levels={levels} tricky={tricky} onRemove={toggleWord} />
               )}
 
               {route === "settings" && (
@@ -287,13 +292,33 @@ export default function App() {
               )}
 
               {route === "capture" && (
-                <Capture deckIds={deckIds} onSave={saveCapturedWord} onBack={() => setRoute("dashboard")} />
+                <div
+                  className={expandFrom ? "screen-expand" : undefined}
+                  style={
+                    expandFrom
+                      ? ({
+                          "--expand-x": `${expandFrom.x}px`,
+                          "--expand-y": `${expandFrom.y}px`,
+                          "--expand-r": `${expandFrom.r}px`,
+                        } as CSSProperties)
+                      : undefined
+                  }
+                >
+                  <Capture
+                    deckIds={deckIds}
+                    levels={levels}
+                    onSave={saveCapturedWord}
+                    onBack={() => setRoute("dashboard")}
+                  />
+                </div>
               )}
             </>
           )}
         </div>
 
-        {showTabs && <TabBar active={activeTab} onChange={(t) => setRoute(t)} />}
+        {showTabs && (
+          <TabBar active={activeTab} onChange={(t) => setRoute(t)} onAddWord={showFab ? openCapture : undefined} />
+        )}
       </div>
     </div>
   );
