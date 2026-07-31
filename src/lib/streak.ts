@@ -8,23 +8,28 @@ function dayKey(d: Date): string {
   return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 }
 
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+/** Steps one calendar day back, in place. Not `-24h`: clock days are 23 or
+ *  25 hours long across a DST change, which landed the cursor back on the
+ *  same day (counting it twice) or skipped one (ending the streak early). */
+function stepBackOneDay(d: Date): void {
+  d.setDate(d.getDate() - 1);
+}
 
 export function streakDays(results: { timestamp: number }[], now: Date): number {
   if (results.length === 0) return 0;
   const days = new Set(results.map((r) => dayKey(new Date(r.timestamp))));
 
   // Anchor on today, or yesterday if today hasn't been practiced yet.
-  let cursor = new Date(now);
+  const cursor = new Date(now);
   if (!days.has(dayKey(cursor))) {
-    cursor = new Date(cursor.getTime() - MS_PER_DAY);
+    stepBackOneDay(cursor);
     if (!days.has(dayKey(cursor))) return 0;
   }
 
   let streak = 0;
   while (days.has(dayKey(cursor))) {
     streak++;
-    cursor = new Date(cursor.getTime() - MS_PER_DAY);
+    stepBackOneDay(cursor);
   }
   return streak;
 }

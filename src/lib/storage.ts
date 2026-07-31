@@ -19,20 +19,27 @@ export function newDeckItem(entryId: string, now: Date): DeckItem {
   };
 }
 
+/** Falls back on unreadable or corrupt data — a bad entry shouldn't stop the
+ *  app booting — but says so, since silently starting from scratch looks
+ *  identical to losing the user's deck. */
 function read<T>(key: string, fallback: T): T {
   try {
     const raw = localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
-  } catch {
+  } catch (err) {
+    console.warn(`[woordkast] could not read "${key}" — using defaults`, err);
     return fallback;
   }
 }
 
+/** Writes fail on a full quota or in private mode. Nothing here can recover,
+ *  but the failure is logged rather than swallowed: without it, progress
+ *  stops persisting with no signal anywhere. */
 function write(key: string, value: unknown): void {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    /* storage unavailable (private mode) — fail quietly for this demo slice */
+  } catch (err) {
+    console.warn(`[woordkast] could not save "${key}" — changes stay in memory`, err);
   }
 }
 

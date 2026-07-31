@@ -22,10 +22,15 @@ interface WiktionaryUsage {
   definitions: WiktionaryDefinition[];
 }
 
+/** Plain text from a definition's markup.
+ *
+ *  Parsed through DOMParser, which produces an inert document: no scripts
+ *  run and no subresources are fetched. Assigning this third-party HTML to
+ *  `innerHTML` — even on a detached node, as this used to — still fires
+ *  handlers like `<img onerror>`. */
 function stripHtml(html: string): string {
-  const el = document.createElement("div");
-  el.innerHTML = html;
-  return (el.textContent ?? "").replace(/\s+/g, " ").trim();
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
 export async function lookupWiktionary(
@@ -47,13 +52,20 @@ export async function lookupWiktionary(
     );
     if (res.status === 404) return null; // page doesn't exist — a real "not found"
     if (!res.ok) throw new Error(`Wiktionary responded ${res.status}`);
-    const data = (await res.json()) as Record<string, WiktionaryUsage[]>;
-    const dutch = data.nl?.filter((u) => u.language === "Dutch");
-    if (!dutch || dutch.length === 0) return null;
+    const data = (await res.json()) as Record<string, WiktionaryUsage[]> | null;
+    // Shape is validated rather than trusted: this is a third-party payload,
+    // and a TypeError here would be reported to the user as a failed request
+    // ("check your connection") when the request in fact succeeded.
+    const usages = data?.nl;
+    if (!Array.isArray(usages)) return null;
+    const dutch = usages.filter((u) => u?.language === "Dutch");
+    if (dutch.length === 0) return null;
 
     // First usable gloss across the Dutch part-of-speech sections.
     for (const usage of dutch) {
+      if (!Array.isArray(usage.definitions)) continue;
       for (const def of usage.definitions) {
+        if (typeof def?.definition !== "string") continue;
         const english = stripHtml(def.definition);
         if (english) {
           return {
