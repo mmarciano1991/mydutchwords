@@ -27,6 +27,7 @@ import { SessionReport } from "./screens/SessionReport";
 import { Capture } from "./screens/Capture";
 import { Settings } from "./screens/Settings";
 import { Auth } from "./screens/Auth";
+import { Welcome } from "./screens/Welcome";
 import { TabBar, type Tab } from "./components/TabBar";
 
 type Route = Tab | "practice" | "report" | "capture";
@@ -47,6 +48,13 @@ export default function App() {
   const [deck, setDeck] = useState<DeckItem[]>(() => loadDeck());
   const [results, setResults] = useState<PracticeResult[]>(() => loadResults());
   const [route, setRoute] = useState<Route>("dashboard");
+
+  // Access gate flow (Figma 228:1789): a signed-out visitor lands on the
+  // Welcome choice screen first, then Auth in whichever mode they picked.
+  // Signing out skips straight back to "signin" (see handleSignOut) rather
+  // than replaying Welcome.
+  const [authStep, setAuthStep] = useState<"welcome" | "auth">("welcome");
+  const [authMode, setAuthMode] = useState<"signin" | "signup">("signin");
 
   // Where the Add-a-word screen should expand from (Material's container
   // transform). Null when it was opened some other way — then it just appears.
@@ -111,6 +119,10 @@ export default function App() {
     setDeck([]);
     setResults([]);
     setCustomEntries([]);
+    // Straight back to sign-in, not Welcome — this visitor already knows
+    // the app.
+    setAuthMode("signin");
+    setAuthStep("auth");
   }
 
   // Resolve the deck (newest first) into full dictionary entries. Recomputed
@@ -259,7 +271,20 @@ export default function App() {
           {configured && !ready ? null : locked ? (
             // The boot splash (main.tsx) covers this in practice — Supabase's
             // local-storage session read resolves well within its hold time.
-            <Auth />
+            authStep === "welcome" ? (
+              <Welcome
+                onSignIn={() => {
+                  setAuthMode("signup");
+                  setAuthStep("auth");
+                }}
+                onLogIn={() => {
+                  setAuthMode("signin");
+                  setAuthStep("auth");
+                }}
+              />
+            ) : (
+              <Auth initialMode={authMode} onBack={() => setAuthStep("welcome")} />
+            )
           ) : (
             <>
               {route === "dashboard" && (
