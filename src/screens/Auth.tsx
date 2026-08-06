@@ -1,11 +1,13 @@
 /* Auth — the account screen: email + password (sign in / create account),
-   and "Continue with Google". The app is a hard gate behind this screen
-   (App.tsx renders it in place of everything else while signed out), so
-   there's no back/close affordance — signing in is the only way through.
-   On success the session change (watched in App) navigates away; sign-up
-   may instead ask the user to confirm by email. */
+   and "Continue with Google" (Figma 228:1789, "Sign-in" / "Log-in" frames).
+   The app is a hard gate behind this screen (App.tsx renders it in place of
+   everything else while signed out); `onBack`, when given, returns to the
+   Welcome choice screen rather than closing the gate. On success the
+   session change (watched in App) navigates away; sign-up may instead ask
+   the user to confirm by email. */
 import { useState } from "react";
 import { signInEmail, signInWithGoogle, signUpEmail } from "../lib/auth";
+import { Appbar } from "../components/Appbar";
 import { Notice } from "../components/Notice";
 
 function GoogleGlyph() {
@@ -21,8 +23,8 @@ function GoogleGlyph() {
 
 type Mode = "signin" | "signup";
 
-export function Auth() {
-  const [mode, setMode] = useState<Mode>("signin");
+export function Auth({ initialMode = "signin", onBack }: { initialMode?: Mode; onBack?: () => void }) {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -59,12 +61,8 @@ export function Auth() {
   }
 
   return (
-    <div className="screen pad-top">
-      <div className="topbar">
-        <span className="title-serif" style={{ fontSize: 21 }}>
-          {isSignup ? "Create account" : "Sign in"}
-        </span>
-      </div>
+    <div className="screen">
+      <Appbar title={isSignup ? "Create account" : "Sign in"} onBack={onBack} />
 
       <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
         <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "0 2px 18px" }}>
