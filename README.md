@@ -74,6 +74,14 @@ The `Deploy to Hostinger (Manual)` GitHub Action builds the app and uploads
 `dist/` to `/public_html/mydutchwords/` over FTPS. Trigger it from the Actions
 tab. Vite is configured with `base: "./"` so it works from that subfolder.
 
+## Docs
+
+- [`docs/auth-setup.md`](docs/auth-setup.md) — optional accounts and cloud
+  sync via Supabase.
+- [`docs/pilot-survey.md`](docs/pilot-survey.md) — running a timed user test:
+  querying which words each tester is learning, and building a survey from the
+  ones the app calls mastered.
+
 ## Out of scope
 
 Spaced-repetition scheduling, audio pronunciation, photo/OCR capture, tags, and
