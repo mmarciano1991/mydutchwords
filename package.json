@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "tokens": "node scripts/build-tokens.mjs",
     "test": "vitest run",
-    "dictionary": "node scripts/gen-dictionary.mjs"
+    "dictionary": "node scripts/gen-dictionary.mjs",
+    "survey": "node scripts/survey-words.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",
