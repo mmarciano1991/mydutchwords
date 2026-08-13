@@ -14,7 +14,15 @@ export interface PracticeCard {
    at the end of the session so the user retries it minutes later, until it's
    answered correctly — capped at MAX_RECYCLES retries per card so a stubborn
    word can't trap the session. Every attempt applies a real grade (miss −1 /
-   know +1), so a miss-then-recover nets out at the original level. */
+   know +1), so a miss-then-recover nets out at the original level.
+
+   The header therefore reports words finished out of words in the session,
+   never cards seen out of cards queued: a re-queued card used to raise both
+   halves of the count, so missing one read as "the session just got longer",
+   which is a punishment the design never intended. Now the denominator is
+   fixed at the session's distinct words and the bar advances only when a
+   word is done with, so a miss holds the bar still — that word isn't
+   finished yet, and the card's "One more try" says why it's back. */
 const MAX_RECYCLES = 2;
 
 /** Per-word outcome across attempts: first-attempt grade decides the report's
@@ -39,6 +47,12 @@ export function Practice({
   const [queue, setQueue] = useState<PracticeCard[]>(initialQueue);
   const [index, setIndex] = useState(0);
   const [flipped, setFlipped] = useState(false);
+  // Progress counts distinct words, not cards shown, so the target is fixed
+  // for the session's whole life: retries are extra attempts at a word you
+  // already have, never extra work. `total` is read once — the queue itself
+  // grows as cards recycle, which is exactly what it must not track.
+  const [total] = useState(initialQueue.length);
+  const [finished, setFinished] = useState(0);
   // Transient per-answer feedback ("Next review in 3 days"), keyed so the
   // fade animation restarts on every grade; cleared by timer (JS, not CSS,
   // so it also disappears under prefers-reduced-motion).
@@ -66,6 +80,12 @@ export function Practice({
       recycles.current.set(word.id, (recycles.current.get(word.id) ?? 0) + 1);
       nextQueue = [...queue, { entry, word: updated }];
       setQueue(nextQueue);
+    } else {
+      // The word is done with — known, or out of retries — so it leaves the
+      // queue and the bar moves. A miss that comes back around leaves the bar
+      // where it is: that word simply isn't finished yet. Each word can reach
+      // here only once, so this counts distinct words.
+      setFinished((n) => n + 1);
     }
 
     // Make the schedule legible: say when this word comes back.
@@ -91,17 +111,24 @@ export function Practice({
     setFlipped(false);
   }
 
-  const progress = (index / queue.length) * 100;
+  const progress = (finished / total) * 100;
 
   return (
     <div className="screen pad-top">
       <div className="topbar">
         <IconButton action="close" onClick={onClose} aria-label="Close practice" />
-        <div className="progress">
+        <div
+          className="progress"
+          role="progressbar"
+          aria-valuenow={finished}
+          aria-valuemin={0}
+          aria-valuemax={total}
+          aria-valuetext={`${finished} of ${total} words done`}
+        >
           <div className="progress__fill" style={{ width: `${progress}%` }} />
         </div>
         <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)" }}>
-          {index + 1}/{queue.length}
+          {finished}/{total}
         </span>
       </div>
 
