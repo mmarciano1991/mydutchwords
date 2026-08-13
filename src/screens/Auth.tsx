@@ -10,7 +10,13 @@
    session change (watched in App) navigates away; sign-up may instead ask
    the user to confirm by email. */
 import { useState } from "react";
-import { signInEmail, signInWithGoogle, signUpEmail } from "../lib/auth";
+import {
+  resendConfirmation,
+  sendPasswordReset,
+  signInEmail,
+  signInWithGoogle,
+  signUpEmail,
+} from "../lib/auth";
 import { Appbar } from "../components/Appbar";
 import { Notice } from "../components/Notice";
 
@@ -25,14 +31,23 @@ function GoogleGlyph() {
   );
 }
 
-type Mode = "signin" | "signup";
+type Mode = "signin" | "signup" | "reset";
+/** Which email we're waiting on, if any — the screen becomes that step. */
+type Sent = "confirm" | "reset";
 
-export function Auth({ initialMode = "signin", onBack }: { initialMode?: Mode; onBack?: () => void }) {
+export function Auth({
+  initialMode = "signin",
+  onBack,
+}: {
+  initialMode?: Exclude<Mode, "reset">;
+  onBack?: () => void;
+}) {
   const [mode, setMode] = useState<Mode>(initialMode);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [confirmSent, setConfirmSent] = useState(false);
+  const [sent, setSent] = useState<Sent | null>(null);
+  const [resent, setResent] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const isSignup = mode === "signup";
@@ -42,15 +57,25 @@ export function Auth({ initialMode = "signin", onBack }: { initialMode?: Mode; o
     if (busy) return;
     setError(null);
     setBusy(true);
+    const address = email.trim();
+
+    if (mode === "reset") {
+      const res = await sendPasswordReset(address);
+      setBusy(false);
+      if (res.error) return setError(res.error);
+      setSent("reset");
+      return;
+    }
+
     const action = isSignup ? signUpEmail : signInEmail;
-    const res = await action(email.trim(), password);
+    const res = await action(address, password);
     setBusy(false);
     if (res.error) {
       setError(res.error);
       return;
     }
-    if (res.needsConfirmation) setConfirmSent(true);
-    // On a real sign-in the session change (watched in App) leaves this screen.
+    if (res.needsConfirmation) setSent("confirm");
+    // On a real log-in the session change (watched in App) leaves this screen.
   }
 
   async function google() {
@@ -64,6 +89,118 @@ export function Auth({ initialMode = "signin", onBack }: { initialMode?: Mode; o
     // On success the browser redirects to Google, so no further UI here.
   }
 
+  async function resend() {
+    setError(null);
+    setBusy(true);
+    const res = await resendConfirmation(email.trim());
+    setBusy(false);
+    if (res.error) return setError(res.error);
+    setResent(true);
+  }
+
+  /** Every branch of this screen ends here rather than at a dead stop: the
+   *  waiting-for-email steps and the reset form all offer the way back. */
+  function backToLogin() {
+    setMode("signin");
+    setSent(null);
+    setResent(false);
+    setPassword("");
+    setError(null);
+  }
+
+  // ── Waiting on an email ── its own step, with something to do while you
+  // wait. Previously the confirmation replaced the form with a notice and no
+  // action at all, mid-way through creating an account.
+  if (sent) {
+    return (
+      <div className="screen">
+        <Appbar title="Check your email" onBack={backToLogin} />
+        <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
+          <Notice type="success">
+            {sent === "confirm"
+              ? `We've sent a confirmation link to ${email || "your inbox"}. Open it, then come back here and log in.`
+              : `We've sent a link to ${email || "your inbox"}. Open it to set a new password.`}
+          </Notice>
+
+          {error && (
+            <div style={{ marginTop: 14 }}>
+              <Notice type="error">{error}</Notice>
+            </div>
+          )}
+
+          {sent === "confirm" && (
+            <>
+              <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "18px 2px" }}>
+                Nothing after a minute or two? Check your spam folder, or send it again.
+              </p>
+              <button className="btn btn--secondary" onClick={resend} disabled={busy || resent}>
+                {busy ? "One moment…" : resent ? "Sent again" : "Send it again"}
+              </button>
+            </>
+          )}
+
+          <button
+            className="link-btn"
+            style={{ margin: "22px auto 0", display: "block" }}
+            onClick={backToLogin}
+          >
+            Back to log in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Forgot your password ── email only; the new password is set back in
+  // the app, after the link (see NewPassword).
+  if (mode === "reset") {
+    return (
+      <div className="screen">
+        <Appbar title="Reset your password" onBack={backToLogin} />
+        <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
+          <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "0 2px 18px" }}>
+            Enter the email you signed up with and we&rsquo;ll send you a link to set a new
+            password.
+          </p>
+
+          {error && (
+            <div style={{ marginBottom: 14 }}>
+              <Notice type="error">{error}</Notice>
+            </div>
+          )}
+
+          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <label className="auth-field">
+              <span className="auth-field__label">Email</span>
+              <input
+                className="text-input"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                autoComplete="email"
+                autoCapitalize="off"
+                spellCheck={false}
+                required
+              />
+            </label>
+            <button className="btn btn--primary" type="submit" disabled={busy} style={{ marginTop: 4 }}>
+              {busy ? "One moment…" : "Send reset link"}
+            </button>
+          </form>
+
+          <button
+            className="link-btn"
+            style={{ margin: "22px auto 0", display: "block" }}
+            onClick={backToLogin}
+          >
+            Back to log in
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="screen">
       <Appbar title={isSignup ? "Create an account" : "Log in"} onBack={onBack} />
@@ -75,72 +212,77 @@ export function Auth({ initialMode = "signin", onBack }: { initialMode?: Mode; o
             : "Log in to sync your deck and progress across devices."}
         </p>
 
-        {confirmSent ? (
-          <Notice type="success">
-            Almost there — check {email || "your inbox"} for a confirmation link, then log in.
-          </Notice>
-        ) : (
-          <>
-            {error && (
-              <div style={{ marginBottom: 14 }}>
-                <Notice type="error">{error}</Notice>
-              </div>
-            )}
-
-            <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              <label className="auth-field">
-                <span className="auth-field__label">Email</span>
-                <input
-                  className="text-input"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  autoComplete="email"
-                  autoCapitalize="off"
-                  spellCheck={false}
-                  required
-                />
-              </label>
-              <label className="auth-field">
-                <span className="auth-field__label">Password</span>
-                <input
-                  className="text-input"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder={isSignup ? "At least 6 characters" : "Your password"}
-                  autoComplete={isSignup ? "new-password" : "current-password"}
-                  minLength={6}
-                  required
-                />
-              </label>
-              <button className="btn btn--primary" type="submit" disabled={busy} style={{ marginTop: 4 }}>
-                {busy ? "One moment…" : isSignup ? "Create account" : "Log in"}
-              </button>
-            </form>
-
-            <div className="auth-divider">
-              <span>or</span>
-            </div>
-
-            <button className="btn btn--secondary" onClick={google} disabled={busy}>
-              <GoogleGlyph />
-              Continue with Google
-            </button>
-
-            <button
-              className="link-btn"
-              style={{ margin: "20px auto 0", display: "block" }}
-              onClick={() => {
-                setMode(isSignup ? "signin" : "signup");
-                setError(null);
-              }}
-            >
-              {isSignup ? "Already have an account? Log in" : "New here? Create an account"}
-            </button>
-          </>
+        {error && (
+          <div style={{ marginBottom: 14 }}>
+            <Notice type="error">{error}</Notice>
+          </div>
         )}
+
+        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <label className="auth-field">
+            <span className="auth-field__label">Email</span>
+            <input
+              className="text-input"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              autoComplete="email"
+              autoCapitalize="off"
+              spellCheck={false}
+              required
+            />
+          </label>
+          <label className="auth-field">
+            <span className="auth-field__label">Password</span>
+            <input
+              className="text-input"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder={isSignup ? "At least 6 characters" : "Your password"}
+              autoComplete={isSignup ? "new-password" : "current-password"}
+              minLength={6}
+              required
+            />
+          </label>
+          <button className="btn btn--primary" type="submit" disabled={busy} style={{ marginTop: 4 }}>
+            {busy ? "One moment…" : isSignup ? "Create account" : "Log in"}
+          </button>
+        </form>
+
+        {!isSignup && (
+          <button
+            className="link-btn"
+            style={{ margin: "14px auto 0", display: "block" }}
+            onClick={() => {
+              setMode("reset");
+              setError(null);
+            }}
+          >
+            Forgot your password?
+          </button>
+        )}
+
+        <div className="auth-divider">
+          <span>or</span>
+        </div>
+
+        <button className="btn btn--secondary" onClick={google} disabled={busy}>
+          <GoogleGlyph />
+          Continue with Google
+        </button>
+
+        <button
+          className="link-btn"
+          style={{ margin: "20px auto 0", display: "block" }}
+          onClick={() => {
+            setMode(isSignup ? "signin" : "signup");
+            setError(null);
+          }}
+        >
+          {isSignup ? "Already have an account? Log in" : "New here? Create an account"}
+        </button>
       </div>
     </div>
   );

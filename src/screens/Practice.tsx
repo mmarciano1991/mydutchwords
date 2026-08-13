@@ -35,12 +35,17 @@ interface Outcome {
 export function Practice({
   queue: initialQueue,
   scheduling = true,
+  onGrade,
   onFinish,
   onClose,
 }: {
   queue: PracticeCard[];
   /** false = warm-up (ahead-of-schedule): answers are not graded into the ladder. */
   scheduling?: boolean;
+  /** Fired for every graded answer, as it's given, so nothing depends on the
+   *  session being finished. Not called in warm-up: those answers are
+   *  deliberately not written anywhere. */
+  onGrade?: (card: ReviewedCard) => void;
   onFinish: (reviewedCards: ReviewedCard[]) => void;
   onClose: () => void;
 }) {
@@ -67,6 +72,11 @@ export function Practice({
 
   function grade(g: Grade) {
     const updated = scheduling ? applyGrade(word, g, new Date()) : word;
+
+    // Hand the answer up now rather than at onFinish. The session can end in
+    // ways that never reach onFinish — the close button, a backgrounded tab
+    // the OS reclaims — and an answer the user gave is not the app's to lose.
+    if (scheduling) onGrade?.({ word: updated, grade: g });
 
     const existing = outcomes.current.get(word.id);
     outcomes.current.set(word.id, {

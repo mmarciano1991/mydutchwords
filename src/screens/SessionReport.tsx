@@ -2,8 +2,12 @@
    (Figma node 133:245). Missed words were already retried in-session (see
    Practice) and rescheduled sooner by the ladder; from here the user can
    move on to the next batch and/or drill the missed words again right now.
-   The footer adapts to what's actually left: both actions, just one, or —
-   once the deck is fully caught up — a way back to the dashboard. */
+   The footer adapts to what's actually left, but leaving is always offered:
+   it demotes to a link while there's a batch to continue or missed words to
+   drill, and is the primary action once neither is. Without it, a session
+   that ended with missed words and no next batch could only offer "Review
+   missed words" — and this screen carries no tab bar and no close, so
+   answering honestly rebuilt the same screen with the same single button. */
 import { isLeech, type SessionReport as EngineSessionReport } from "../lib/learningEngine";
 import { resolveEntry } from "../lib/wordSources";
 import { Badge } from "../components/Badge";
@@ -120,7 +124,15 @@ export function SessionReport({
             Review missed words
           </button>
         )}
-        {!hasNext && !hasReview && (
+        {hasNext || hasReview ? (
+          <button
+            className="link-btn"
+            style={{ margin: "5px auto 0", display: "block" }}
+            onClick={onBackToDashboard}
+          >
+            Back to dashboard
+          </button>
+        ) : (
           <button className="btn btn--primary" onClick={onBackToDashboard}>
             Back to dashboard
           </button>

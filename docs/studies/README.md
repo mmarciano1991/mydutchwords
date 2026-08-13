@@ -76,6 +76,17 @@ The script is revised by each run and inherited by the next. The version in
 force is the "Revised task script" section of the **most recent** run — start
 there, not from run 01.
 
+Two things every version of it must carry:
+
+- **Woordkast is a web page, not an installed app.** Participants open a URL
+  in their phone browser; there is nothing in an app store and nothing to
+  install. A script that calls it "the app" without handing over the URL has
+  skipped a step the participant cannot guess. (They may add it to their home
+  screen if they like — optional, and not part of any task.)
+- **The account is made before task 1**, in the facilitator pre-step,
+  including any email confirmation. Otherwise the first task measures
+  sign-up.
+
 ### Out of scope, every run
 
 No completion rate, no timing, no usability or satisfaction judgement. Those
