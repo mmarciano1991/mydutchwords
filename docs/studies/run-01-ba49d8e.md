@@ -237,7 +237,12 @@ Status only. The findings above describe build `ba49d8e` and are not edited.
 | Deck empty state doesn't teach the + button | Fixed — "Your deck is empty. Tap + to look up a word and add it here." | `7ca3175` |
 | Practice counter grows on a miss (2/4 → 3/5) | Fixed — progress counts words finished out of the session's distinct words; a miss holds the bar still | `c5b3d62` |
 
-Everything else stands. Still open as of run 02: no route from reading into
-the app, no photo capture, silent wrong senses, inflected-form lookup, the
-summary-screen loop, silent discard on closing a session, no password
-recovery, and the email-confirmation interruption.
+| The summary screen loops when a session leaves missed words | Fixed — "Back to dashboard" is always offered | `43a1fdd` |
+| Closing a session discards its grades silently | Fixed — answers are written as they're given | `43a1fdd` |
+| Email confirmation isn't in the script | Fixed both ways — it's a step in the app now ("Check your email", with resend), and the pre-step covers it | `43a1fdd` |
+| No password recovery | Fixed — "Forgot your password?" sends a link, which lands on "Set a new password" | `43a1fdd` |
+| The script called the app a "mobile app" | Fixed in the run protocol — scripts must hand over a URL and say there's nothing to install | `43a1fdd` |
+
+Everything else stands. Still open as of run 03: no route from reading into
+the app, no photo capture, silent wrong senses, inflected-form lookup,
+pre-flip grading, and no "add another".

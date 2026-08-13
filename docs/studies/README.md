@@ -15,6 +15,7 @@ means two things. Real friction is measured with real people.
 | --- | --- | --- | --- |
 | [01](./run-01-ba49d8e.md) | `ba49d8e` | 2026-08-13 | T1 completes with heavy friction · T2 has no path · T3 loops at the exit |
 | [02](./run-02-c5b3d62.md) | `c5b3d62` | 2026-08-13 | Entry and practice copy repaired · T2 still has no path · T3 still loops at the exit |
+| [03](./run-03-43a1fdd.md) | `43a1fdd` | 2026-08-13 | T3 completable in every direction · account dead-ends closed · T2 still has no path · T1 blocked on words, not buttons |
 
 ## The convention
 
