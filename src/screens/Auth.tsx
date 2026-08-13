@@ -71,7 +71,7 @@ export function Auth({ initialMode = "signin", onBack }: { initialMode?: Mode; o
       <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
         <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "0 2px 18px" }}>
           {isSignup
-            ? "Create a profile to save your deck and progress across devices."
+            ? "Create an account to save your deck and progress across devices."
             : "Log in to sync your deck and progress across devices."}
         </p>
 

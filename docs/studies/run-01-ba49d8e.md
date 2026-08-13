@@ -1,12 +1,16 @@
-# Study 1 — synthetic first-run walkthrough
+# Run 01 — synthetic first-run walkthrough
+
+**Build `ba49d8e` · 13 August 2026 · frozen**
 
 A single synthetic participant (expat in NL, learning Dutch for daily life, no
 prior exposure to Woordkast) attempting the three core tasks. The purpose is
 narrow: **check that the task script and the happy path are logically
 coherent** before real participants see it in Study 2.
 
-Run against `ba49d8e`. Completion rate, timing and satisfaction are explicitly
-out of scope — see the last section.
+Completion rate, timing and satisfaction are explicitly out of scope — see the
+last section. What this run found on this build stands as written; fixes made
+afterwards are listed in the appendix, not edited into the findings. See
+[README](./README.md) for the convention.
 
 ---
 
@@ -218,3 +222,22 @@ genuinely stuck — and log every time you need to use it.
 No completion rate, no task timing, and no usability or satisfaction
 judgement. This run only validates that the script and happy path are
 logically coherent. Real friction is measured in Study 2.
+
+---
+
+## Appendix — fixed since this run
+
+Status only. The findings above describe build `ba49d8e` and are not edited.
+
+| Finding | Status | Where |
+| --- | --- | --- |
+| "Sign in" / "Log-in" are synonyms on Welcome | Fixed — "Create an account" / "Log in", carried through Auth, its submit button, the blurb, the confirmation notice, the mode-switch link, and Settings' "Log out" | `7ca3175` |
+| Auth title contradicts the button that opened it | Fixed by the same change — each path keeps its own word throughout | `7ca3175` |
+| "Search your word" reads as searching your own deck | Fixed — "Search a Dutch word", plus a start-state line: "Look up a Dutch word in the dictionary, then add it to your deck" | `7ca3175` |
+| Deck empty state doesn't teach the + button | Fixed — "Your deck is empty. Tap + to look up a word and add it here." | `7ca3175` |
+| Practice counter grows on a miss (2/4 → 3/5) | Fixed — progress counts words finished out of the session's distinct words; a miss holds the bar still | `c5b3d62` |
+
+Everything else stands. Still open as of run 02: no route from reading into
+the app, no photo capture, silent wrong senses, inflected-form lookup, the
+summary-screen loop, silent discard on closing a session, no password
+recovery, and the email-confirmation interruption.
