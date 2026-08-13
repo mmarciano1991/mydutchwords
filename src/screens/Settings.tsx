@@ -33,11 +33,11 @@ export function Settings({
                 <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis" }}>
                   {email}
                 </div>
-                <div className="faint" style={{ fontSize: 12.5 }}>Progress syncs to your profile</div>
+                <div className="faint" style={{ fontSize: 12.5 }}>Progress syncs to your account</div>
               </div>
             </div>
             <button className="btn btn--secondary" style={{ marginTop: 16 }} onClick={onSignOut}>
-              Sign out
+              Log out
             </button>
           </div>
         )}

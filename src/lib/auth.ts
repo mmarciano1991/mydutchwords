@@ -27,6 +27,33 @@ export async function signUpEmail(email: string, password: string): Promise<Auth
   return { error: null, needsConfirmation };
 }
 
+/** Sends the sign-up confirmation email again — for the one that never
+ *  arrived, or was lost in a spam folder before the user came back. */
+export async function resendConfirmation(email: string): Promise<AuthResult> {
+  if (!supabase) return { error: NOT_CONFIGURED };
+  const { error } = await supabase.auth.resend({ type: "signup", email });
+  return { error: error?.message ?? null };
+}
+
+/** Emails a recovery link. Following it returns to the app with a recovery
+ *  session, which App turns into the "Set a new password" screen — so the
+ *  loop finishes in the app rather than leaving the user signed in with the
+ *  password they couldn't remember. */
+export async function sendPasswordReset(email: string): Promise<AuthResult> {
+  if (!supabase) return { error: NOT_CONFIGURED };
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname,
+  });
+  return { error: error?.message ?? null };
+}
+
+/** Sets a new password for the currently-signed-in (or recovering) user. */
+export async function updatePassword(password: string): Promise<AuthResult> {
+  if (!supabase) return { error: NOT_CONFIGURED };
+  const { error } = await supabase.auth.updateUser({ password });
+  return { error: error?.message ?? null };
+}
+
 export async function signInWithGoogle(): Promise<AuthResult> {
   if (!supabase) return { error: NOT_CONFIGURED };
   const { error } = await supabase.auth.signInWithOAuth({

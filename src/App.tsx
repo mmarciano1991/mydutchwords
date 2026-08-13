@@ -27,6 +27,7 @@ import { SessionReport } from "./screens/SessionReport";
 import { Capture } from "./screens/Capture";
 import { Settings } from "./screens/Settings";
 import { Auth } from "./screens/Auth";
+import { NewPassword } from "./screens/NewPassword";
 import { Welcome } from "./screens/Welcome";
 import { TabBar, type Tab } from "./components/TabBar";
 
@@ -87,7 +88,7 @@ export default function App() {
   }, []);
 
   // ── Accounts + cloud sync (optional; no-ops when Supabase isn't configured) ──
-  const { user, configured, ready } = useAuth();
+  const { user, configured, ready, recovering, clearRecovery } = useAuth();
 
   // Hard access gate (Figma 228:1789): signed-out visitors can't reach any
   // part of the app — no offline browsing, no "continue without an
@@ -119,8 +120,8 @@ export default function App() {
     setDeck([]);
     setResults([]);
     setCustomEntries([]);
-    // Straight back to sign-in, not Welcome — this visitor already knows
-    // the app.
+    // Straight back to log-in, not Welcome — this visitor already knows
+    // the app, and has an account by definition.
     setAuthMode("signin");
     setAuthStep("auth");
   }
@@ -212,6 +213,18 @@ export default function App() {
     );
   }
 
+  /** Writes one answer the moment it's given: the word's new ladder state,
+   *  and a row in the practice log. Both effects above persist on change, so
+   *  a session abandoned half-way keeps everything answered up to that point
+   *  — nothing waits for the session to be finished. Each attempt is logged,
+   *  including in-session retries, which is what the ladder already grades. */
+  const persistGrade = useCallback(({ word, grade }: ReviewedCard) => {
+    setDeck((prev) =>
+      prev.map((d) => (d.id === word.id ? { ...word, dateAdded: d.dateAdded } : d))
+    );
+    setResults((prev) => [...prev, { entryId: word.id, grade, timestamp: Date.now() }]);
+  }, []);
+
   function finishPractice(reviewedCards: ReviewedCard[]) {
     if (sessionMode === "warmup") {
       // Warm-up: informational report only — nothing is persisted.
@@ -219,14 +232,8 @@ export default function App() {
       setRoute("report");
       return;
     }
-    setDeck((prev) => {
-      const updated = new Map(reviewedCards.map((c) => [c.word.id, c.word]));
-      return prev.map((d) => (updated.has(d.id) ? { ...updated.get(d.id)!, dateAdded: d.dateAdded } : d));
-    });
-    setResults((prev) => [
-      ...prev,
-      ...reviewedCards.map((c) => ({ entryId: c.word.id, grade: c.grade, timestamp: Date.now() })),
-    ]);
+    // Deck and log were already written per answer (persistGrade); all that's
+    // left is what the session as a whole means.
     setReviewedIds((prev) => [...prev, ...reviewedCards.map((c) => c.word.id)]);
     setReport(buildSessionReport(reviewedCards));
     setRoute("report");
@@ -256,7 +263,10 @@ export default function App() {
     beginSession(buildRestudySession(report), true, "warmup");
   }
 
-  const showTabs = !locked && !FOCUSED.includes(route);
+  // Recovery renders in place of the app, so it gets no navigation either —
+  // the session is signed in, which would otherwise leave the tab bar showing
+  // under a screen that isn't part of the app.
+  const showTabs = !locked && !recovering && !FOCUSED.includes(route);
 
   // The FAB is the shortcut to Add-a-word — so it's dropped wherever the
   // screen already puts that action in front of the user (the empty
@@ -268,12 +278,17 @@ export default function App() {
     <div className="app-shell">
       <div className="phone">
         <div style={{ flex: 1, minHeight: 0, display: "flex", flexDirection: "column" }}>
-          {configured && !ready ? null : locked ? (
+          {configured && !ready ? null : recovering ? (
+            // A recovery link signs the user in, so this has to take
+            // precedence over the normal signed-in app — otherwise the
+            // password they came to change never gets changed.
+            <NewPassword onDone={clearRecovery} />
+          ) : locked ? (
             // The boot splash (main.tsx) covers this in practice — Supabase's
             // local-storage session read resolves well within its hold time.
             authStep === "welcome" ? (
               <Welcome
-                onSignIn={() => {
+                onCreateAccount={() => {
                   setAuthMode("signup");
                   setAuthStep("auth");
                 }}
@@ -313,7 +328,14 @@ export default function App() {
               )}
 
               {route === "practice" && (
-                <Practice key={sessionId} queue={queue} scheduling={sessionMode === "scheduled"} onFinish={finishPractice} onClose={() => setRoute("dashboard")} />
+                <Practice
+                  key={sessionId}
+                  queue={queue}
+                  scheduling={sessionMode === "scheduled"}
+                  onGrade={persistGrade}
+                  onFinish={finishPractice}
+                  onClose={() => setRoute("dashboard")}
+                />
               )}
 
               {route === "report" && report && (

@@ -47,7 +47,7 @@ export function Browse({
       <div className="screen__body gutter" style={{ paddingTop: 14, paddingBottom: 20 }}>
         {entries.length === 0 ? (
           <p className="muted" style={{ fontSize: 15, padding: "30px 4px", textAlign: "center" }}>
-            Your deck is empty. Add a word to start.
+            Your deck is empty. Tap + to look up a word and add it here.
           </p>
         ) : results.length === 0 ? (
           <p className="muted" style={{ fontSize: 15, padding: "30px 4px", textAlign: "center" }}>

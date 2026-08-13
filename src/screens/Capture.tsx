@@ -102,7 +102,9 @@ export function Capture({
         search={{
           value: query,
           onChange: edit,
-          placeholder: "Search your word",
+          // Says what is searched (the dictionary's Dutch side), not "your
+          // word" — which read as "search the words you already have".
+          placeholder: "Search a Dutch word",
           autoFocus: true,
           // Escape hatch out of state 2: look it up online anyway.
           onSubmit: () => missed && search(trimmed),
@@ -110,6 +112,19 @@ export function Capture({
       />
 
       <div className="screen__body gutter" style={{ paddingTop: 16, paddingBottom: 16 }}>
+        {/* ── 1. Start ── the screen is otherwise blank before anything is
+            typed, which left "add a word" meaning whatever the user assumed.
+            One line, naming both halves: where the word comes from, and
+            where it goes. */}
+        {!hasBody && (
+          <p
+            className="muted"
+            style={{ fontSize: 15, lineHeight: 1.55, margin: 0, padding: "24px 6px", textAlign: "center" }}
+          >
+            Look up a Dutch word in the dictionary, then add it to your deck.
+          </p>
+        )}
+
         {/* ── 2. Suggestions ── */}
         {showSuggestions && (
           <div className="addword__block">

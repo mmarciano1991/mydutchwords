@@ -81,6 +81,11 @@ tab. Vite is configured with `base: "./"` so it works from that subfolder.
 - [`docs/pilot-survey.md`](docs/pilot-survey.md) — running a timed user test:
   querying which words each tester is learning, and building a survey from the
   ones the app calls mastered.
+- [`docs/studies/`](docs/studies/) — synthetic first-run walkthroughs, one per
+  build: whether the task script still matches the app before real
+  participants see it. Start at the
+  [index](docs/studies/README.md); the newest run holds the task script in
+  force.
 
 ## Out of scope
 
