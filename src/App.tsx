@@ -119,8 +119,8 @@ export default function App() {
     setDeck([]);
     setResults([]);
     setCustomEntries([]);
-    // Straight back to sign-in, not Welcome — this visitor already knows
-    // the app.
+    // Straight back to log-in, not Welcome — this visitor already knows
+    // the app, and has an account by definition.
     setAuthMode("signin");
     setAuthStep("auth");
   }
@@ -273,7 +273,7 @@ export default function App() {
             // local-storage session read resolves well within its hold time.
             authStep === "welcome" ? (
               <Welcome
-                onSignIn={() => {
+                onCreateAccount={() => {
                   setAuthMode("signup");
                   setAuthStep("auth");
                 }}

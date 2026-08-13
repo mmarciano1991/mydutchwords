@@ -37,7 +37,7 @@ export function Settings({
               </div>
             </div>
             <button className="btn btn--secondary" style={{ marginTop: 16 }} onClick={onSignOut}>
-              Sign out
+              Log out
             </button>
           </div>
         )}

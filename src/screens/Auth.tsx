@@ -1,5 +1,9 @@
-/* Auth — the account screen: email + password (sign in / create account),
+/* Auth — the account screen: email + password (log in / create account),
    and "Continue with Google" (Figma 228:1789, "Sign-in" / "Log-in" frames).
+   Every label here answers to the Welcome button that opened it: the
+   create-account path says "Create account" throughout and the returning
+   path says "Log in", so the screen never contradicts the door the user
+   came through.
    The app is a hard gate behind this screen (App.tsx renders it in place of
    everything else while signed out); `onBack`, when given, returns to the
    Welcome choice screen rather than closing the gate. On success the
@@ -62,18 +66,18 @@ export function Auth({ initialMode = "signin", onBack }: { initialMode?: Mode; o
 
   return (
     <div className="screen">
-      <Appbar title={isSignup ? "Create account" : "Sign in"} onBack={onBack} />
+      <Appbar title={isSignup ? "Create an account" : "Log in"} onBack={onBack} />
 
       <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
         <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "0 2px 18px" }}>
           {isSignup
             ? "Create a profile to save your deck and progress across devices."
-            : "Sign in to sync your deck and progress across devices."}
+            : "Log in to sync your deck and progress across devices."}
         </p>
 
         {confirmSent ? (
           <Notice type="success">
-            Almost there — check {email || "your inbox"} for a confirmation link, then sign in.
+            Almost there — check {email || "your inbox"} for a confirmation link, then log in.
           </Notice>
         ) : (
           <>
@@ -112,7 +116,7 @@ export function Auth({ initialMode = "signin", onBack }: { initialMode?: Mode; o
                 />
               </label>
               <button className="btn btn--primary" type="submit" disabled={busy} style={{ marginTop: 4 }}>
-                {busy ? "One moment…" : isSignup ? "Create account" : "Sign in"}
+                {busy ? "One moment…" : isSignup ? "Create account" : "Log in"}
               </button>
             </form>
 
@@ -133,7 +137,7 @@ export function Auth({ initialMode = "signin", onBack }: { initialMode?: Mode; o
                 setError(null);
               }}
             >
-              {isSignup ? "Already have an account? Sign in" : "New here? Create an account"}
+              {isSignup ? "Already have an account? Log in" : "New here? Create an account"}
             </button>
           </>
         )}

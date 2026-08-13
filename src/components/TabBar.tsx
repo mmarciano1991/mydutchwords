@@ -46,7 +46,7 @@ export function TabBar({
       <button
         className={`fab${onAddWord ? "" : " fab--hidden"}`}
         onClick={(e) => onAddWord?.(e.currentTarget)}
-        aria-label="Add a word"
+        aria-label="Add a word to your deck"
         aria-hidden={onAddWord ? undefined : true}
         tabIndex={onAddWord ? undefined : -1}
       >

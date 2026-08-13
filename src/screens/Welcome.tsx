@@ -1,17 +1,20 @@
 /* Welcome — the first choice screen of the access flow (Figma 228:1789,
-   "Fist screen"): medallion + wordmark + tagline, then Sign in / Log-in.
+   "Fist screen"): medallion + wordmark + tagline, then Create an account /
+   Log in. The two CTAs name the two situations a visitor can be in rather
+   than two synonyms for the same door, so a first-timer doesn't have to
+   guess which one is theirs.
    Shown once, right after the splash, to any signed-out visitor; Auth's
    back chevron returns here. No guest/"try without an account" option —
    the app still requires a signed-in session (see App.tsx). */
 import { TulipMedallion } from "../components/brand";
 
 export function Welcome({
-  onSignIn,
+  onCreateAccount,
   onLogIn,
 }: {
-  /** Primary CTA — starts account creation. */
-  onSignIn: () => void;
-  /** Secondary CTA — starts sign-in for an existing account. */
+  /** Primary CTA — for a visitor without an account yet. */
+  onCreateAccount: () => void;
+  /** Secondary CTA — for a visitor who already has one. */
   onLogIn: () => void;
 }) {
   return (
@@ -29,11 +32,11 @@ export function Welcome({
         </p>
       </div>
       <div className="gutter" style={{ paddingBottom: 30, display: "flex", flexDirection: "column", gap: 22 }}>
-        <button className="btn btn--primary" onClick={onSignIn}>
-          Sign in
+        <button className="btn btn--primary" onClick={onCreateAccount}>
+          Create an account
         </button>
         <button className="btn btn--secondary" onClick={onLogIn}>
-          Log-in
+          Log in
         </button>
       </div>
     </div>
