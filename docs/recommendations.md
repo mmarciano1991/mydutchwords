@@ -6,8 +6,8 @@ document: the runs are frozen records, this is the response to them.
 
 Ordered by what a wrong answer costs the learner.
 
-**Shipped so far:** 3a, 4 and 5 in `42e9350`; 1b (bundled-dictionary half +
-online half) in `2e45d52`. Everything else stands.
+**Shipped so far:** 3a, 4 and 5 in `42e9350`; 1b in `2e45d52`; 1a and 3b in
+`8864c50`. Open: 1c, 2a, 6.
 
 ---
 
@@ -34,15 +34,22 @@ disposes** — and context, not confidence, is what makes a gloss checkable.
 
 ### Recommendation — three layers, in this order
 
-**a. Make the translation editable, before and after saving.** Smallest change,
-largest safety gain. On the found-word card, let the gloss be edited in place;
-in the deck row, offer Edit alongside Remove.
+**a. Make the translation editable, before and after saving.** ✅ **Shipped in
+`8864c50`.** The deck row's expanded view gained an **Edit translation** link
+opening a small form (translation + both example fields); saving reuses 1b's
+exact override mechanism (`addCustomEntry`/`resolveEntry`) — no `DeckItem`
+schema change, no fork of the bundled entry, same sync.
 
-Implementation note: don't fork the bundled entry. Add an optional
-`override?: { english?: string; example?: string; exampleEn?: string }` to
-`DeckItem`, and have `resolveEntry` merge it over the dictionary entry. It
-rides the existing `cloudState` sync with no schema work, survives dictionary
-updates, and keeps the 14k bundle immutable.
+Fixing this surfaced a real bug in that shared mechanism: the "does this match
+the bundled default" guard only compared the translation, so an edit that
+changed *only* the example was silently discarded as a false no-op — caught by
+testing exactly that case in a browser. The guard now compares translation and
+both example fields against a proper resolved default (a new
+`resolveBundled()` helper, factored out of `resolveEntry`), not the
+permanently-empty raw dictionary entry. Editing a word back to precisely its
+default now also removes the stale override rather than leaving it pinned.
+Verified across a page reload and a practice session, and re-verified that 1b's
+picker still works correctly after the refactor.
 
 **b. Stop showing only the first sense.** ✅ **Shipped in `2e45d52`.**
 `lookupWiktionary` now collects every distinct definition across every
@@ -121,8 +128,8 @@ for committed users — not as the answer to this finding.
 on the lemma. `huurders`, `maatregelen`, `gestegen`, `toegenomen`, `afspraken`,
 `duurder`, `verboden` all miss. Worse, a near-match *suppresses* the online
 lookup: `termijn` offered `terwijl` and never looked the real word up, because
-`searchable = missed && suggestions.length === 0` (`Capture.tsx:69`). That
-half is now fixed; the inflection half is not.
+`searchable = missed && suggestions.length === 0` (`Capture.tsx:69`). Both
+halves are now fixed.
 
 **What other apps do.** [Yomitan deinflects before looking anything
 up](https://yomitan.wiki/) — converting a conjugated form back to its
@@ -136,17 +143,26 @@ queries per word to do it.
 result rather than instead of it, and they survive a failed request — which is
 exactly when they're the only lead left. `termijn` resolves.
 
-**b. Deinflect before declaring a miss.** Dutch is regular enough for a small
-rule-based stemmer: plural `-en`/`-s`, diminutive `-je`/`-tje`, comparative
-`-er`, superlative `-st`, past participle `ge-…-d`/`-t`/`-en`, verb endings
-`-t`/`-en`, plus the doubled-consonant and `aa→a` vowel alternations
-(`huurders → huurder`, `maatregelen → maatregel`, `gestegen → stijgen` needs a
-small irregular list). Generate candidates, test each against the dictionary,
-and when one hits, **say why**: "huurders → **huurder** (plural)". That turns
-today's guesswork into a lesson, which is what this app is for.
+**b. Deinflect before declaring a miss.** ✅ **Shipped in `8864c50`**
+(`src/lib/deinflect.ts`). A rule-based stemmer tries plural `-en`/`-s`
+(with the `afspraken → afspraak` vowel-doubling spelling change), comparative
+`-er`/`-der`, diminutive `-je`/`-tje`, and weak past participles `ge-…-d`/`-t`
+back to their `-en` infinitive (with the `gebeld → bellen` consonant-doubling
+change) — each candidate tested against the real dictionary, so a rule that's
+wrong about Dutch morphology just produces a candidate nothing matches and
+never surfaces. A short hand-authored list
+(`src/data/irregularVerbs.ts`, same pattern as `senses.ts`) covers the ablaut
+participles no suffix rule derives: `gestegen → stijgen`,
+`toegenomen → toenemen`, `verboden → verbieden`. A hit says why —
+"huurders" → **huurder** (plural)" — and takes priority over both the fuzzy
+suggestions and the online lookup, since it's a grammatical match rather than
+a guess.
 
-Build it as a pure function beside `suggestWords`, unit-tested like
-`learningEngine` — same shape as the code already there.
+Pure function, unit-tested with a fake dictionary (15 cases, including that a
+misfiring rule must fail silently rather than propose a wrong answer) — same
+shape as `learningEngine.ts`. Verified against the real bundled dictionary in
+a browser: every word from the original run-01 finding now resolves with an
+explanation.
 
 **c. Stop offering distant guesses.** `gestegen → gisteren` is edit distance 2
 with no shared prefix and no shared meaning. Require a shared prefix for
@@ -226,20 +242,21 @@ reopening it is a bigger conversation than this list.
 
 | | Item | Effort | Why here |
 | --- | --- | --- | --- |
-| ✅ | **3a** — let the online lookup run alongside suggestions | One line | Shipped `42e9350` |
-| ✅ | **5** — stay on the capture screen after adding | Small | Shipped `42e9350` |
-| ✅ | **4** — Show translation before the grade buttons | Small | Shipped `42e9350` |
-| 1 | **1a** — editable translations, via a `DeckItem.override` | Small–medium | The safety net under every wrong gloss |
-| 2 | **2a** — Add from text | Medium | Makes task 1 native, and feeds context into 1c |
-| 3 | **3b** — Dutch deinflection before "not found" | Medium | Pure, testable; converts misses into explanations |
-| 4 | **1c** — capture the sentence the word was met in | Medium | Best long-term answer to the wrong-sense problem |
-| 5 | **6** — OTP code instead of a confirmation link | Small, mostly config | Or just disable confirmation for the pilot |
-| — | ✅ **1b** — multiple senses | — | Shipped `2e45d52`. Extending `senses.ts` is now ongoing, not a project |
+| 1 | **2a** — Add from text | Medium | Makes task 1 native, and feeds context into 1c |
+| 2 | **1c** — capture the sentence the word was met in | Medium | Best long-term answer to the wrong-sense problem |
+| 3 | **6** — OTP code instead of a confirmation link | Small, mostly config | Or just disable confirmation for the pilot |
+| — | ✅ **3a** | — | Shipped `42e9350` |
+| — | ✅ **5** | — | Shipped `42e9350` |
+| — | ✅ **4** | — | Shipped `42e9350` |
+| — | ✅ **1b** | — | Shipped `2e45d52` — extending `senses.ts` is now ongoing, not a project |
+| — | ✅ **1a** | — | Shipped `8864c50` — surfaced and fixed a real bug in 1b's shared override guard |
+| — | ✅ **3b** | — | Shipped `8864c50` — every original run-01 miss now resolves |
 
-Four of nine are done. **1a** — editing a saved translation directly, for the
-words that *don't* have a sense picker — is the next one to take: it's the
-same override mechanism 1b just proved out, applied without requiring a
-second known sense first.
+Six of nine are done. What's left doesn't have a shared mechanism to reuse the
+way the last three did: **2a** is a new screen, **1c** is a new field, **6**
+is mostly configuration. **2a** is the one worth taking next — it's the
+structural fix for task 1, and it hands 1c its context for free once it
+exists.
 
 ---
 
