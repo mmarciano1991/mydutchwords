@@ -16,6 +16,12 @@ means two things. Real friction is measured with real people.
 | [01](./run-01-ba49d8e.md) | `ba49d8e` | 2026-08-13 | T1 completes with heavy friction · T2 has no path · T3 loops at the exit |
 | [02](./run-02-c5b3d62.md) | `c5b3d62` | 2026-08-13 | Entry and practice copy repaired · T2 still has no path · T3 still loops at the exit |
 | [03](./run-03-43a1fdd.md) | `43a1fdd` | 2026-08-13 | T3 completable in every direction · account dead-ends closed · T2 still has no path · T1 blocked on words, not buttons |
+| [04](./run-04-795d03e.md) | `795d03e` | 2026-08-13 | First run on the deployed build, image capture out of scope · T2 walked as a typed task: 3 of 7 letter words wrong, one with a confirming example |
+
+Findings are the runs' job; deciding what to do about them is not.
+[`docs/recommendations.md`](../recommendations.md) holds the proposed
+solutions, grounded in what comparable apps do — a living document, revised as
+items ship, unlike the runs.
 
 ## The convention
 
@@ -58,6 +64,19 @@ The run is performed in character, one task at a time, stating what is
 expected before each action and what actually happened after it. The
 participant is deliberately **not** charitable: wherever a moderately patient
 but busy person would hesitate or give up, the run says so and says why.
+
+### Out of scope for every run
+
+Not gaps to be re-reported each time — decisions. A run that flags one of
+these is wasting the reader's attention:
+
+- **Capture from an image** — camera, gallery picker, OCR. Deferred as a
+  product decision (`README.md`), so task 2 is a **typed** capture task from a
+  real letter or sign: the artefact still comes from the participant's life,
+  the words are still the ones a letter produces, and only the input method
+  changes. Revisit only if capture-from-image ships.
+- Audio pronunciation, tags, sharing, and browsing the full bundled
+  dictionary — all deferred for the same reason.
 
 ### What each step is checked against
 

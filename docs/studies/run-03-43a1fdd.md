@@ -136,3 +136,14 @@ rescue.
 No completion rate, no task timing, and no usability or satisfaction
 judgement. This run only validates that the script and happy path are
 logically coherent. Real friction is measured in Study 2.
+
+---
+
+## Appendix — scope changed after this run
+
+Not a fix. From [run 04](./run-04-795d03e.md), **capture from an image is out
+of scope** for these walkthroughs: camera, gallery picker and OCR are a
+deferred product decision, so the missing camera is no longer reported as a
+task-2 dead-end. Task 2 became a typed capture task from a real letter, which
+is how it should have been scripted from run 01 — this run's ❌ on task 2
+records the old framing.
