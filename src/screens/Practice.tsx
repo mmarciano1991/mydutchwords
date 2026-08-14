@@ -168,20 +168,6 @@ export function Practice({
               <div className="flashcard__word">{entry.dutch}</div>
               {entry.example && <Divider />}
               {entry.example && <div className="flashcard__example">{entry.example}</div>}
-              {/* The real sentence this word was met in (Add from text, 2a) —
-                  Dutch only, so it sits beside the card's own Dutch example
-                  rather than the translated back face. Seeing a word next to
-                  where it was actually read is the check a dictionary
-                  example alone can't offer (docs/recommendations.md, 1c). */}
-              {entry.metIn && (
-                <>
-                  <Divider />
-                  <div className="flashcard__met-in">
-                    <div className="flashcard__met-in-label">Where you met it</div>
-                    <div className="flashcard__example">{entry.metIn}</div>
-                  </div>
-                </>
-              )}
               <div className="flashcard__hint" aria-hidden="true">Tap to flip</div>
             </div>
             <div className="flashcard__face flashcard__face--back" aria-hidden={!flipped}>

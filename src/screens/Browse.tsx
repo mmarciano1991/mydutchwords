@@ -1,22 +1,30 @@
 import { useMemo, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
+import { useWordLookup } from "../lib/useWordLookup";
 import { Appbar } from "../components/Appbar";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
 import { MasteryBar } from "../components/MasteryBar";
+import { WordLookupResult } from "../components/WordLookupResult";
 
 /** Just the fields a user can correct — gender and the id stay as they are. */
 type Edit = { english: string; example: string; exampleEn: string };
 
 /* Deck screen — the words the user has added, only. Search filters the deck;
    the FAB in the bottom navigation opens the Add-a-word flow. (Browsing the
-   full 14k bundled dictionary is gone: words enter the deck via capture now.) */
+   full 14k bundled dictionary is gone: words enter the deck via capture now.)
+
+   A search with no deck matches falls through to the same lookup pipeline
+   and result UI as Capture ("Add a word"), so finding a word that isn't in
+   the deck yet and adding it never requires switching screens. */
 export function Browse({
   entries,
   levels,
   tricky,
+  deckIds,
   onRemove,
   onEdit,
+  onSave,
 }: {
   /** The user's deck words, resolved to dictionary content (newest first). */
   entries: DictionaryEntry[];
@@ -24,10 +32,14 @@ export function Browse({
   levels: Map<string, number>;
   /** Deck word ids flagged as leeches (4+ lapses). */
   tricky: Set<string>;
+  /** All deck word ids — passed straight through to the shared lookup result. */
+  deckIds: Set<string>;
   onRemove: (entryId: string) => void;
   /** Corrects a saved word's translation and example — the general form of
    *  the sense picker's override, for the words that never had a picker. */
   onEdit: (entryId: string, edit: Edit) => void;
+  /** Adds a word found via the fallback lookup — same handler Capture uses. */
+  onSave: (entry: DictionaryEntry) => void;
 }) {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
@@ -43,6 +55,16 @@ export function Browse({
       (e) => e.dutch.toLowerCase().includes(q) || e.english.toLowerCase().includes(q)
     );
   }, [query, entries]);
+
+  // Only actually looked up once the deck search comes up empty — the same
+  // pipeline Capture runs, so a word not yet in the deck resolves exactly
+  // the same way it would from the Add-a-word screen.
+  const lookup = useWordLookup(results.length === 0 ? query : "");
+  const { entry, deinflectionAmbiguous, notFound, failed, showSuggestions, searching } = lookup;
+  const noDeckMatch = query.trim() !== "" && results.length === 0;
+  const lookupHasBody = Boolean(
+    entry || deinflectionAmbiguous || notFound || failed || showSuggestions || searching
+  );
 
   function toggle(id: string) {
     setOpenId((prev) => (prev === id ? null : id));
@@ -80,6 +102,19 @@ export function Browse({
           <p className="muted" style={{ fontSize: 15, padding: "30px 4px", textAlign: "center" }}>
             Your deck is empty. Tap + to look up a word and add it here.
           </p>
+        ) : noDeckMatch && lookupHasBody ? (
+          <div>
+            <p className="muted" style={{ fontSize: 14, padding: "0 4px 14px" }}>
+              No deck words match “{query}” — here’s what the dictionary has:
+            </p>
+            <WordLookupResult
+              lookup={lookup}
+              deckIds={deckIds}
+              levels={levels}
+              onSave={onSave}
+              onEditSuggestion={setQuery}
+            />
+          </div>
         ) : results.length === 0 ? (
           <p className="muted" style={{ fontSize: 15, padding: "30px 4px", textAlign: "center" }}>
             No deck words match “{query}”.
@@ -163,12 +198,6 @@ export function Browse({
                         </div>
                       ) : (
                         <>
-                          {e.metIn && (
-                            <div style={{ marginBottom: 10 }}>
-                              <div className="eyebrow">Where you met it</div>
-                              <div className="wordrow__example-nl">{e.metIn}</div>
-                            </div>
-                          )}
                           <div className="eyebrow">In context</div>
                           {e.example ? (
                             <div className="wordrow__example">

@@ -7,14 +7,30 @@
    network failures, server errors, timeouts, and cancellation — so callers
    can tell "not found" apart from "the lookup failed".
 
-   Limitations (accepted for this slice): the definition endpoint doesn't
-   expose the noun's article, so gender comes back null and example
-   sentences are usually absent — the word still enters the normal
-   practice cycle. */
-import type { DictionaryEntry, WordSense } from "./types";
+   Article and example sentence, best-effort, from two different places:
+    - An example sentence rides along on the definition response itself,
+      in `parsedExamples`, whenever that sense was authored with Wiktionary's
+      {{uxi}} template — no extra request. Most senses simply don't have one
+      ("kat" has none at all; "huis" has several), so this is often still
+      empty, same as before — the word still enters the normal practice
+      cycle either way.
+    - The article isn't in the definition response at all — it only shows up
+      on the rendered page, in the noun's headword line (`<span
+      class="gender"><abbr title="…">`). Fetched separately with a second
+      request, and only when a noun sense actually exists to attach it to.
+      Any failure here (network, timeout, no headword found) degrades to the
+      previous null rather than failing the whole lookup: this is
+      enrichment on top of an already-usable result, not part of the
+      contract above. */
+import type { DictionaryEntry, Gender, WordSense } from "./types";
 
+interface WiktionaryExample {
+  example: string;
+  translation: string;
+}
 interface WiktionaryDefinition {
   definition: string;
+  parsedExamples?: WiktionaryExample[];
 }
 interface WiktionaryUsage {
   partOfSpeech: string;
@@ -33,6 +49,65 @@ function stripHtml(html: string): string {
   return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
+/** Maps a headword line's `<abbr title="…">` to a Dutch article: "neuter
+ *  gender" is the one case that's `het`; masculine, feminine, and the
+ *  merged "common gender" (the historical m/f merger most nl-noun entries
+ *  actually carry) all take `de`. */
+function genderFromAbbrTitle(title: string): Gender {
+  const t = title.toLowerCase();
+  if (t.includes("neuter")) return "het";
+  if (t.includes("masculine") || t.includes("feminine") || t.includes("common")) return "de";
+  return null;
+}
+
+/** One retry, after a brief pause, for the kind of failure that's usually
+ *  gone a moment later: a dropped wifi/cellular handoff (the fetch promise
+ *  rejects near-instantly, not after the timeout) or a transient 5xx/429
+ *  from Wiktionary's own API. Real cancellation/timeout (the shared
+ *  controller already aborted) is never retried — that's a deliberate stop,
+ *  not a hiccup. */
+async function fetchWithRetry(url: string, signal: AbortSignal): Promise<Response> {
+  const attempt = () => fetch(url, { signal, headers: { Accept: "application/json" } });
+  let res: Response;
+  try {
+    res = await attempt();
+  } catch (err) {
+    if (signal.aborted) throw err;
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    return attempt();
+  }
+  if (res.ok || res.status === 404 || signal.aborted) return res;
+  await new Promise((resolve) => setTimeout(resolve, 500));
+  return attempt();
+}
+
+/** Reads the article straight out of the rendered page's headword line —
+ *  the one piece of grammar `/page/definition/` doesn't carry at all. Scoped
+ *  to the Dutch-language section so an English or Afrikaans homograph's own
+ *  headword (`huis` has both) never leaks in. Takes the first noun headword
+ *  on the page; a rarer homograph with two differently-gendered noun senses
+ *  under separate etymologies would all get that one article, which is a
+ *  known simplification, not a bug — still strictly better than the null
+ *  every online capture got before this. */
+async function fetchGender(term: string, signal: AbortSignal): Promise<Gender> {
+  try {
+    const res = await fetch(
+      `https://en.wiktionary.org/api/rest_v1/page/html/${encodeURIComponent(term)}`,
+      { signal, headers: { Accept: "text/html" } }
+    );
+    if (!res.ok) return null;
+    const html = await res.text();
+    const doc = new DOMParser().parseFromString(html, "text/html");
+    const section = doc.getElementById("Dutch")?.closest("section");
+    const title = section?.querySelector(".headword-line .gender abbr[title]")?.getAttribute("title");
+    return title ? genderFromAbbrTitle(title) : null;
+  } catch {
+    // Best-effort: a failed enrichment request shouldn't fail a lookup that
+    // otherwise already succeeded on the definition endpoint.
+    return null;
+  }
+}
+
 export async function lookupWiktionary(
   word: string,
   { signal, timeoutMs = 8000 }: { signal?: AbortSignal; timeoutMs?: number } = {}
@@ -46,9 +121,9 @@ export async function lookupWiktionary(
   if (signal?.aborted) controller.abort();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(
+    const res = await fetchWithRetry(
       `https://en.wiktionary.org/api/rest_v1/page/definition/${encodeURIComponent(term)}`,
-      { signal: controller.signal, headers: { Accept: "application/json" } }
+      controller.signal
     );
     if (res.status === 404) return null; // page doesn't exist — a real "not found"
     if (!res.ok) throw new Error(`Wiktionary responded ${res.status}`);
@@ -73,6 +148,7 @@ export async function lookupWiktionary(
     for (const usage of dutch) {
       if (senses.length >= MAX_SENSES) break;
       if (!Array.isArray(usage.definitions)) continue;
+      const label = usage.partOfSpeech?.toLowerCase();
       for (const def of usage.definitions) {
         if (senses.length >= MAX_SENSES) break;
         if (typeof def?.definition !== "string") continue;
@@ -80,20 +156,43 @@ export async function lookupWiktionary(
         const key = english.toLowerCase();
         if (!english || seen.has(key)) continue;
         seen.add(key);
-        // Gender and examples are the same absence as before, per sense —
-        // the definition endpoint doesn't carry either.
-        senses.push({ english, example: "", exampleEn: "", gender: null, label: usage.partOfSpeech?.toLowerCase() });
+        // The first authored {{uxi}} example for this sense, if any — most
+        // senses don't have one (see the file header), so this is often
+        // still empty.
+        const example = def.parsedExamples?.[0];
+        senses.push({
+          english,
+          example: example ? stripHtml(example.example) : "",
+          exampleEn: example ? stripHtml(example.translation) : "",
+          gender: null,
+          label,
+        });
       }
     }
     if (senses.length === 0) return null;
 
+    // Only nouns have an article, and it's not in this response at all — so
+    // only bother with the extra request when a noun sense is actually here
+    // to receive it.
+    if (senses.some((s) => s.label === "noun")) {
+      const gender = await fetchGender(term, controller.signal);
+      if (gender) {
+        for (const sense of senses) {
+          if (sense.label === "noun") sense.gender = gender;
+        }
+      }
+    }
+
+    // These mirror senses[0] exactly — see DictionaryEntry's own doc comment
+    // for why every reader that only looks at the top-level fields is
+    // reading the primary sense.
     return {
       id: term,
       dutch: term,
       english: senses[0].english,
-      gender: null,
-      example: "",
-      exampleEn: "",
+      gender: senses[0].gender,
+      example: senses[0].example,
+      exampleEn: senses[0].exampleEn,
       senses,
     };
   } finally {

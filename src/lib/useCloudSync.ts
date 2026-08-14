@@ -16,6 +16,11 @@ import { fetchRemoteState, mergeState, pushState, type AppState } from "./cloudS
 import { supabase } from "./supabase";
 
 const PUSH_DEBOUNCE_MS = 1200;
+// How long to wait before re-trying a failed initial pull (network/RLS
+// hiccup, most likely right after the OAuth redirect's cold page load).
+// Retried indefinitely — until it succeeds, local edits stay unsynced but
+// are never at risk, since nothing is pushed until the pull is known-good.
+const HYDRATE_RETRY_MS = 15_000;
 
 export function useCloudSync({
   userId,
@@ -42,22 +47,34 @@ export function useCloudSync({
   const localRef = useRef({ deck, results });
   localRef.current = { deck, results };
 
-  // Pull + merge + push once per login.
+  // Pull + merge + push once per login. A failed pull is retried rather than
+  // treated as "no remote data" — conflating the two would let a merge fall
+  // back to local-only state and then push it over a remote snapshot the
+  // fetch never actually saw, destroying real progress on a transient error.
   useEffect(() => {
     if (!supabase || !userId || hydratedFor.current === userId) return;
     let cancelled = false;
-    (async () => {
-      const remote = await fetchRemoteState(userId);
+    let retryTimer: number | undefined;
+
+    const attempt = async () => {
+      const result = await fetchRemoteState(userId);
       if (cancelled) return;
+      if (!result.ok) {
+        retryTimer = window.setTimeout(attempt, HYDRATE_RETRY_MS);
+        return;
+      }
       const local: AppState = { ...localRef.current, customWords: getCustomEntries() };
-      const merged = remote ? mergeState(local, remote) : local;
+      const merged = result.state ? mergeState(local, result.state) : local;
       setCustomEntries(merged.customWords);
       applyMerged(merged);
       hydratedFor.current = userId;
       await pushState(userId, merged);
-    })();
+    };
+    void attempt();
+
     return () => {
       cancelled = true;
+      window.clearTimeout(retryTimer);
     };
     // Intentionally keyed on userId only: the local snapshot is read through
     // localRef at merge time, and ongoing changes go through the push effect.

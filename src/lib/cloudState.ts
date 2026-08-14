@@ -67,24 +67,35 @@ export function mergeState(a: AppState, b: AppState): AppState {
   };
 }
 
-/** The signed-in user's saved snapshot, or null if they have none yet.
- *  Returns null (not throw) on any failure so sync never breaks the app. */
-export async function fetchRemoteState(userId: string): Promise<AppState | null> {
-  if (!supabase) return null;
+/** Result of a remote-state fetch. `ok: false` means the fetch itself failed
+ *  (network/RLS/timeout) — distinct from `ok: true, state: null`, which means
+ *  the request succeeded and the user genuinely has no saved snapshot yet.
+ *  Callers must not treat a failed fetch the same as "no data": doing so
+ *  would let a merge fall back to local-only state and then push that over
+ *  a real remote snapshot it never actually saw. */
+export type RemoteFetchResult = { ok: true; state: AppState | null } | { ok: false };
+
+/** The signed-in user's saved snapshot. Never throws. */
+export async function fetchRemoteState(userId: string): Promise<RemoteFetchResult> {
+  if (!supabase) return { ok: true, state: null };
   try {
     const { data, error } = await supabase
       .from(TABLE)
       .select("deck, results, custom_words")
       .eq("user_id", userId)
       .maybeSingle();
-    if (error || !data) return null;
+    if (error) return { ok: false };
+    if (!data) return { ok: true, state: null };
     return {
-      deck: (data.deck as DeckItem[]) ?? [],
-      results: (data.results as PracticeResult[]) ?? [],
-      customWords: (data.custom_words as DictionaryEntry[]) ?? [],
+      ok: true,
+      state: {
+        deck: (data.deck as DeckItem[]) ?? [],
+        results: (data.results as PracticeResult[]) ?? [],
+        customWords: (data.custom_words as DictionaryEntry[]) ?? [],
+      },
     };
   } catch {
-    return null;
+    return { ok: false };
   }
 }
 

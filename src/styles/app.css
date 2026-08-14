@@ -191,6 +191,13 @@ input {
   padding-top: max(54px, env(safe-area-inset-top));
 }
 
+/* Headerless screens whose first element is a card, not a title — top
+   clearance should read as the same gutter as the card's sides, not the
+   taller space reserved for a title row. */
+.pad-top-tight {
+  padding-top: max(var(--space-5), env(safe-area-inset-top));
+}
+
 .gutter {
   padding-left: var(--space-5);
   padding-right: var(--space-5);
@@ -1409,19 +1416,6 @@ input {
   font-weight: 600;
   letter-spacing: 0.04em;
 }
-.flashcard__met-in {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.flashcard__met-in-label {
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-}
-
 /* Divider component (60×1 rule, blue/200) */
 .divider-rule {
   width: 60px;

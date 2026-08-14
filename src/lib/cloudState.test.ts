@@ -1,6 +1,21 @@
-import { describe, expect, it } from "vitest";
-import { mergeState, type AppState } from "./cloudState";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import type { AppState } from "./cloudState";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./types";
+
+const maybeSingleMock = vi.fn();
+const upsertMock = vi.fn();
+
+vi.mock("./supabase", () => ({
+  supabase: {
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: maybeSingleMock }) }),
+      upsert: upsertMock,
+    }),
+  },
+}));
+
+// Imported after the mock so cloudState.ts picks up the mocked client.
+const { mergeState, fetchRemoteState, pushState } = await import("./cloudState");
 
 function deckItem(id: string, over: Partial<DeckItem> = {}): DeckItem {
   return {
@@ -88,5 +103,60 @@ describe("mergeState", () => {
       state({ deck: [deckItem("b", { dateAdded: 9 })] })
     );
     expect(merged.deck.map((d) => d.id)).toEqual(["b", "a"]);
+  });
+});
+
+// fetchRemoteState must let callers tell "the fetch failed" apart from "the
+// fetch succeeded and there's genuinely nothing saved" — conflating the two
+// is what let a transient error wipe real cloud progress (see useCloudSync).
+describe("fetchRemoteState", () => {
+  beforeEach(() => {
+    maybeSingleMock.mockReset();
+  });
+
+  it("reports ok:true with a null state for a brand-new user", async () => {
+    maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
+    const result = await fetchRemoteState("user-1");
+    expect(result).toEqual({ ok: true, state: null });
+  });
+
+  it("reports ok:true with the saved state when a row exists", async () => {
+    maybeSingleMock.mockResolvedValueOnce({
+      data: { deck: [deckItem("huis")], results: [], custom_words: [] },
+      error: null,
+    });
+    const result = await fetchRemoteState("user-1");
+    expect(result.ok).toBe(true);
+    expect(result.ok && result.state?.deck.map((d) => d.id)).toEqual(["huis"]);
+  });
+
+  it("reports ok:false (not ok:true, state:null) on a query error", async () => {
+    maybeSingleMock.mockResolvedValueOnce({ data: null, error: new Error("network down") });
+    const result = await fetchRemoteState("user-1");
+    expect(result).toEqual({ ok: false });
+  });
+
+  it("reports ok:false (not ok:true, state:null) when the request throws", async () => {
+    maybeSingleMock.mockRejectedValueOnce(new Error("timeout"));
+    const result = await fetchRemoteState("user-1");
+    expect(result).toEqual({ ok: false });
+  });
+});
+
+describe("pushState", () => {
+  beforeEach(() => {
+    upsertMock.mockReset();
+  });
+
+  it("resolves true on a clean upsert", async () => {
+    upsertMock.mockResolvedValueOnce({ error: null });
+    const ok = await pushState("user-1", state());
+    expect(ok).toBe(true);
+  });
+
+  it("resolves false (never throws) on an upsert error", async () => {
+    upsertMock.mockResolvedValueOnce({ error: new Error("network down") });
+    const ok = await pushState("user-1", state());
+    expect(ok).toBe(false);
   });
 });

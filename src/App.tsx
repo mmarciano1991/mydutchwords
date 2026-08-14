@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
-import { addCustomEntry, editEntry, resolveEntry, setCustomEntries } from "./lib/wordSources";
+import { addCustomEntry, editEntry, getCustomEntries, resolveEntry, setCustomEntries } from "./lib/wordSources";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
 import {
   buildNextSession,
@@ -19,7 +19,7 @@ import { streakDays } from "./lib/streak";
 import { useAuth } from "./lib/useAuth";
 import { useCloudSync } from "./lib/useCloudSync";
 import { signOut } from "./lib/auth";
-import type { AppState } from "./lib/cloudState";
+import { pushState, type AppState } from "./lib/cloudState";
 import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
 import { Practice, type PracticeCard } from "./screens/Practice";
@@ -120,6 +120,13 @@ export default function App() {
   }, [locked]);
 
   async function handleSignOut() {
+    // Flush the latest state before signing out: the debounced push (see
+    // useCloudSync) may not have fired yet for the last few seconds of
+    // progress, and it's about to be wiped from local storage below. Must
+    // happen while still authenticated — RLS needs auth.uid() = user_id.
+    if (user) {
+      await pushState(user.id, { deck, results, customWords: getCustomEntries() });
+    }
     await signOut();
     // Start the local session clean so the next account doesn't inherit this
     // deck.
@@ -336,8 +343,10 @@ export default function App() {
                   entries={deckEntries}
                   levels={levels}
                   tricky={tricky}
+                  deckIds={deckIds}
                   onRemove={toggleWord}
                   onEdit={editDeckWord}
+                  onSave={saveCapturedWord}
                 />
               )}
 

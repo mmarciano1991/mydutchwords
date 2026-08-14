@@ -51,8 +51,8 @@ export function Dashboard({
   const streakSuffix = streak > 1 ? ` · 🔥 ${streak}-day streak` : "";
 
   return (
-    <div className="screen pad-top">
-      <div className="screen__body gutter" style={{ paddingTop: 18, paddingBottom: 26, display: "flex", flexDirection: "column", gap: 20 }}>
+    <div className="screen pad-top-tight">
+      <div className="screen__body gutter" style={{ paddingBottom: 26, display: "flex", flexDirection: "column", gap: 20 }}>
         {caughtUp ? (
           // ── All caught up: calm cream card; practising ahead is optional (Figma 163:334) ──
           <section className="hero hero--calm">

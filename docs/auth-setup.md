@@ -147,3 +147,19 @@ Hostinger just serves the files.
   (debounced) as you practise.
 - **On sign-out**, the local session is cleared for privacy; signing back in
   restores everything from the profile.
+- **If the initial pull fails** (network hiccup, most likely right after the
+  Google OAuth redirect's cold page load), the app retries every 15s rather
+  than assuming "no saved data" — it never pushes local state over a remote
+  snapshot it wasn't able to read, so a transient failure can't clobber real
+  progress.
+
+### If a user says their progress disappeared after signing in
+
+Check the Supabase dashboard's **Authentication → Users** list for two
+separate rows with that user's email — one is likely from "Continue with
+Google", the other from email/password. Supabase auto-links a new OAuth
+identity to an existing account with the same, *confirmed* email; if the
+original email/password account was never confirmed, linking is skipped and
+a second, separate account is created instead — with its own empty saved
+snapshot. If you find two rows, that's the cause, not a sync bug: the
+progress is still on the first account, just inaccessible from the second.

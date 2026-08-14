@@ -1,4 +1,4 @@
-import { Wordmark } from "../components/brand";
+import { Appbar } from "../components/Appbar";
 import { DICTIONARY } from "../data/dictionary";
 
 export function Settings({
@@ -17,11 +17,8 @@ export function Settings({
   onSignOut: () => void;
 }) {
   return (
-    <div className="screen pad-top">
-      <div className="gutter" style={{ padding: "4px 22px 14px" }}>
-        <Wordmark />
-        <h1 className="title-serif" style={{ marginTop: 7 }}>Settings</h1>
-      </div>
+    <div className="screen">
+      <Appbar title="Settings" />
 
       <div className="screen__body gutter" style={{ paddingBottom: 26 }}>
         {/* Account — only shown when cloud sync is set up for this build. */}
