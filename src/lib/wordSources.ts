@@ -111,14 +111,18 @@ export function editEntry(id: string, edit: { english: string; example: string; 
  *
  *  Compares every field a save can change, not just the gloss: a save that
  *  only edits the example (translation left exactly as the default) is a
- *  real edit too, and comparing english alone would silently drop it. */
+ *  real edit too, and comparing english alone would silently drop it. A
+ *  bundled default never carries a metIn (see types.ts) — the dictionary
+ *  doesn't know where a user met a word — so any entry with one set is
+ *  never "just the default", even when the rest matches exactly. */
 function matchesBundledDefault(entry: DictionaryEntry): boolean {
   const base = resolveBundled(entry.id);
   return (
     base !== undefined &&
     base.english === entry.english &&
     base.example === entry.example &&
-    base.exampleEn === entry.exampleEn
+    base.exampleEn === entry.exampleEn &&
+    entry.metIn === undefined
   );
 }
 

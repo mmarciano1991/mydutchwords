@@ -25,15 +25,16 @@ import { Browse } from "./screens/Browse";
 import { Practice, type PracticeCard } from "./screens/Practice";
 import { SessionReport } from "./screens/SessionReport";
 import { Capture } from "./screens/Capture";
+import { AddFromText } from "./screens/AddFromText";
 import { Settings } from "./screens/Settings";
 import { Auth } from "./screens/Auth";
 import { NewPassword } from "./screens/NewPassword";
 import { Welcome } from "./screens/Welcome";
 import { TabBar, type Tab } from "./components/TabBar";
 
-type Route = Tab | "practice" | "report" | "capture";
+type Route = Tab | "practice" | "report" | "capture" | "add-from-text";
 
-const FOCUSED: Route[] = ["practice", "report", "capture"];
+const FOCUSED: Route[] = ["practice", "report", "capture", "add-from-text"];
 
 /** Joins spaced-repetition Words back to their dictionary content for display. */
 function toPracticeCards(words: Word[]): PracticeCard[] {
@@ -391,9 +392,19 @@ export default function App() {
                     onSave={saveCapturedWord}
                     onUndo={(entryId) => setDeck((prev) => prev.filter((d) => d.id !== entryId))}
                     onViewDeck={() => setRoute("browse")}
+                    onAddFromText={() => setRoute("add-from-text")}
                     onBack={() => setRoute("dashboard")}
                   />
                 </div>
+              )}
+
+              {route === "add-from-text" && (
+                <AddFromText
+                  deckIds={deckIds}
+                  levels={levels}
+                  onSave={saveCapturedWord}
+                  onBack={() => setRoute("capture")}
+                />
               )}
             </>
           )}

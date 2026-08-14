@@ -35,6 +35,19 @@ export async function resendConfirmation(email: string): Promise<AuthResult> {
   return { error: error?.message ?? null };
 }
 
+/** Verifies the code from a sign-up confirmation email and signs the user
+ *  in directly — no separate "now log in" step, since verifyOtp already
+ *  returns a session. Requires the project's confirmation email template to
+ *  contain {{ .Token }} (a one-time dashboard change — see
+ *  docs/auth-setup.md); this call works either way, but only reads as a
+ *  6-digit code to the user once that template change is made, otherwise
+ *  the email still shows a link and this field goes unused. */
+export async function verifySignupOtp(email: string, token: string): Promise<AuthResult> {
+  if (!supabase) return { error: NOT_CONFIGURED };
+  const { error } = await supabase.auth.verifyOtp({ email, token, type: "signup" });
+  return { error: error?.message ?? null };
+}
+
 /** Emails a recovery link. Following it returns to the app with a recovery
  *  session, which App turns into the "Set a new password" screen — so the
  *  loop finishes in the app rather than leaving the user signed in with the

@@ -10,10 +10,15 @@
    This module doesn't decide what's "found" — it proposes candidate lemmas
    and lets the caller's own dictionary be the judge, via the `lookup`
    predicate. A rule that's wrong about Dutch morphology just produces a
-   candidate nothing matches, which costs nothing and never surfaces: the
-   only way this returns non-null is a real dictionary hit, so an incorrect
-   guess (of the "gestegen → gisteren" kind the suggestion list used to make)
-   isn't a failure mode this module has.
+   candidate nothing matches, which costs nothing and never surfaces.
+
+   It does NOT stop at the first real hit, though — that used to be the
+   contract, and a real article broke it: "sloten" (ditches) and "slot"
+   (lock) pluralise identically, and the bundled dictionary has both
+   singulars, so returning on the first match silently asserted "slot" was
+   right and never tried "sloot" at all. Every real candidate is returned;
+   the caller decides what to do with more than one (see Capture.tsx, which
+   offers them as a choice — the same shape as picking a word sense).
 
    Pure, synchronous, no I/O — same shape as learningEngine.ts. Irregular
    verbs (stijgen → gestegen is ablaut, not suffixation) can't be derived by
@@ -22,7 +27,7 @@
 import { IRREGULAR_PARTICIPLES } from "../data/irregularVerbs";
 
 export interface Deinflection {
-  /** The base form that was actually found in the dictionary. */
+  /** A base form that was actually found in the dictionary. */
   lemma: string;
   /** Human-readable grammatical relation, shown as "word → lemma (reason)". */
   reason: string;
@@ -62,10 +67,15 @@ function withDoubledConsonant(stem: string): string | null {
 
 interface Rule {
   reason: string;
-  /** Base forms to try, most likely first. Never includes `word` itself. */
+  /** Base forms to try. Never includes `word` itself. All are tested — this
+   *  is not "most likely first" any more, since every real hit is kept. */
   candidates: (word: string) => string[];
 }
 
+/** The specific patterns, checked before the generic fallback below. Order
+ *  doesn't gate correctness any more (every rule's real hits are kept
+ *  regardless of position) — it only affects nothing observable, since
+ *  results are deduplicated by lemma as they're collected. */
 const RULES: Rule[] = [
   {
     // huurders → huurder, aanvragers → aanvrager: agent nouns and other -s
@@ -76,7 +86,9 @@ const RULES: Rule[] = [
   },
   {
     // maatregelen → maatregel (plain strip); afspraken → afspraak (the
-    // stripped stem is also tried with its vowel doubled back).
+    // stripped stem is also tried with its vowel doubled back). sloten
+    // matches both "slot" (plain) and "sloot" (doubled) — both real words,
+    // both returned; see the module comment.
     reason: "plural",
     candidates: (w) => {
       if (!isPlainWord(w, 5) || !w.endsWith("en")) return [];
@@ -129,28 +141,77 @@ const RULES: Rule[] = [
   },
 ];
 
+/** Adjective agreement: "aanhoudende" is "aanhoudend" plus the -e ending
+ *  Dutch adjectives take before a noun. This is deliberately the LAST thing
+ *  tried, never merged with RULES above (see deinflect): stripping a bare
+ *  trailing "e" is the least specific pattern here — nearly any word could
+ *  coincidentally end in one — so it only runs once every more specific
+ *  rule has already come back empty, the same way the irregular list is
+ *  checked before the specific rules rather than folded in among them. */
+const AGREEMENT_RULE: Rule = {
+  reason: "adjective agreement",
+  candidates: (w) => {
+    if (!isPlainWord(w, 5) || !w.endsWith("e")) return [];
+    const stem = w.slice(0, -1);
+    const doubled = withDoubledVowel(stem);
+    return doubled ? [stem, doubled] : [stem];
+  },
+};
+
+/** Runs `rules` against `q`, keeping every candidate `lookup` confirms as a
+ *  real word, deduplicated by lemma (a word can't be its own inflection). */
+function collectHits(q: string, rules: Rule[], lookup: (term: string) => boolean): Deinflection[] {
+  const hits: Deinflection[] = [];
+  const seen = new Set<string>();
+  for (const rule of rules) {
+    for (const candidate of rule.candidates(q)) {
+      if (candidate && candidate !== q && !seen.has(candidate) && lookup(candidate)) {
+        hits.push({ lemma: candidate, reason: rule.reason });
+        seen.add(candidate);
+      }
+    }
+  }
+  return hits;
+}
+
 /**
  * Explains a word the dictionary missed, by testing candidate base forms
  * against `lookup` (typically `wordSources.lookupLocal`, wrapped to return a
- * boolean) until one is a real hit. Irregular participles are checked first,
- * since no suffix rule derives "stijgen" from "gestegen"; everything else
- * follows regular Dutch morphology, tried in the order above.
+ * boolean). Returns every real dictionary hit, not just the first: Dutch
+ * genuinely pluralises unrelated words identically often enough ("sloten" is
+ * both "locks" and "ditches") that "first match" was itself a source of
+ * confidently wrong answers — the same failure this module exists to fix.
+ * An empty array means nothing suggests this word is a known inflection.
+ *
+ * Irregular participles are checked first, since no suffix rule derives
+ * "stijgen" from "gestegen". The regular rules run next, together — if any
+ * of them find a real word, that's the answer (ambiguous or not) and the
+ * generic adjective-agreement fallback never runs, since a bare trailing
+ * "-e" is the least specific pattern here and would just add noise to an
+ * already-resolved case.
  */
-export function deinflect(word: string, lookup: (term: string) => boolean): Deinflection | null {
+export function deinflect(word: string, lookup: (term: string) => boolean): Deinflection[] {
   const q = word.trim().toLowerCase();
-  if (!isPlainWord(q, 3)) return null;
+  if (!isPlainWord(q, 3)) return [];
+
+  const hits: Deinflection[] = [];
+  const seen = new Set<string>();
 
   const irregular = IRREGULAR_PARTICIPLES[q];
   if (irregular && irregular !== q && lookup(irregular)) {
-    return { lemma: irregular, reason: "past participle" };
+    hits.push({ lemma: irregular, reason: "past participle" });
+    seen.add(irregular);
   }
 
   for (const rule of RULES) {
     for (const candidate of rule.candidates(q)) {
-      if (candidate && candidate !== q && lookup(candidate)) {
-        return { lemma: candidate, reason: rule.reason };
+      if (candidate && candidate !== q && !seen.has(candidate) && lookup(candidate)) {
+        hits.push({ lemma: candidate, reason: rule.reason });
+        seen.add(candidate);
       }
     }
   }
-  return null;
+  if (hits.length > 0) return hits;
+
+  return collectHits(q, [AGREEMENT_RULE], lookup);
 }

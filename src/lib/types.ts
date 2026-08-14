@@ -19,6 +19,15 @@ export interface DictionaryEntry {
    *  choice exists. Absent (not empty) for the ~14,190 words with one gloss,
    *  so resolving an ordinary word never allocates an array for it. */
   senses?: WordSense[];
+  /** The real Dutch sentence this word was actually met in, distinct from
+   *  the dictionary's own canonical example above. Set automatically by
+   *  "Add from text" (see AddFromText.tsx), where the sentence is
+   *  unambiguous — it's whichever one the tapped word came from. A learner
+   *  who can compare a gloss against the sentence they personally read it
+   *  in can catch a wrong sense the dictionary's own example never would
+   *  (see docs/recommendations.md, item 1c). Dutch only — the point is to
+   *  recognise it, not translate it again. */
+  metIn?: string;
 }
 
 /** One meaning of a word — its own translation, example, and article, since

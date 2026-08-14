@@ -158,6 +158,12 @@ export function Browse({
                         </div>
                       ) : (
                         <>
+                          {e.metIn && (
+                            <div style={{ marginBottom: 10 }}>
+                              <div className="eyebrow">Where you met it</div>
+                              <div className="wordrow__example-nl">{e.metIn}</div>
+                            </div>
+                          )}
                           <div className="eyebrow">In context</div>
                           {e.example ? (
                             <div className="wordrow__example">
