@@ -3,6 +3,7 @@
    search slot is off unless a `search` prop is passed, so screens that only
    need a title stay unchanged. `divider` draws the hairline that appears
    once there's body content beneath. */
+import type { Ref } from "react";
 import { IconButton } from "./IconButton";
 import { SearchIcon } from "./icons";
 import { Close } from "../icons";
@@ -12,6 +13,8 @@ export type AppbarSearch = {
   onChange: (value: string) => void;
   placeholder: string;
   autoFocus?: boolean;
+  /** Lets the screen refocus the field — e.g. ready for the next word. */
+  inputRef?: Ref<HTMLInputElement>;
   /** Enter key — e.g. "look this up online anyway". */
   onSubmit?: () => void;
 };
@@ -52,6 +55,7 @@ export function Appbar({
         >
           <SearchIcon />
           <input
+            ref={search.inputRef}
             value={search.value}
             onChange={(e) => search.onChange(e.target.value)}
             placeholder={search.placeholder}

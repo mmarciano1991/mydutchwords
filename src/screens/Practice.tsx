@@ -177,19 +177,34 @@ export function Practice({
         </div>
       )}
 
+      {/* Grading is only offered once the answer is on screen. Both buttons
+          used to be live under an unflipped card, next to a question asking
+          whether you know the word — which invites answering a card you
+          haven't tried to recall, and quietly turns self-assessment into
+          guesswork. Revealing first is what makes the grade mean something
+          (and is how Anki has always sequenced it). The card itself still
+          flips on tap; this is the same gesture given a label. */}
       <div className="gutter" style={{ padding: "12px 22px 32px", display: "flex", gap: 12 }}>
-        <button className="btn btn--difficult" onClick={() => grade("dontKnow")}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M4 4l8 8M12 4l-8 8" stroke="#B5462F" strokeWidth="2" strokeLinecap="round" />
-          </svg>
-          Still learning
-        </button>
-        <button className="btn btn--success" onClick={() => grade("know")}>
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8.5l3.2 3.2L13 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-          I knew it
-        </button>
+        {flipped ? (
+          <>
+            <button className="btn btn--difficult" onClick={() => grade("dontKnow")}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4l8 8M12 4l-8 8" stroke="#B5462F" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              Still learning
+            </button>
+            <button className="btn btn--success" onClick={() => grade("know")}>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M3 8.5l3.2 3.2L13 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              I knew it
+            </button>
+          </>
+        ) : (
+          <button className="btn btn--primary" onClick={() => setFlipped(true)}>
+            Show translation
+          </button>
+        )}
       </div>
     </div>
   );

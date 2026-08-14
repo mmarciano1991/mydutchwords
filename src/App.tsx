@@ -163,13 +163,16 @@ export default function App() {
   }
 
   /** Save from the capture flow. Words from the online lookup aren't in the
-   *  bundled dictionary, so they're persisted as custom entries first. */
+   *  bundled dictionary, so they're persisted as custom entries first.
+   *
+   *  Deliberately does not navigate: the capture screen confirms the save
+   *  itself and clears for the next word. Landing on the deck after every
+   *  add cost four taps per word on a task that asks for three. */
   function saveCapturedWord(entry: DictionaryEntry) {
     addCustomEntry(entry);
     setDeck((prev) =>
       isInDeck(prev, entry.id) ? prev : [newDeckItem(entry.id, new Date()), ...prev]
     );
-    setRoute("browse");
   }
 
   // What the scheduler would practice right now — drives the hero's due count.
@@ -367,6 +370,8 @@ export default function App() {
                     deckIds={deckIds}
                     levels={levels}
                     onSave={saveCapturedWord}
+                    onUndo={(entryId) => setDeck((prev) => prev.filter((d) => d.id !== entryId))}
+                    onViewDeck={() => setRoute("browse")}
                     onBack={() => setRoute("dashboard")}
                   />
                 </div>

@@ -12,7 +12,7 @@
    (useLatestSearch): editing cancels it, the spinner shows only when the
    response is slow, and network failures get a retry instead of
    masquerading as "not found". */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
 import { lookupLocal, suggestWords } from "../lib/wordSources";
 import { lookupWiktionary } from "../lib/wiktionary";
@@ -37,15 +37,25 @@ export function Capture({
   deckIds,
   levels,
   onSave,
+  onUndo,
+  onViewDeck,
   onBack,
 }: {
   deckIds: Set<string>;
   /** Ladder level per deck word id — drives the mastery bar on state 3c. */
   levels: Map<string, number>;
   onSave: (entry: DictionaryEntry) => void;
+  /** Takes the last-added word back out of the deck. */
+  onUndo: (entryId: string) => void;
+  onViewDeck: () => void;
   onBack: () => void;
 }) {
   const [query, setQuery] = useState("");
+  // The word just added, so the screen can confirm it without navigating
+  // away, and the count of words added since this screen opened.
+  const [added, setAdded] = useState<DictionaryEntry | null>(null);
+  const [addedCount, setAddedCount] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
   const online = useLatestSearch(fetchOnline, { slowAfterMs: 180 });
 
   const trimmed = query.trim();
@@ -63,10 +73,12 @@ export function Capture({
 
   const { search, reset } = online;
 
-  // A miss with near-matches rests on those (state 2) — a typo is far more
-  // likely than a word the bundled dictionary has never heard of, and it
-  // costs no round-trip. Only a miss with nothing close goes online.
-  const searchable = missed && suggestions.length === 0;
+  // Every miss goes online, near-matches or not. Resting on the near-matches
+  // alone assumed a miss was a typo, which held for "huurdrr" and failed for
+  // every real word the bundled dictionary lacks: "termijn" was answered with
+  // "terwijl" and never looked up. The suggestions still show — they're the
+  // faster answer when they're right — but they no longer stand in for one.
+  const searchable = missed;
 
   useEffect(() => {
     if (searchable) search(trimmed);
@@ -74,7 +86,26 @@ export function Capture({
 
   function edit(value: string) {
     setQuery(value);
+    setAdded(null); // typing again means we're past the last confirmation
     reset(); // abort any in-flight lookup; the spinner disappears at once
+  }
+
+  /** Adds the word and stays put, ready for the next one. */
+  function save(entry: DictionaryEntry) {
+    onSave(entry);
+    setAdded(entry);
+    setAddedCount((n) => n + 1);
+    setQuery("");
+    reset();
+    inputRef.current?.focus();
+  }
+
+  function undo() {
+    if (!added) return;
+    onUndo(added.id);
+    setAdded(null);
+    setAddedCount((n) => Math.max(0, n - 1));
+    inputRef.current?.focus();
   }
 
   // Online state is only trusted when it belongs to the current query.
@@ -89,9 +120,11 @@ export function Capture({
   const notFound = !localHit && current?.status === "success" && current.data === null;
   const failed = current?.status === "error";
 
-  // State 2: close spellings to offer while nothing definite has resolved.
-  const showSuggestions = !entry && !notFound && !failed && suggestions.length > 0;
-  const hasBody = Boolean(entry || notFound || failed || showSuggestions || searching);
+  // Close spellings, offered alongside whatever the online lookup returns
+  // rather than instead of it. They stay up through a "not found" or a
+  // failed request, since that's exactly when they're the only lead left.
+  const showSuggestions = !entry && suggestions.length > 0;
+  const hasBody = Boolean(entry || notFound || failed || showSuggestions || searching || added);
 
   return (
     <div className="screen">
@@ -106,7 +139,8 @@ export function Capture({
           // word" — which read as "search the words you already have".
           placeholder: "Search a Dutch word",
           autoFocus: true,
-          // Escape hatch out of state 2: look it up online anyway.
+          inputRef,
+          // Re-runs a lookup that failed on a flaky connection.
           onSubmit: () => missed && search(trimmed),
         }}
       />
@@ -125,7 +159,27 @@ export function Capture({
           </p>
         )}
 
-        {/* ── 2. Suggestions ── */}
+        {/* ── Just added ── the confirmation that replaces navigating to the
+            deck, so a second word costs two taps instead of four. */}
+        {added && (
+          <div className="addword__block">
+            <Notice type="success">
+              <strong>{added.dutch}</strong> added to your deck
+              {addedCount > 1 ? ` · ${addedCount} words this visit` : ""}
+            </Notice>
+            <div style={{ display: "flex", gap: 18, justifyContent: "center", marginTop: 2 }}>
+              <button className="link-btn" onClick={undo}>
+                Undo
+              </button>
+              <button className="link-btn" onClick={onViewDeck}>
+                View your deck
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ── 2. Suggestions ── near-matches, offered next to the online
+            result rather than in place of it. */}
         {showSuggestions && (
           <div className="addword__block">
             <div className="eyebrow">Did you mean</div>
@@ -136,9 +190,6 @@ export function Capture({
                 </button>
               ))}
             </div>
-            <button className="link-btn" onClick={() => search(trimmed)}>
-              No — look up &ldquo;{trimmed}&rdquo; online
-            </button>
           </div>
         )}
 
@@ -154,7 +205,7 @@ export function Capture({
         {entry && !inDeck && (
           <div className="addword__block">
             <WordCard entry={entry} />
-            <button className="btn btn--primary" onClick={() => onSave(entry)}>
+            <button className="btn btn--primary" onClick={() => save(entry)}>
               Add to deck
             </button>
           </div>
@@ -181,22 +232,11 @@ export function Capture({
           </div>
         )}
 
-        {/* ── 3b. Not found ── */}
+        {/* ── 3b. Not found ── the near-matches are rendered once, above,
+            for every state that still has them. */}
         {notFound && (
           <div className="addword__block">
             <Notice type="caution">We couldn&rsquo;t find &ldquo;{trimmed}&rdquo;</Notice>
-            {suggestions.length > 0 && (
-              <>
-                <div className="eyebrow">Did you mean</div>
-                <div className="suggestion-chips">
-                  {suggestions.map((s) => (
-                    <button key={s.id} className="suggestion-chip" onClick={() => edit(s.dutch)}>
-                      {s.dutch}
-                    </button>
-                  ))}
-                </div>
-              </>
-            )}
           </div>
         )}
 
