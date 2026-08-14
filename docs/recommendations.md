@@ -6,7 +6,8 @@ document: the runs are frozen records, this is the response to them.
 
 Ordered by what a wrong answer costs the learner.
 
-**Shipped so far:** 3a, 4 and 5, in `42e9350`. Everything else stands.
+**Shipped so far:** 3a, 4 and 5 in `42e9350`; 1b (bundled-dictionary half +
+online half) in `2e45d52`. Everything else stands.
 
 ---
 
@@ -43,14 +44,27 @@ Implementation note: don't fork the bundled entry. Add an optional
 rides the existing `cloudState` sync with no schema work, survives dictionary
 updates, and keeps the 14k bundle immutable.
 
-**b. Stop showing only the first sense.** `lookupWiktionary` walks the Dutch
-definitions and returns on the first usable gloss (`wiktionary.ts:65-81`) —
-the rest are already in the response and thrown away. Return up to three and
-render a picker. For the bundled dictionary the fix is authoring, not code:
-`data/curated.ts` carries one gloss per word, so words with genuinely distinct
-senses need a second. Prioritise a **civic Dutch** pass — the vocabulary of
-letters, forms and signs (`aanslag`, `termijn`, `beschikking`, `bezwaar`,
-`ingang`, `uitrit`, `verzuim`) — rather than the whole 14k.
+**b. Stop showing only the first sense.** ✅ **Shipped in `2e45d52`.**
+`lookupWiktionary` now collects every distinct definition across every
+part-of-speech section (capped at 5) instead of returning on the first —
+those extra senses were already in the response and were being thrown away.
+For the bundled dictionary, a new small hand-authored overlay
+(`src/data/senses.ts`) carries additional senses for `aanslag`, `weken` and
+`uiterlijk` (the last newly added to `data/curated.ts`, along with `termijn`,
+closing two run-04 gaps directly) — a **civic Dutch** starter set, not a bulk
+pass over the other ~14,190 words, exactly as scoped here.
+
+The capture screen renders every sense as its own card with its own Add
+button whenever a word has more than one (`SenseCard.tsx`); picking one had
+to survive past the moment of picking it, so `resolveEntry` now checks the
+custom-word store *before* the bundled dictionary rather than after, and
+`addCustomEntry` writes an override whenever the saved gloss differs from the
+bundled default — reusing the deck's existing sync wholesale, no schema
+change. Verified in a browser: picking the non-default sense for `aanslag`
+updates the deck immediately and survives a full page reload.
+
+Extending the civic-Dutch list is now just adding an entry to
+`src/data/senses.ts` — no build step, no code change.
 
 **c. Capture the sentence the word was met in.** Readlang's model, and the
 single highest-value addition to the data. An optional "where you saw it"
@@ -219,13 +233,13 @@ reopening it is a bigger conversation than this list.
 | 2 | **2a** — Add from text | Medium | Makes task 1 native, and feeds context into 1c |
 | 3 | **3b** — Dutch deinflection before "not found" | Medium | Pure, testable; converts misses into explanations |
 | 4 | **1c** — capture the sentence the word was met in | Medium | Best long-term answer to the wrong-sense problem |
-| 5 | **1b** — multiple senses (Wiktionary picker, then civic-Dutch authoring) | Medium code, ongoing data | The real fix, but the data pass is never "done" |
-| 6 | **6** — OTP code instead of a confirmation link | Small, mostly config | Or just disable confirmation for the pilot |
+| 5 | **6** — OTP code instead of a confirmation link | Small, mostly config | Or just disable confirmation for the pilot |
+| — | ✅ **1b** — multiple senses | — | Shipped `2e45d52`. Extending `senses.ts` is now ongoing, not a project |
 
-The three cheap ones are done. What remains is the wrong-sense problem and the
-reading route, which is where the value now is: **1a** is the next to take, and
-**1b** is the one to start authoring in the background, because it is the only
-item whose cost is measured in words rather than commits.
+Four of nine are done. **1a** — editing a saved translation directly, for the
+words that *don't* have a sense picker — is the next one to take: it's the
+same override mechanism 1b just proved out, applied without requiring a
+second known sense first.
 
 ---
 
