@@ -7,7 +7,8 @@ document: the runs are frozen records, this is the response to them.
 Ordered by what a wrong answer costs the learner.
 
 **Shipped so far:** 3a, 4 and 5 in `42e9350`; 1b in `2e45d52`; 1a and 3b in
-`8864c50`. Open: 1c, 2a, 6.
+`8864c50`. Open: 1c, 2a, 6, and item 7 below — found by
+[run 05](./studies/run-05-f4f6ecd.md), inside 3b itself.
 
 ---
 
@@ -238,25 +239,70 @@ reopening it is a bigger conversation than this list.
 
 ---
 
+## 7. Deinflection can resolve to the wrong real word
+
+**The finding.** [Run 05](./studies/run-05-f4f6ecd.md), testing against a real
+pasted news article, found this inside 3b itself: `sloten` (ditches) resolves
+to `slot` (lock), and `beken` (streams) resolves to `bek` (beak/mouth) — both
+with full confidence, no hedge. Dutch pluralises `sloot`→`sloten` and
+`slot`→`sloten` identically (same for `beek`/`bek`→`beken`), and the bundled
+dictionary contains all four singulars. `deinflect.ts` generates the
+unmodified-strip candidate before the vowel-doubled one and returns on the
+**first** real dictionary hit — so it stops at the wrong word before ever
+trying the right one. This is the exact failure shape run 01 and run 04 both
+found, now reproduced inside the mechanism built to prevent it.
+
+Separately, `aanhoudende` (adjective agreement `-e`) isn't covered by any
+current rule, and fell through to the fuzzy suggestion list instead — which
+happened to land correctly this time, but isn't a rule doing its job on
+purpose.
+
+**What other apps do.** The same principle as 1b applies here, not a new one:
+[Yomitan doesn't pick a definition, it stacks every one it finds](https://yomitan.wiki/)
+and lets the reader judge from context. A deinflector that finds two
+independently valid lemmas is in exactly the situation 1b was built for.
+
+### Recommendation
+
+**a. Don't stop at the first hit — collect every real candidate.** Change
+`deinflect` to keep testing all of a rule's candidates (and irregular +
+regular candidates together) instead of returning on the first match, and
+return the full list. When exactly one candidate is real, behave exactly as
+today. When more than one is, that's not a single confident answer anymore —
+it's a sense picker with an extra step: reuse `SenseCard`'s pattern (each
+candidate rendered as "sloten → **slot** (lock)" / "sloten → **sloot**
+(ditch)", both tappable) rather than asserting one. Small change: `deinflect`
+already tests every candidate against `lookup`, it just discards the rest
+once it finds one.
+
+**b. Add an adjective-agreement rule.** Strip a bare trailing `-e` as a last,
+lowest-priority candidate (it's the least specific pattern here — almost any
+word can end in `e`), tried only after every more specific rule has failed.
+`aanhoudende → aanhoudend` this way, with an explanation, instead of by luck
+through the suggestion list.
+
+---
+
 ## Suggested order
 
 | | Item | Effort | Why here |
 | --- | --- | --- | --- |
-| 1 | **2a** — Add from text | Medium | Makes task 1 native, and feeds context into 1c |
-| 2 | **1c** — capture the sentence the word was met in | Medium | Best long-term answer to the wrong-sense problem |
-| 3 | **6** — OTP code instead of a confirmation link | Small, mostly config | Or just disable confirmation for the pilot |
+| 1 | **7a** — deinflection: don't stop at the first hit | Small | Fixes a live wrong-answer bug, reuses 1b's picker pattern |
+| 2 | **2a** — Add from text | Medium | Makes task 1 native, and feeds context into 1c |
+| 3 | **1c** — capture the sentence the word was met in | Medium | Best long-term answer to the wrong-sense problem |
+| 4 | **7b** — adjective-agreement deinflection rule | Small | Closes a gap 7a's fix won't happen to cover |
+| 5 | **6** — OTP code instead of a confirmation link | Small, mostly config | Or just disable confirmation for the pilot |
 | — | ✅ **3a** | — | Shipped `42e9350` |
 | — | ✅ **5** | — | Shipped `42e9350` |
 | — | ✅ **4** | — | Shipped `42e9350` |
 | — | ✅ **1b** | — | Shipped `2e45d52` — extending `senses.ts` is now ongoing, not a project |
 | — | ✅ **1a** | — | Shipped `8864c50` — surfaced and fixed a real bug in 1b's shared override guard |
-| — | ✅ **3b** | — | Shipped `8864c50` — every original run-01 miss now resolves |
+| — | ✅ **3b** | — | Shipped `8864c50`, revised by 7a — every original run-01 miss resolves, but see 7 |
 
-Six of nine are done. What's left doesn't have a shared mechanism to reuse the
-way the last three did: **2a** is a new screen, **1c** is a new field, **6**
-is mostly configuration. **2a** is the one worth taking next — it's the
-structural fix for task 1, and it hands 1c its context for free once it
-exists.
+Six of eleven are done. **7a** jumps to the top: it isn't a new feature, it's
+closing a live wrong-answer bug in code that's already deployed, and the fix
+is smaller than any other item on this list because 1b already built the
+picker it needs.
 
 ---
 
