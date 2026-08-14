@@ -4,7 +4,9 @@ Every issue still open after [run 04](./studies/run-04-795d03e.md), with a
 proposed solution grounded in what comparable apps do. This is a living
 document: the runs are frozen records, this is the response to them.
 
-Nothing here is implemented. Ordered by what a wrong answer costs the learner.
+Ordered by what a wrong answer costs the learner.
+
+**Shipped so far:** 3a, 4 and 5, in `42e9350`. Everything else stands.
 
 ---
 
@@ -104,8 +106,9 @@ for committed users — not as the answer to this finding.
 **The finding.** Article and letter Dutch is inflected; lookup is exact-match
 on the lemma. `huurders`, `maatregelen`, `gestegen`, `toegenomen`, `afspraken`,
 `duurder`, `verboden` all miss. Worse, a near-match *suppresses* the online
-lookup: `termijn` offers `terwijl` and never looks the real word up, because
-`searchable = missed && suggestions.length === 0` (`Capture.tsx:69`).
+lookup: `termijn` offered `terwijl` and never looked the real word up, because
+`searchable = missed && suggestions.length === 0` (`Capture.tsx:69`). That
+half is now fixed; the inflection half is not.
 
 **What other apps do.** [Yomitan deinflects before looking anything
 up](https://yomitan.wiki/) — converting a conjugated form back to its
@@ -114,10 +117,10 @@ queries per word to do it.
 
 ### Recommendation
 
-**a. Let the online lookup run even when suggestions exist.** One line:
-`searchable = missed`. Show the suggestion chips *and* the online result when
-it lands. `termijn` starts working immediately. Do this one first — it is the
-cheapest fix on this entire page.
+**a. Let the online lookup run even when suggestions exist.** ✅ **Shipped in
+`42e9350`.** `searchable = missed`; the chips now show alongside the online
+result rather than instead of it, and they survive a failed request — which is
+exactly when they're the only lead left. `termijn` resolves.
 
 **b. Deinflect before declaring a miss.** Dutch is regular enough for a small
 rule-based stemmer: plural `-en`/`-s`, diminutive `-je`/`-tje`, comparative
@@ -151,11 +154,11 @@ retrieval first, then honest self-assessment.
 
 ### Recommendation
 
-Replace the two always-visible buttons with a single full-width **Show
-translation**, then swap in the grade pair after the flip. Tap count is
-unchanged (the flip was already a tap), the ambiguity is gone, and the card
-stops inviting a grade for a word the user hasn't tried to recall. Contained
-entirely in `Practice.tsx`. Keep tap-anywhere-on-the-card flipping too.
+✅ **Shipped in `42e9350`.** A single full-width **Show translation** before
+the flip, the grade pair after it. Tap count is unchanged (the flip was
+already a tap), the ambiguity is gone, and the card stops inviting a grade for
+a word the user hasn't tried to recall. Tapping the card still flips it — this
+is the same gesture given a label.
 
 ---
 
@@ -169,12 +172,14 @@ the next note. Quizlet's set editor keeps a running list of rows.
 
 ### Recommendation
 
-After Add to deck, stay on the capture screen: clear the field, refocus it,
-and confirm inline — "**huurder** added" with an Undo, and a running count for
-the session. Put **Done** in the appbar for leaving deliberately. Two taps per
-word instead of four, and the deck screen stops being a place you land by
-accident. `saveCapturedWord` currently ends with `setRoute("browse")`
-(`App.tsx:171`); that line is the change.
+✅ **Shipped in `42e9350`.** Adding keeps you on the capture screen, which
+confirms the save ("**huurder** added to your deck", with a running count from
+the second word on), clears the field, and refocuses it. **Undo** takes the
+word back out; **View your deck** goes where the old flow dumped you, when
+that's actually what you wanted. Two taps per word instead of four.
+
+The appbar's back chevron stayed as the exit rather than gaining a **Done** —
+it was already there and already leaves.
 
 ---
 
@@ -207,19 +212,20 @@ reopening it is a bigger conversation than this list.
 
 | | Item | Effort | Why here |
 | --- | --- | --- | --- |
-| 1 | **3a** — let the online lookup run alongside suggestions | One line | Cheapest real gain available; fixes `termijn` today |
-| 2 | **5** — stay on the capture screen after adding | Small | Removes friction from the task that's run three times |
-| 3 | **4** — Show translation before the grade buttons | Small | Contained, and it's what the practice loop is for |
-| 4 | **1a** — editable translations, via a `DeckItem.override` | Small–medium | The safety net under every wrong gloss |
-| 5 | **2a** — Add from text | Medium | Makes task 1 native, and feeds context into 1c |
-| 6 | **3b** — Dutch deinflection before "not found" | Medium | Pure, testable; converts misses into explanations |
-| 7 | **1c** — capture the sentence the word was met in | Medium | Best long-term answer to the wrong-sense problem |
-| 8 | **1b** — multiple senses (Wiktionary picker, then civic-Dutch authoring) | Medium code, ongoing data | The real fix, but the data pass is never "done" |
-| 9 | **6** — OTP code instead of a confirmation link | Small, mostly config | Or just disable confirmation for the pilot |
+| ✅ | **3a** — let the online lookup run alongside suggestions | One line | Shipped `42e9350` |
+| ✅ | **5** — stay on the capture screen after adding | Small | Shipped `42e9350` |
+| ✅ | **4** — Show translation before the grade buttons | Small | Shipped `42e9350` |
+| 1 | **1a** — editable translations, via a `DeckItem.override` | Small–medium | The safety net under every wrong gloss |
+| 2 | **2a** — Add from text | Medium | Makes task 1 native, and feeds context into 1c |
+| 3 | **3b** — Dutch deinflection before "not found" | Medium | Pure, testable; converts misses into explanations |
+| 4 | **1c** — capture the sentence the word was met in | Medium | Best long-term answer to the wrong-sense problem |
+| 5 | **1b** — multiple senses (Wiktionary picker, then civic-Dutch authoring) | Medium code, ongoing data | The real fix, but the data pass is never "done" |
+| 6 | **6** — OTP code instead of a confirmation link | Small, mostly config | Or just disable confirmation for the pilot |
 
-Items 1–3 are a single afternoon and would change what run 05 looks like.
-Item 8 is the one to start authoring in the background now, because it is the
-only item whose cost is measured in words rather than commits.
+The three cheap ones are done. What remains is the wrong-sense problem and the
+reading route, which is where the value now is: **1a** is the next to take, and
+**1b** is the one to start authoring in the background, because it is the only
+item whose cost is measured in words rather than commits.
 
 ---
 
