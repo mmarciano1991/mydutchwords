@@ -86,6 +86,8 @@ tab. Vite is configured with `base: "./"` so it works from that subfolder.
   participants see it. Start at the
   [index](docs/studies/README.md); the newest run holds the task script in
   force.
+- [`docs/recommendations.md`](docs/recommendations.md) — what to do about the
+  findings still open, with the reasoning and the comparable apps behind each.
 
 ## Out of scope
 

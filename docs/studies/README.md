@@ -18,6 +18,11 @@ means two things. Real friction is measured with real people.
 | [03](./run-03-43a1fdd.md) | `43a1fdd` | 2026-08-13 | T3 completable in every direction · account dead-ends closed · T2 still has no path · T1 blocked on words, not buttons |
 | [04](./run-04-795d03e.md) | `795d03e` | 2026-08-13 | First run on the deployed build, image capture out of scope · T2 walked as a typed task: 3 of 7 letter words wrong, one with a confirming example |
 
+Findings are the runs' job; deciding what to do about them is not.
+[`docs/recommendations.md`](../recommendations.md) holds the proposed
+solutions, grounded in what comparable apps do — a living document, revised as
+items ship, unlike the runs.
+
 ## The convention
 
 **A run is frozen once written.** It records what the app did on one build, so
