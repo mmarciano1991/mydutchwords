@@ -4,6 +4,7 @@ import { applyGrade, type Grade, type ReviewedCard, type Word } from "../lib/lea
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
 import { Divider } from "../components/Divider";
+import { Check, Close } from "../icons";
 
 export interface PracticeCard {
   entry: DictionaryEntry;
@@ -147,13 +148,22 @@ export function Practice({
           {flipped ? "Translation" : isRepeat ? "One more try" : scheduling ? "Do you know this word?" : "Warm-up — does not change your schedule"}
         </div>
 
-        <button
-          className="flashcard"
-          onClick={() => setFlipped((f) => !f)}
-          aria-label="Flip card"
-        >
+        <button className="flashcard" onClick={() => setFlipped((f) => !f)}>
           <div className={`flashcard__inner${flipped ? " is-flipped" : ""}`}>
-            <div className="flashcard__face flashcard__face--front">
+            {/* No aria-label on the button itself: an explicit label would
+                replace this whole subtree as the accessible name, which is
+                exactly what made the card silent to a screen reader (see
+                docs/pilot-readiness-report.md, C1). The button's name now
+                composes from whichever face is actually showing. Both faces
+                stay in the DOM at all times (the 3D flip needs that), so
+                each face's aria-hidden is toggled by `flipped` explicitly —
+                without it, the not-currently-showing face's text risks
+                being included in the accessible name too (CSS
+                backface-visibility isn't one of the hiding techniques name
+                computation is guaranteed to respect), which would read the
+                translation and the word out together and give the answer
+                away before it's earned. */}
+            <div className="flashcard__face flashcard__face--front" aria-hidden={flipped}>
               <GenderChip gender={entry.gender} />
               <div className="flashcard__word">{entry.dutch}</div>
               {entry.example && <Divider />}
@@ -172,14 +182,14 @@ export function Practice({
                   </div>
                 </>
               )}
-              <div className="flashcard__hint">Tap to flip</div>
+              <div className="flashcard__hint" aria-hidden="true">Tap to flip</div>
             </div>
-            <div className="flashcard__face flashcard__face--back">
+            <div className="flashcard__face flashcard__face--back" aria-hidden={!flipped}>
               <GenderChip gender={entry.gender} />
               <div className="flashcard__word">{entry.english}</div>
               {entry.exampleEn && <Divider />}
               {entry.exampleEn && <div className="flashcard__example">{entry.exampleEn}</div>}
-              <div className="flashcard__hint">Tap to flip</div>
+              <div className="flashcard__hint" aria-hidden="true">Tap to flip</div>
             </div>
           </div>
         </button>
@@ -202,15 +212,11 @@ export function Practice({
         {flipped ? (
           <>
             <button className="btn btn--difficult" onClick={() => grade("dontKnow")}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M4 4l8 8M12 4l-8 8" stroke="#B5462F" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              <Close size={16} />
               Still learning
             </button>
             <button className="btn btn--success" onClick={() => grade("know")}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                <path d="M3 8.5l3.2 3.2L13 5" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <Check size={16} />
               I knew it
             </button>
           </>

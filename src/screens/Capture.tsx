@@ -88,6 +88,9 @@ export function Capture({
           // Says what is searched (the dictionary's Dutch side), not "your
           // word" — which read as "search the words you already have".
           placeholder: "Search a Dutch word",
+          // Placeholder text disappears once typing starts, so the
+          // accessible name says the same thing plus where the result goes.
+          ariaLabel: "Search a Dutch word to add to your deck",
           autoFocus: true,
           inputRef,
           onSubmit: retry,

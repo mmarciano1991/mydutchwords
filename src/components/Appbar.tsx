@@ -12,6 +12,10 @@ export type AppbarSearch = {
   value: string;
   onChange: (value: string) => void;
   placeholder: string;
+  /** Accessible name for the field — placeholder text disappears once
+   *  typing starts and isn't a reliable name for assistive tech, so this is
+   *  required rather than falling back to `placeholder` silently. */
+  ariaLabel: string;
   autoFocus?: boolean;
   /** Lets the screen refocus the field — e.g. ready for the next word. */
   inputRef?: Ref<HTMLInputElement>;
@@ -59,6 +63,7 @@ export function Appbar({
             value={search.value}
             onChange={(e) => search.onChange(e.target.value)}
             placeholder={search.placeholder}
+            aria-label={search.ariaLabel}
             autoFocus={search.autoFocus}
             autoComplete="off"
             autoCapitalize="off"

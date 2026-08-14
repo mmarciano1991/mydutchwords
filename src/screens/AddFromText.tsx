@@ -93,6 +93,11 @@ export function AddFromText({
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Plak of typ hier een stukje Nederlandse tekst…"
+            // The placeholder is deliberately Dutch (it's a prompt for Dutch
+            // input), so it can't double as the accessible name for an
+            // English-language screen reader user — this says the same
+            // thing the paragraph above it does, in English.
+            aria-label="Dutch text to read and capture words from"
             autoFocus
           />
           <button className="btn btn--primary" disabled={!draft.trim()} onClick={startReading}>
@@ -126,6 +131,7 @@ export function AddFromText({
                   .filter(Boolean)
                   .join(" ")}
                 onClick={() => setActive({ token: t, index: i })}
+                aria-label={addedIndices.has(i) ? `${t.text}, already added to your deck` : undefined}
               >
                 {t.text}
               </button>

@@ -30,7 +30,9 @@ export function TabBar({
         onClick={() => onChange(tab)}
         aria-current={isActive ? "page" : undefined}
       >
-        <Icon />
+        <span className="tab__icon">
+          <Icon />
+        </span>
         <span>{label}</span>
       </button>
     );

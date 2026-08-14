@@ -1029,7 +1029,7 @@ input {
   align-items: center;
   gap: var(--space-1);
   padding: 6px 0;
-  color: var(--inactive);
+  color: var(--primary);
   font-size: var(--size-label);
   font-weight: 700;
   letter-spacing: var(--tracking-label);
@@ -1038,8 +1038,19 @@ input {
   width: 24px;
   height: 24px;
 }
-.tab--active {
-  color: var(--primary);
+/* Active state is carried by the icon's pill, not a text-color change —
+   both tabs' labels stay --primary (Figma 251:3369/3370). */
+.tab__icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-1);
+  border-radius: var(--radius-button);
+  color: inherit;
+}
+.tab--active .tab__icon {
+  background: var(--primary);
+  color: var(--on-primary);
 }
 
 /* ── Floating add button ──
@@ -1447,8 +1458,10 @@ input {
 /* ── Motion & micro-interactions ──
    Subtle, fast, Material-inspired. Lives close to the interactive elements so
    intent is obvious. All of it is disabled under prefers-reduced-motion below. */
-.tab {
-  transition: color var(--motion-base) var(--ease-standard);
+.tab__icon {
+  transition:
+    background var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard);
 }
 .tab:active {
   transform: translateY(1px);

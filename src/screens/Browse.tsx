@@ -65,7 +65,12 @@ export function Browse({
         title="Your deck"
         search={
           entries.length > 0
-            ? { value: query, onChange: setQuery, placeholder: "Search Dutch or English…" }
+            ? {
+                value: query,
+                onChange: setQuery,
+                placeholder: "Search Dutch or English…",
+                ariaLabel: "Search your deck by Dutch or English word",
+              }
             : undefined
         }
       />

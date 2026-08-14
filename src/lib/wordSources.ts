@@ -191,7 +191,18 @@ function editDistance(a: string, b: string, max: number): number {
 }
 
 /** Spelling suggestions for a term that wasn't found: prefix matches first,
- *  then close misspellings (edit distance ≤ 2) from the bundled dictionary. */
+ *  then close misspellings — edit distance 1 outright (a single typo is
+ *  close enough on its own), edit distance 2 only when the candidate also
+ *  shares the query's first letter.
+ *
+ *  Distance 2 alone was too loose: "gestegen" → "gisteren" is genuinely
+ *  edit-distance 2 with no shared prefix and no shared meaning
+ *  ("yesterday" for what should resolve as a form of "stijgen", to rise) —
+ *  a confident-looking wrong guess offered next to a real deinflection hit,
+ *  which is exactly the failure item 1 in recommendations.md is about.
+ *  Requiring the first letter to match keeps genuine near-misses
+ *  ("gestegn" → "gestegen") while dropping unrelated words that merely
+ *  happen to be two edits away. (See recommendations.md item 3c.) */
 export function suggestWords(term: string, max = 3): DictionaryEntry[] {
   const q = term.trim().toLowerCase();
   if (q.length < 2) return [];
@@ -209,6 +220,15 @@ export function suggestWords(term: string, max = 3): DictionaryEntry[] {
   for (const e of DICTIONARY) {
     if (out.length >= max) break;
     if (seen.has(e.id) || e.id === q) continue;
+    if (editDistance(q, e.id, 1) <= 1) {
+      out.push(e);
+      seen.add(e.id);
+    }
+  }
+  for (const e of DICTIONARY) {
+    if (out.length >= max) break;
+    if (seen.has(e.id) || e.id === q) continue;
+    if (e.id[0] !== q[0]) continue;
     if (editDistance(q, e.id, 2) <= 2) {
       out.push(e);
       seen.add(e.id);
