@@ -52,6 +52,26 @@ The schema lives as a migration in [`supabase/migrations/`](../supabase/migratio
 > confirmation email unless you turn that off under
 > **Authentication → Providers → Email**.
 
+### Switch the confirmation email to a 6-digit code
+
+By default Supabase's confirmation email contains a link
+(`{{ .ConfirmationURL }}`) that signs the user up in a browser tab, away from
+the app. Woordkast's sign-up screen instead asks the user to type in a code
+without leaving the app (`verifySignupOtp` in `src/lib/auth.ts`, backed by
+Supabase's `verifyOtp`) — but that only shows a code because of one manual
+template edit:
+
+1. **Authentication → Emails → Confirm signup**.
+2. In the template body, replace `{{ .ConfirmationURL }}` with `{{ .Token }}`
+   (a 6-digit code Supabase generates instead of a confirmation link).
+3. Save.
+
+Until this edit is made, the email still contains a link instead of a code —
+the app's "enter the code" screen has no code to show, so the fallback copy
+("Got a link instead of a code? Opening it confirms your account the same
+way…") is what a user actually sees. `verifySignupOtp` works correctly either
+way; this template change is only about what the email displays.
+
 ## 4. Tell Supabase where the app lives
 
 Under **Authentication → URL Configuration**:

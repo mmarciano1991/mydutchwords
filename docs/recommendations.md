@@ -7,7 +7,7 @@ document: the runs are frozen records, this is the response to them.
 Ordered by what a wrong answer costs the learner.
 
 **Shipped so far:** 3a, 4 and 5 in `42e9350`; 1b in `2e45d52`; 1a and 3b in
-`8864c50`. Open: 1c, 2a, 6.
+`8864c50`; 7a, 7b, 2a, 1c and 6 in `20e0703`. Nothing open from this list.
 
 ---
 
@@ -73,12 +73,17 @@ updates the deck immediately and survives a full page reload.
 Extending the civic-Dutch list is now just adding an entry to
 `src/data/senses.ts` — no build step, no code change.
 
-**c. Capture the sentence the word was met in.** Readlang's model, and the
-single highest-value addition to the data. An optional "where you saw it"
-field at capture, shown on the flashcard beneath the app's own example. Even
-with no sense selection at all, a learner who sees *their* sentence next to
-the gloss can tell that "attack" doesn't fit a letter about money. Pairs
-naturally with item 2.
+**c. Capture the sentence the word was met in.** ✅ **Shipped in
+`20e0703`**, as part of Add from text (item 2a) — that's where a source
+sentence exists unambiguously, so `metIn` is set automatically there and
+nowhere else (no manual field was added to the ordinary capture screen; see
+2a). `DictionaryEntry.metIn` rides the same custom-entry override sync as 1a's
+translation edits and 1b's sense picks — no new schema, no separate storage.
+Shown on the deck row's expanded view ("Where you met it", above the app's
+own "In context" example) and on the flashcard's front face, beneath the
+app's own Dutch example. Verified in a browser: tapping a word out of pasted
+text captures its actual sentence, and it survives to both the deck row and
+the flashcard.
 
 **Also worth one line of copy:** when a gloss came from the online fallback it
 has no gender and no example, and it currently just looks thinner than the
@@ -101,12 +106,19 @@ that is where the words are.
 
 ### Recommendation
 
-**a. An "Add from text" screen.** Paste or type any Dutch text; the app splits
-it into words and renders them tappable; tapping one looks it up and offers
-Add, with the surrounding sentence captured automatically. This is the
-highest-value single feature on this list: it makes task 1 native, it removes
-the retyping, and it hands item 1c its context for free. It reuses the whole
-existing lookup path — only the entry point is new.
+**a. An "Add from text" screen.** ✅ **Shipped in `20e0703`**
+(`src/screens/AddFromText.tsx`). Paste or type any Dutch text; a pure
+tokenizer (`tokenizeText.ts`) splits it into sentences and tappable word
+tokens; tapping one runs it through the same resolution pipeline as the
+capture screen — deinflection, the sense picker, suggestions, all of it —
+now shared via an extracted `useWordLookup` hook and a shared
+`WordLookupResult` component, so the two screens can never drift apart on
+what a resolved word looks like. Adding a tapped word also captures the exact
+sentence it came from (item 1c), automatically. Reached from the capture
+screen's blank state ("Or add several words from something you're reading
+→"). Verified in a browser end to end: paste two sentences, tap a word in
+the second one, add it, and both its `metIn` sentence and its dictionary
+example show up distinctly on the deck row and the flashcard.
 
 **b. A paste affordance on the capture screen.** When Add a word opens, offer
 a **Paste** button rather than reading the clipboard unprompted (a silent read
@@ -221,16 +233,32 @@ It's well-signposted since run 03, but the interruption is structural.
 
 ### Recommendation
 
-**Send a 6-digit code instead of a link.** In Supabase this is a template
-change — use `{{ .Token }}` in place of `{{ .ConfirmationURL }}` and omit
-`emailRedirectTo`, then verify with `verifyOtp` ([docs](https://supabase.com/docs/guides/auth/auth-email-passwordless)).
-The user never leaves the app: they read six digits off a notification and
-type them into the screen they're already on. Note that code length is a
-server setting, so don't hard-code a six-character input mask.
+**Send a 6-digit code instead of a link.** ✅ **Shipped in `20e0703`.**
+Sign-up's "check your email" step now has a code-entry form (`Auth.tsx`) that
+calls a new `verifySignupOtp` (`src/lib/auth.ts`, wrapping Supabase's
+`verifyOtp` with `type: "signup"`); a successful verify returns a session
+directly, so there's no separate "now log in" step the way the link flow
+needed one. The fallback copy still covers a user who opens the link instead
+("Opening it confirms your account the same way — come back here and log in
+afterward"), since the link keeps working either way. The resend button is
+unchanged.
 
-For the pilot specifically, the simpler option is to **turn email confirmation
-off** for the cohort and rely on the password. Fewer moving parts during a
-14-day study, and it removes the pre-step entirely.
+This only *displays* as a 6-digit code once the Supabase project's
+confirmation email template is switched from `{{ .ConfirmationURL }}` to
+`{{ .Token }}` — a one-time dashboard change, documented in
+[`docs/auth-setup.md`](./auth-setup.md), that this repo can't make on the
+user's behalf (it isn't in source control). Until that switch is made, the
+email still shows a link; `verifySignupOtp` works correctly regardless, it
+just has nothing to verify against until the template points at a token.
+Verified in a browser against a stubbed Supabase auth API: sign-up reaches
+the code screen, a wrong code surfaces the server's error text, and the
+right code signs the user straight into the app.
+
+For the pilot specifically, the simpler option is still to **turn email
+confirmation off** for the cohort and rely on the password. Fewer moving
+parts during a 14-day study, and it removes the pre-step entirely — this
+remains true even with the code in place, if the template change isn't worth
+making before the study starts.
 
 Worth raising but **not** recommending: letting people try the app before
 making an account. The hard gate is a deliberate product decision, and
@@ -238,25 +266,79 @@ reopening it is a bigger conversation than this list.
 
 ---
 
+## 7. Deinflection can resolve to the wrong real word
+
+**The finding.** [Run 05](./studies/run-05-f4f6ecd.md), testing against a real
+pasted news article, found this inside 3b itself: `sloten` (ditches) resolves
+to `slot` (lock), and `beken` (streams) resolves to `bek` (beak/mouth) — both
+with full confidence, no hedge. Dutch pluralises `sloot`→`sloten` and
+`slot`→`sloten` identically (same for `beek`/`bek`→`beken`), and the bundled
+dictionary contains all four singulars. `deinflect.ts` generates the
+unmodified-strip candidate before the vowel-doubled one and returns on the
+**first** real dictionary hit — so it stops at the wrong word before ever
+trying the right one. This is the exact failure shape run 01 and run 04 both
+found, now reproduced inside the mechanism built to prevent it.
+
+Separately, `aanhoudende` (adjective agreement `-e`) isn't covered by any
+current rule, and fell through to the fuzzy suggestion list instead — which
+happened to land correctly this time, but isn't a rule doing its job on
+purpose.
+
+**What other apps do.** The same principle as 1b applies here, not a new one:
+[Yomitan doesn't pick a definition, it stacks every one it finds](https://yomitan.wiki/)
+and lets the reader judge from context. A deinflector that finds two
+independently valid lemmas is in exactly the situation 1b was built for.
+
+### Recommendation
+
+**a. Don't stop at the first hit — collect every real candidate.** ✅
+**Shipped in `20e0703`.** `deinflect` now returns `Deinflection[]`
+instead of `Deinflection | null`, collecting every rule's real candidate
+instead of returning on the first match. Exactly one candidate still behaves
+as before — a single explanatory notice. More than one is no longer asserted
+as a single answer: a new `DeinflectionCard` (visually identical to
+`SenseCard`, same "which one did you mean" pattern as 1b) renders each
+candidate with its own gender, gloss, example and **Add this word** button —
+"sloten" now offers both **slot** (lock) and **sloot** (ditch); "beken" both
+**bek** (mouth) and **beek** (stream). Unit-tested (`deinflect.test.ts`)
+including a regression test for exactly this run-05 case, and a precedence
+test proving a more specific rule's single hit is never joined by a decoy
+from a less specific one. Verified in a browser: both candidates render with
+correct data for `sloten` and `beken`, and saving either one persists the
+right word to the deck.
+
+**b. Add an adjective-agreement rule.** ✅ **Shipped in `20e0703`.** A
+new `AGREEMENT_RULE` strips a bare trailing `-e` (plus the vowel-doubling
+spelling change, e.g. a stem ending in a long vowel), tried only as a
+fallback once every more specific rule has already failed to match anything
+— it's the least specific pattern here, since almost any word can end in
+`-e`. `aanhoudende → aanhoudend` (and `kleine → klein`, verified in a
+browser) now resolve this way, with an explicit "adjective agreement"
+explanation, instead of by luck through the fuzzy suggestion list.
+
+---
+
 ## Suggested order
 
 | | Item | Effort | Why here |
 | --- | --- | --- | --- |
-| 1 | **2a** — Add from text | Medium | Makes task 1 native, and feeds context into 1c |
-| 2 | **1c** — capture the sentence the word was met in | Medium | Best long-term answer to the wrong-sense problem |
-| 3 | **6** — OTP code instead of a confirmation link | Small, mostly config | Or just disable confirmation for the pilot |
 | — | ✅ **3a** | — | Shipped `42e9350` |
 | — | ✅ **5** | — | Shipped `42e9350` |
 | — | ✅ **4** | — | Shipped `42e9350` |
 | — | ✅ **1b** | — | Shipped `2e45d52` — extending `senses.ts` is now ongoing, not a project |
 | — | ✅ **1a** | — | Shipped `8864c50` — surfaced and fixed a real bug in 1b's shared override guard |
-| — | ✅ **3b** | — | Shipped `8864c50` — every original run-01 miss now resolves |
+| — | ✅ **3b** | — | Shipped `8864c50`, revised by 7a — every original run-01 miss resolves, but see 7 |
+| — | ✅ **7a** | — | Shipped `20e0703` — the run-05 wrong-answer bug, fixed by reusing 1b's picker pattern |
+| — | ✅ **2a** | — | Shipped `20e0703` — Add from text, feeding item 1c its context |
+| — | ✅ **1c** | — | Shipped `20e0703` — sentence capture, automatic, via Add from text only |
+| — | ✅ **7b** | — | Shipped `20e0703` — the adjective-agreement gap 7a's fix didn't cover |
+| — | ✅ **6** | — | Shipped `20e0703` — OTP code in-app; needs a one-time Supabase email-template change (`docs/auth-setup.md`) to display as a code rather than a link |
 
-Six of nine are done. What's left doesn't have a shared mechanism to reuse the
-way the last three did: **2a** is a new screen, **1c** is a new field, **6**
-is mostly configuration. **2a** is the one worth taking next — it's the
-structural fix for task 1, and it hands 1c its context for free once it
-exists.
+All eleven are done. Everything still open is out of this list's scope: item
+3c (stop offering distant fuzzy guesses) and item 2's other two sub-items
+(paste affordance, share target) were never picked up in the "Suggested
+order" above and remain candidates for a future run if a study surfaces them
+as live problems again.
 
 ---
 

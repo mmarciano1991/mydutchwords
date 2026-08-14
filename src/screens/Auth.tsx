@@ -16,6 +16,7 @@ import {
   signInEmail,
   signInWithGoogle,
   signUpEmail,
+  verifySignupOtp,
 } from "../lib/auth";
 import { Appbar } from "../components/Appbar";
 import { Notice } from "../components/Notice";
@@ -49,6 +50,7 @@ export function Auth({
   const [sent, setSent] = useState<Sent | null>(null);
   const [resent, setResent] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [code, setCode] = useState("");
 
   const isSignup = mode === "signup";
 
@@ -98,6 +100,20 @@ export function Auth({
     setResent(true);
   }
 
+  /** Verifying signs the user in directly (verifyOtp returns a session) —
+   *  no separate "now log in" step, unlike the link, which only confirms
+   *  the account and still requires a password afterward. */
+  async function verifyCode(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy || !code.trim()) return;
+    setError(null);
+    setBusy(true);
+    const res = await verifySignupOtp(email.trim(), code.trim());
+    setBusy(false);
+    if (res.error) return setError(res.error);
+    // On success the session change (watched in App) leaves this screen.
+  }
+
   /** Every branch of this screen ends here rather than at a dead stop: the
    *  waiting-for-email steps and the reset form all offer the way back. */
   function backToLogin() {
@@ -105,6 +121,7 @@ export function Auth({
     setSent(null);
     setResent(false);
     setPassword("");
+    setCode("");
     setError(null);
   }
 
@@ -118,7 +135,7 @@ export function Auth({
         <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
           <Notice type="success">
             {sent === "confirm"
-              ? `We've sent a confirmation link to ${email || "your inbox"}. Open it, then come back here and log in.`
+              ? `We've sent a code to ${email || "your inbox"}. Enter it below to finish creating your account.`
               : `We've sent a link to ${email || "your inbox"}. Open it to set a new password.`}
           </Notice>
 
@@ -130,8 +147,28 @@ export function Auth({
 
           {sent === "confirm" && (
             <>
+              <form onSubmit={verifyCode} style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+                <label className="auth-field">
+                  <span className="auth-field__label">Confirmation code</span>
+                  <input
+                    className="text-input"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="123456"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    autoFocus
+                  />
+                </label>
+                <button className="btn btn--primary" type="submit" disabled={busy || !code.trim()}>
+                  {busy ? "One moment…" : "Verify and continue"}
+                </button>
+              </form>
+
               <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "18px 2px" }}>
-                Nothing after a minute or two? Check your spam folder, or send it again.
+                Got a link instead of a code? Opening it confirms your account the same way — come back
+                here and log in afterward. Nothing after a minute or two? Check your spam folder, or send
+                it again.
               </p>
               <button className="btn btn--secondary" onClick={resend} disabled={busy || resent}>
                 {busy ? "One moment…" : resent ? "Sent again" : "Send it again"}

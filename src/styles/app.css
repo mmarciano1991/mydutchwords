@@ -1145,6 +1145,43 @@ input {
   color: var(--text-faint);
 }
 
+/* ── Add from text (item 02a) — pasted reading rendered as tap targets, one
+   button per word, so tapping runs it through the same lookup pipeline as
+   typing it into Capture. ── */
+.readtext {
+  font-family: var(--font-serif);
+  font-size: 17px;
+  line-height: 1.75;
+  color: var(--text-body);
+  margin: 0;
+}
+.readtext__word {
+  background: none;
+  border: none;
+  padding: 1px 3px;
+  margin: -1px -3px;
+  border-radius: 5px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: background var(--motion-base) var(--ease-standard);
+}
+.readtext__word:active {
+  background: var(--surface-tint);
+}
+.readtext__word--active {
+  background: var(--line-blue-soft);
+  color: var(--primary);
+  font-weight: 600;
+}
+.readtext__word--added {
+  color: var(--success-solid);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
 /* ── SenseCard — one of several meanings offered at capture time (item 01b:
    a word like "aanslag" silently resolved to one gloss — "attack" — when a
    municipal letter meant "tax assessment", with no sign a second meaning
@@ -1360,6 +1397,18 @@ input {
   font-size: var(--size-label);
   font-weight: 600;
   letter-spacing: 0.04em;
+}
+.flashcard__met-in {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.flashcard__met-in-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 
 /* Divider component (60×1 rule, blue/200) */

@@ -17,6 +17,7 @@ means two things. Real friction is measured with real people.
 | [02](./run-02-c5b3d62.md) | `c5b3d62` | 2026-08-13 | Entry and practice copy repaired · T2 still has no path · T3 still loops at the exit |
 | [03](./run-03-43a1fdd.md) | `43a1fdd` | 2026-08-13 | T3 completable in every direction · account dead-ends closed · T2 still has no path · T1 blocked on words, not buttons |
 | [04](./run-04-795d03e.md) | `795d03e` | 2026-08-13 | First run on the deployed build, image capture out of scope · T2 walked as a typed task: 3 of 7 letter words wrong, one with a confirming example |
+| [05](./run-05-f4f6ecd.md) | `f4f6ecd` | 2026-08-14 | First run with a real article (T1) and Google-account scenarios · every run-04 wrong-sense finding closed · new bug found inside 3b: `sloten`/`beken` deinflect to the wrong real word with full confidence |
 
 Findings are the runs' job; deciding what to do about them is not.
 [`docs/recommendations.md`](../recommendations.md) holds the proposed
