@@ -11,7 +11,7 @@
    expose the noun's article, so gender comes back null and example
    sentences are usually absent — the word still enters the normal
    practice cycle. */
-import type { DictionaryEntry } from "./types";
+import type { DictionaryEntry, WordSense } from "./types";
 
 interface WiktionaryDefinition {
   definition: string;
@@ -61,25 +61,41 @@ export async function lookupWiktionary(
     const dutch = usages.filter((u) => u?.language === "Dutch");
     if (dutch.length === 0) return null;
 
-    // First usable gloss across the Dutch part-of-speech sections.
+    // Every distinct Dutch definition, not just the first — the response
+    // already carries all of them across every part-of-speech section, and
+    // returning only the first meant a genuine heteronym (the exact case
+    // Wiktionary is richest for) silently handed back one arbitrary sense.
+    // Capped so an unusually prolific entry doesn't turn the capture screen
+    // into a wall of choices nobody will read.
+    const MAX_SENSES = 5;
+    const senses: WordSense[] = [];
+    const seen = new Set<string>();
     for (const usage of dutch) {
+      if (senses.length >= MAX_SENSES) break;
       if (!Array.isArray(usage.definitions)) continue;
       for (const def of usage.definitions) {
+        if (senses.length >= MAX_SENSES) break;
         if (typeof def?.definition !== "string") continue;
         const english = stripHtml(def.definition);
-        if (english) {
-          return {
-            id: term,
-            dutch: term,
-            english,
-            gender: null,
-            example: "",
-            exampleEn: "",
-          };
-        }
+        const key = english.toLowerCase();
+        if (!english || seen.has(key)) continue;
+        seen.add(key);
+        // Gender and examples are the same absence as before, per sense —
+        // the definition endpoint doesn't carry either.
+        senses.push({ english, example: "", exampleEn: "", gender: null, label: usage.partOfSpeech?.toLowerCase() });
       }
     }
-    return null;
+    if (senses.length === 0) return null;
+
+    return {
+      id: term,
+      dutch: term,
+      english: senses[0].english,
+      gender: null,
+      example: "",
+      exampleEn: "",
+      senses,
+    };
   } finally {
     clearTimeout(timer);
     signal?.removeEventListener("abort", onAbort);

@@ -15141,4 +15141,11 @@ export const ENTRIES: Omit<DictionaryEntry, "id">[] = [
   { dutch: "linker", english: "left", gender: null, example: "Hij brak zijn linker arm.", exampleEn: "He broke his left arm." },
   { dutch: "enig", english: "only; some", gender: null, example: "Ze was het enige kind in het gezin.", exampleEn: "She was the only child in the family." },
   { dutch: "waarvandaan", english: "from where; whence", gender: null, example: "Niemand wist waarvandaan hij kwam.", exampleEn: "Nobody knew from where he came." },
+
+  // Civic Dutch: words the synthetic walkthrough study met on a municipal
+  // letter and either missed outright, or found under one gloss when a
+  // second, distinct one changes what the letter means. See
+  // docs/studies/run-04-795d03e.md and src/data/senses.ts.
+  { dutch: "termijn", english: "term / deadline / period", gender: "de", example: "U moet binnen de termijn reageren.", exampleEn: "You must respond within the deadline." },
+  { dutch: "uiterlijk", english: "at the latest / by (a deadline)", gender: null, example: "Uiterlijk 30 september moet u reageren.", exampleEn: "You must respond by 30 September at the latest." },
 ];
