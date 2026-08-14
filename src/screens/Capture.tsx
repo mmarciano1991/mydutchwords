@@ -14,7 +14,7 @@
    masquerading as "not found". */
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
-import { lookupLocal, suggestWords } from "../lib/wordSources";
+import { entryForSense, lookupLocal, suggestWords } from "../lib/wordSources";
 import { lookupWiktionary } from "../lib/wiktionary";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
 import { useLatestSearch } from "../lib/useLatestSearch";
@@ -22,6 +22,7 @@ import { Appbar } from "../components/Appbar";
 import { GenderChip } from "../components/GenderChip";
 import { MasteryBar } from "../components/MasteryBar";
 import { Notice } from "../components/Notice";
+import { SenseCard } from "../components/SenseCard";
 import { WordCard } from "../components/WordCard";
 
 /** No lookups (suggestions or online) below this many characters. */
@@ -201,8 +202,28 @@ export function Capture({
           </p>
         )}
 
-        {/* ── 3a. Found ── */}
-        {entry && !inDeck && (
+        {/* ── 3a. Found ── a word with more than one known meaning shows all
+            of them, each with its own Add button, instead of picking one
+            silently. That silent pick is exactly what run 04 of the study
+            caught: "aanslag" resolved to "attack" on a tax letter, with no
+            sign a second, correct meaning existed. */}
+        {entry && !inDeck && (entry.senses?.length ?? 0) > 1 && (
+          <div className="addword__block">
+            <div className="eyebrow">Which meaning fits?</div>
+            <div className="sense-list">
+              {entry.senses!.map((sense, i) => (
+                <SenseCard
+                  key={i}
+                  dutch={entry.dutch}
+                  sense={sense}
+                  onAdd={() => save(entryForSense(entry, sense))}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+
+        {entry && !inDeck && (entry.senses?.length ?? 0) <= 1 && (
           <div className="addword__block">
             <WordCard entry={entry} />
             <button className="btn btn--primary" onClick={() => save(entry)}>

@@ -1,10 +1,14 @@
 /* Word sources — resolves a deck word id to displayable content.
    Most deck words reference the bundled dictionary; words captured via the
    online lookup (Add a word) don't exist there, so they're stored as custom
-   entries in localStorage and resolved from a module cache here. */
+   entries in localStorage and resolved from a module cache here. The same
+   storage now also holds a bundled word's content when the user picked a
+   non-default sense for it at capture time (see entryForSense below) — an
+   override, not a duplicate, since resolveEntry always prefers it. */
 import { DICTIONARY, findEntry, indexOfEntry } from "../data/dictionary";
 import { exampleAt } from "../data/examples";
-import type { DictionaryEntry } from "./types";
+import { extraSensesFor } from "../data/senses";
+import type { DictionaryEntry, WordSense } from "./types";
 
 const CUSTOM_KEY = "woordkast.customWords";
 
@@ -24,18 +28,37 @@ function loadCustom(): Map<string, DictionaryEntry> {
 
 const custom = loadCustom();
 
-/** Bundled dictionary first, then user-captured custom words.
+/** Bundled dictionary first, then user-captured custom words — except a
+ *  custom entry wins outright when both exist: that's exactly the case
+ *  where the user picked a non-default sense for a bundled word (see
+ *  addCustomEntry), and their choice should stick on every later screen,
+ *  not just at the moment of capture.
  *
  *  Bundled entries carry no example sentence of their own — those load
  *  separately (see data/examples) — so one is attached here if it has
- *  arrived. Before then the entry reads exactly as a word without one, which
- *  every screen already handles. Custom (online-captured) words never have
- *  examples, so they pass straight through. */
+ *  arrived, along with any extra senses authored for this word (see
+ *  data/senses). Before the example arrives the entry reads exactly as a
+ *  word without one, which every screen already handles. Custom (online, or
+ *  overridden) words carry their own complete content and pass straight
+ *  through. */
 export function resolveEntry(id: string): DictionaryEntry | undefined {
-  const entry = findEntry(id);
-  if (!entry) return custom.get(id);
+  const override = custom.get(id);
+  const bundled = findEntry(id);
+  if (!bundled) return override; // online-only word — unchanged
+  if (override) return override;
+
   const example = exampleAt(indexOfEntry(id));
-  return example ? { ...entry, ...example } : entry;
+  const base = example ? { ...bundled, ...example } : bundled;
+  const extras = extraSensesFor(id);
+  if (extras.length === 0) return base;
+
+  const primary: WordSense = {
+    english: base.english,
+    example: base.example,
+    exampleEn: base.exampleEn,
+    gender: base.gender,
+  };
+  return { ...base, senses: [primary, ...extras] };
 }
 
 function persistCustom(): void {
@@ -46,25 +69,48 @@ function persistCustom(): void {
   }
 }
 
-/** Persists a word captured from the online lookup so the deck can resolve it.
- *  Bundled dictionary words resolve natively and are not duplicated here. */
+/** Turns an entry plus one of its senses into the plain entry that gets
+ *  saved — same id, that sense's own content, no senses array (it's only
+ *  needed to render the picker, not to persist a choice). */
+export function entryForSense(entry: DictionaryEntry, sense: WordSense): DictionaryEntry {
+  return {
+    id: entry.id,
+    dutch: entry.dutch,
+    english: sense.english,
+    gender: sense.gender,
+    example: sense.example,
+    exampleEn: sense.exampleEn,
+  };
+}
+
+/** Persists a word captured from the online lookup, or a bundled word whose
+ *  gloss the user picked from among several senses, so resolveEntry keeps
+ *  returning exactly what was chosen. A no-op when the content matches the
+ *  bundled dictionary's own default gloss — true for the vast majority of
+ *  captures — which keeps custom storage limited to words that actually
+ *  need an override instead of a redundant copy of the whole dictionary. */
 export function addCustomEntry(entry: DictionaryEntry): void {
-  if (findEntry(entry.id)) return;
+  const bundled = findEntry(entry.id);
+  if (bundled && bundled.english === entry.english) return;
   custom.set(entry.id, entry);
   persistCustom();
 }
 
-/** All user-captured custom words — for cloud sync (see lib/cloudState). */
+/** All user-captured custom words and overrides — for cloud sync (see
+ *  lib/cloudState). */
 export function getCustomEntries(): DictionaryEntry[] {
   return Array.from(custom.values());
 }
 
-/** Replaces the custom-word cache (used when merging remote + local on login).
- *  Bundled dictionary words are skipped — they resolve natively. */
+/** Replaces the custom-word cache (used when merging remote + local on
+ *  login). Mirrors addCustomEntry's guard: a bundled word is only kept when
+ *  its content actually overrides the dictionary's default, so a synced
+ *  sense-pick survives a fresh login and an ordinary bundled word doesn't. */
 export function setCustomEntries(entries: DictionaryEntry[]): void {
   custom.clear();
   for (const e of entries) {
-    if (!findEntry(e.id)) custom.set(e.id, e);
+    const bundled = findEntry(e.id);
+    if (!bundled || bundled.english !== e.english) custom.set(e.id, e);
   }
   persistCustom();
 }

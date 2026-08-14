@@ -11,6 +11,28 @@ export interface DictionaryEntry {
   gender: Gender;
   example: string;
   exampleEn: string;
+  /** Other meanings of the same word, when more than one is known — e.g.
+   *  "aanslag" as a tax assessment vs. an attack. The entry's own
+   *  english/example/exampleEn above are always senses[0]: every existing
+   *  reader (deck rows, flashcards) that only looks at the top-level fields
+   *  keeps working unchanged, and only the capture screen needs to know a
+   *  choice exists. Absent (not empty) for the ~14,190 words with one gloss,
+   *  so resolving an ordinary word never allocates an array for it. */
+  senses?: WordSense[];
+}
+
+/** One meaning of a word — its own translation, example, and article, since
+ *  a heteronym can take a different one per sense ("uiterlijk" the adverb
+ *  has none; "het uiterlijk" the noun does). */
+export interface WordSense {
+  english: string;
+  example: string;
+  exampleEn: string;
+  gender: Gender;
+  /** Short tag distinguishing this sense at a glance — a part of speech from
+   *  the online dictionary, or a hand-authored hint like "tax / municipal".
+   *  Optional: most senses are distinguishable by their gloss alone. */
+  label?: string;
 }
 
 /** A word the user has added to their flashcard deck: dictionary entry id +

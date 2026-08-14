@@ -1145,6 +1145,67 @@ input {
   color: var(--text-faint);
 }
 
+/* ── SenseCard — one of several meanings offered at capture time (item 01b:
+   a word like "aanslag" silently resolved to one gloss — "attack" — when a
+   municipal letter meant "tax assessment", with no sign a second meaning
+   existed). Visually a compact WordCard: same surface and shadow, smaller
+   type, its own Add button so choosing one is a single tap rather than a
+   select-then-confirm step. ── */
+.sense-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.sensecard {
+  background: var(--surface-card);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-card);
+  padding: 16px 18px;
+  box-shadow: var(--shadow-card);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sensecard__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.sensecard__word {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 20px;
+  color: var(--text-display);
+}
+.sensecard__tag {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-faint);
+  background: var(--surface-tint);
+  padding: 3px 8px;
+  border-radius: var(--radius-pill);
+  white-space: nowrap;
+}
+.sensecard__gloss {
+  font-size: 16px;
+  color: var(--primary);
+}
+.sensecard__example {
+  margin-top: 2px;
+}
+.sensecard__example-en {
+  font-size: var(--size-body-sm);
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+.sensecard__btn {
+  margin-top: 6px;
+  align-self: flex-start;
+}
+
 /* ── Add-a-word flow states (Figma 252:3612) ── */
 .addword__block {
   display: flex;
