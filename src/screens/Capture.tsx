@@ -14,6 +14,7 @@
    masquerading as "not found". */
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
+import { deinflect } from "../lib/deinflect";
 import { entryForSense, lookupLocal, suggestWords } from "../lib/wordSources";
 import { lookupWiktionary } from "../lib/wiktionary";
 import { useDebouncedValue } from "../lib/useDebouncedValue";
@@ -68,18 +69,34 @@ export function Capture({
   const settled = debounced === trimmed;
   const missed = settled && !localHit && trimmed.length >= MIN_QUERY;
 
+  // Grammar before guesswork: a miss might just be an inflected form of a
+  // word the dictionary already has ("huurders" of "huurder"), which is a
+  // real answer, not a "did you mean". Checked first because when it hits,
+  // there's nothing left to suggest or search for.
+  const deinflection = useMemo(
+    () => (missed ? deinflect(trimmed, (term) => Boolean(lookupLocal(term))) : null),
+    [missed, trimmed]
+  );
+  const deinflectedEntry = deinflection ? lookupLocal(deinflection.lemma) : undefined;
+
   // Spelling suggestions are an edit-distance scan over the whole bundled
   // dictionary — too heavy per keystroke, so they compute only once settled.
-  const suggestions = useMemo(() => (missed ? suggestWords(trimmed) : []), [missed, trimmed]);
+  // Skipped once deinflection already found the real word: an edit-distance
+  // guess next to a grammatical certainty is noise, not a second opinion.
+  const suggestions = useMemo(
+    () => (missed && !deinflection ? suggestWords(trimmed) : []),
+    [missed, deinflection, trimmed]
+  );
 
   const { search, reset } = online;
 
-  // Every miss goes online, near-matches or not. Resting on the near-matches
+  // Every miss goes online, near-matches or not — resting on the near-matches
   // alone assumed a miss was a typo, which held for "huurdrr" and failed for
   // every real word the bundled dictionary lacks: "termijn" was answered with
-  // "terwijl" and never looked up. The suggestions still show — they're the
-  // faster answer when they're right — but they no longer stand in for one.
-  const searchable = missed;
+  // "terwijl" and never looked up. Deinflection is the one thing that DOES
+  // stand in for it: once "huurders" has resolved to "huurder" locally,
+  // there's no missing word left to ask Wiktionary about.
+  const searchable = missed && !deinflection;
 
   useEffect(() => {
     if (searchable) search(trimmed);
@@ -114,7 +131,9 @@ export function Capture({
   const current = "query" in onlineState && onlineState.query === trimmed ? onlineState : null;
 
   const entry =
-    localHit ?? (current?.status === "success" ? current.data ?? undefined : undefined);
+    deinflectedEntry ??
+    localHit ??
+    (current?.status === "success" ? current.data ?? undefined : undefined);
   const inDeck = entry ? deckIds.has(entry.id) : false;
 
   const searching = current?.status === "pending";
@@ -200,6 +219,18 @@ export function Capture({
           <p className="muted" role="status" style={{ fontSize: 14, margin: "4px 2px" }}>
             Searching the online dictionary…
           </p>
+        )}
+
+        {/* ── Deinflected ── says why a word that wasn't typed exactly is
+            what's being shown, so the match reads as an explanation rather
+            than a correction the user didn't ask for. Shown whether or not
+            it's already in the deck (3a or 3c below). */}
+        {deinflection && entry && (
+          <div className="addword__block">
+            <Notice type="info">
+              &ldquo;{trimmed}&rdquo; → <strong>{deinflection.lemma}</strong> ({deinflection.reason})
+            </Notice>
+          </div>
         )}
 
         {/* ── 3a. Found ── a word with more than one known meaning shows all

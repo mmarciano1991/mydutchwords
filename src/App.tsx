@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
-import { addCustomEntry, resolveEntry, setCustomEntries } from "./lib/wordSources";
+import { addCustomEntry, editEntry, resolveEntry, setCustomEntries } from "./lib/wordSources";
 import { isInDeck, loadDeck, loadResults, newDeckItem, saveDeck, saveResults } from "./lib/storage";
 import {
   buildNextSession,
@@ -87,6 +87,11 @@ export default function App() {
     return unsubscribe;
   }, []);
 
+  // Bumped whenever a word's saved content changes without the deck itself
+  // changing (editEntry) — deckEntries otherwise has no reason to recompute,
+  // since neither `deck` (ladder state) nor `examplesVersion` moved.
+  const [customWordsVersion, setCustomWordsVersion] = useState(0);
+
   // ── Accounts + cloud sync (optional; no-ops when Supabase isn't configured) ──
   const { user, configured, ready, recovering, clearRecovery } = useAuth();
 
@@ -127,12 +132,20 @@ export default function App() {
   }
 
   // Resolve the deck (newest first) into full dictionary entries. Recomputed
-  // when the examples chunk lands, so rows pick up their sentence.
+  // when the examples chunk lands (rows pick up their sentence) or a word's
+  // content is edited in place (customWordsVersion).
   const deckEntries = useMemo(
     () => deck.map((d) => resolveEntry(d.id)).filter((e): e is DictionaryEntry => Boolean(e)),
-    [deck, examplesVersion]
+    [deck, examplesVersion, customWordsVersion]
   );
   const deckIds = useMemo(() => new Set(deck.map((d) => d.id)), [deck]);
+
+  /** Corrects a saved translation — same override mechanism the sense picker
+   *  uses, offered generally rather than only where a second sense exists. */
+  function editDeckWord(id: string, edit: { english: string; example: string; exampleEn: string }) {
+    editEntry(id, edit);
+    setCustomWordsVersion((v) => v + 1);
+  }
 
   // Ladder level per deck word, drives the mastery bars in Browse.
   const levels = useMemo(() => new Map(deck.map((d) => [d.id, d.level])), [deck]);
@@ -318,7 +331,13 @@ export default function App() {
               )}
 
               {route === "browse" && (
-                <Browse entries={deckEntries} levels={levels} tricky={tricky} onRemove={toggleWord} />
+                <Browse
+                  entries={deckEntries}
+                  levels={levels}
+                  tricky={tricky}
+                  onRemove={toggleWord}
+                  onEdit={editDeckWord}
+                />
               )}
 
               {route === "settings" && (
