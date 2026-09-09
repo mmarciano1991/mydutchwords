@@ -9,10 +9,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Kept in step with ci.yml and package.json "engines" — see the note
+      # there. The build itself doesn't touch jsdom, but a deploy that runs
+      # on a different major than CI verified is a trap worth not setting.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 26
           cache: npm
 
       - name: Install dependencies

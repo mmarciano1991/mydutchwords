@@ -20,10 +20,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Must satisfy the devDependencies' own floor (see package.json
+      # "engines"): jsdom 30 wants ^22.22.2 || ^24.15.0 || >=26.0.0, and the
+      # undici it pulls in wants >=22.19.0. On Node 20 both install with only
+      # an EBADENGINE *warning* and then fail at runtime — undici reads
+      # `markAsUncloneable` from node:worker_threads, which Node 20 doesn't
+      # have, so every jsdom test dies on
+      # "webidl.util.markAsUncloneable is not a function".
+      # 26 matches the version the suite is developed and verified against.
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 26
           cache: npm
 
       - name: Install dependencies

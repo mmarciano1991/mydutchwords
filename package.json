@@ -3,6 +3,10 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
+  "//engines": "Mirrors jsdom 30's own requirement (it pulls in undici 8, which reads markAsUncloneable from node:worker_threads). Recorded here so a wrong Node major shows up as an install-time EBADENGINE warning instead of a cryptic test crash.",
+  "engines": {
+    "node": "^22.22.2 || ^24.15.0 || >=26.0.0"
+  },
   "scripts": {
     "dev": "vite",
     "build": "npm run validate && tsc -b && vite build",
