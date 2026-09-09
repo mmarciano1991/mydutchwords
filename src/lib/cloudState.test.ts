@@ -36,8 +36,23 @@ const result = (entryId: string, timestamp: number, grade: PracticeResult["grade
   timestamp,
   grade,
 });
-const entry = (id: string): DictionaryEntry => ({ id, dutch: id, english: id, gender: null, example: "", exampleEn: "" });
-const state = (over: Partial<AppState> = {}): AppState => ({ deck: [], results: [], customWords: [], ...over });
+const entry = (id: string): DictionaryEntry => ({
+  id,
+  dutch: id,
+  english: id,
+  gender: "none",
+  example: "",
+  exampleEn: "",
+  senses: [{ english: id, example: "", exampleEn: "", gender: "none" }],
+});
+const state = (over: Partial<AppState> = {}): AppState => ({
+  deck: [],
+  results: [],
+  customWords: [],
+  dailySet: null,
+  run: null,
+  ...over,
+});
 
 describe("mergeState", () => {
   it("unions deck words present on only one side", () => {
@@ -95,6 +110,68 @@ describe("mergeState", () => {
       state({ customWords: [entry("fiets"), entry("tram")] })
     );
     expect(merged.customWords.map((e) => e.id).sort()).toEqual(["fiets", "tram"]);
+  });
+
+  // ── The day's set. Only one can survive a merge (it is a single draw, not
+  //    a collection), so the rules have to protect answers already given. ──
+  it("keeps the newer day's set — yesterday's draw is spent", () => {
+    const yesterday = { date: "2024-05-31", wordIds: ["a", "b"] };
+    const today = { date: "2024-06-01", wordIds: ["c", "d"] };
+    expect(mergeState(state({ dailySet: yesterday }), state({ dailySet: today })).dailySet)
+      .toEqual(today);
+    expect(mergeState(state({ dailySet: today }), state({ dailySet: yesterday })).dailySet)
+      .toEqual(today);
+  });
+
+  it("takes whichever set exists when only one device has drawn", () => {
+    const set = { date: "2024-06-01", wordIds: ["a"] };
+    expect(mergeState(state(), state({ dailySet: set })).dailySet).toEqual(set);
+    expect(mergeState(state({ dailySet: set }), state()).dailySet).toEqual(set);
+  });
+
+  it("is null when neither device has drawn", () => {
+    expect(mergeState(state(), state()).dailySet).toBeNull();
+  });
+
+  it("never lets a device that drew nothing overwrite the real set", () => {
+    // A fresh login draws an empty set locally (the deck hasn't arrived yet)
+    // before the pull lands. That must not clobber the day already in flight.
+    const real = { date: "2024-06-01", wordIds: ["a", "b"] };
+    const empty = { date: "2024-06-01", wordIds: [] };
+    expect(mergeState(state({ dailySet: empty }), state({ dailySet: real })).dailySet)
+      .toEqual(real);
+    expect(mergeState(state({ dailySet: real }), state({ dailySet: empty })).dailySet)
+      .toEqual(real);
+  });
+
+  // ── The run: one sitting's record. Not unioned — blending two devices'
+  //    answers would invent a session that never happened. ──
+  it("keeps the newer day's run, so yesterday's result is never shown today", () => {
+    const yesterday = { date: "2024-05-31", wordIds: ["a"], answers: { a: "know" as const } };
+    const today = { date: "2024-06-01", wordIds: ["b"], answers: {} };
+    expect(mergeState(state({ run: yesterday }), state({ run: today })).run).toEqual(today);
+    expect(mergeState(state({ run: today }), state({ run: yesterday })).run).toEqual(today);
+  });
+
+  it("keeps the same-day run that got further", () => {
+    const barely = { date: "2024-06-01", wordIds: ["a", "b"], answers: { a: "know" as const } };
+    const finished = {
+      date: "2024-06-01",
+      wordIds: ["a", "b"],
+      answers: { a: "know" as const, b: "dontKnow" as const },
+    };
+    expect(mergeState(state({ run: barely }), state({ run: finished })).run).toEqual(finished);
+    expect(mergeState(state({ run: finished }), state({ run: barely })).run).toEqual(finished);
+  });
+
+  it("takes whichever run exists when only one device has practised", () => {
+    const run = { date: "2024-06-01", wordIds: ["a"], answers: {} };
+    expect(mergeState(state(), state({ run })).run).toEqual(run);
+    expect(mergeState(state({ run }), state()).run).toEqual(run);
+  });
+
+  it("is null when neither device has practised", () => {
+    expect(mergeState(state(), state()).run).toBeNull();
   });
 
   it("returns deck newest-first", () => {

@@ -5,12 +5,15 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm run validate && tsc -b && vite build",
     "preview": "vite preview",
     "tokens": "node scripts/build-tokens.mjs",
     "test": "vitest run",
     "dictionary": "node scripts/gen-dictionary.mjs",
-    "survey": "node scripts/survey-words.mjs"
+    "survey": "node scripts/survey-words.mjs",
+    "validate": "node scripts/validate-dictionary.mjs",
+    "complete": "node scripts/complete-entries.mjs",
+    "promote": "node scripts/promote-generated.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",
@@ -18,6 +21,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
+    "@anthropic-ai/sdk": "^0.124.0",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",

@@ -1,13 +1,24 @@
-/* useWordLookup — the full "what does this Dutch word resolve to" pipeline:
-   an exact bundled/custom match, then deinflection (grammar before
-   guesswork, possibly ambiguous between more than one real word), then a
-   fuzzy suggestion list, then the online dictionary as a last resort.
+/* useWordLookup — the full "what does this Dutch word resolve to" pipeline,
+   in strict order of how much it can be trusted:
+
+     1. an exact bundled/custom match
+     2. deinflection — grammar, possibly ambiguous between real words
+     3. decomposition — a compound built out of words we already have
+     4. a fuzzy spelling-suggestion list
+     5. the online dictionary, as a last resort
+
+   The order is the point. Everything above the suggestion list is an answer
+   Dutch grammar can justify; the suggestion list is a guess about typing.
+   Offering a guess next to a justified answer was the run-04/05 failure
+   ("terwijl" offered for "termijn"), so each step short-circuits the ones
+   below it rather than running alongside them.
 
    Extracted from Capture.tsx so Add from text (2a) can tap a word out of
    pasted text and run it through the exact same resolution — sense picker,
    deinflection, ambiguity and all — rather than a second, drifting copy of
    this logic. */
 import { useEffect, useMemo } from "react";
+import { decompose, type Compound } from "./decompose";
 import { deinflect, type Deinflection } from "./deinflect";
 import { lookupLocal, suggestWords } from "./wordSources";
 import { lookupWiktionary } from "./wiktionary";
@@ -36,6 +47,11 @@ export interface WordLookup {
    *  own choice, the same shape as a sense picker). */
   deinflections: Deinflection[];
   deinflectionAmbiguous: boolean;
+  /** Ways this word splits into dictionary words, when it's a compound the
+   *  dictionary can't hold on its own ("belastingaanslag"). Only ever
+   *  populated once an exact match AND deinflection have both come back
+   *  empty — a real headword must never be re-explained as a compound. */
+  compounds: Compound[];
   suggestions: DictionaryEntry[];
   showSuggestions: boolean;
   searching: boolean;
@@ -70,14 +86,26 @@ export function useWordLookup(query: string): WordLookup {
   const deinflectedEntry =
     deinflections.length === 1 ? lookupLocal(deinflections[0].lemma) : undefined;
 
+  // Compounds: the half of "missing words" no dictionary can fix by growing,
+  // since Dutch builds them productively and writes them as one word. Tried
+  // after deinflection (an inflected form of a real word is a better answer
+  // than a split) and before suggestions and the network, because a word
+  // built entirely out of words we already have is not a spelling mistake
+  // and not something to ask Wiktionary about.
+  const compounds = useMemo(
+    () => (missed && deinflections.length === 0 ? decompose(trimmed, (t) => Boolean(lookupLocal(t))) : []),
+    [missed, deinflections, trimmed]
+  );
+
   // Spelling suggestions are an edit-distance scan over the whole bundled
   // dictionary — too heavy per keystroke, so they compute only once settled.
-  // Skipped once deinflection found real word(s): an edit-distance guess
-  // next to a grammatical answer (certain or ambiguous) is noise, not a
-  // second opinion.
+  // Skipped once deinflection or decomposition found real word(s): an
+  // edit-distance guess next to a grammatical answer is noise, not a second
+  // opinion.
   const suggestions = useMemo(
-    () => (missed && deinflections.length === 0 ? suggestWords(trimmed) : []),
-    [missed, deinflections, trimmed]
+    () =>
+      missed && deinflections.length === 0 && compounds.length === 0 ? suggestWords(trimmed) : [],
+    [missed, deinflections, compounds, trimmed]
   );
 
   const { search, reset } = online;
@@ -89,7 +117,7 @@ export function useWordLookup(query: string): WordLookup {
   // stand in for it, ambiguous or not: once "sloten" has resolved to "slot"
   // and/or "sloot" locally, there's no missing word left to ask Wiktionary
   // about.
-  const searchable = missed && deinflections.length === 0;
+  const searchable = missed && deinflections.length === 0 && compounds.length === 0;
 
   useEffect(() => {
     if (searchable) search(trimmed);
@@ -116,6 +144,7 @@ export function useWordLookup(query: string): WordLookup {
     entry,
     deinflections,
     deinflectionAmbiguous,
+    compounds,
     suggestions,
     showSuggestions,
     searching,

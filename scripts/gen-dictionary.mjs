@@ -26,7 +26,11 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-const GENDER_CODE = { de: "d", het: "h" };
+/* Gender codes. "n" (none) and "u" (unknown) are deliberately different
+   letters: a verb takes no article, an unglossed import has one nobody has
+   established, and writing both as "" is what made 118 article-less words
+   invisible for as long as they were. */
+const GENDER_CODE = { de: "d", het: "h", none: "n", unknown: "u" };
 const FIELD = "\t";
 const RECORD = "\n";
 
@@ -77,7 +81,13 @@ try {
     const id = e.dutch.toLowerCase();
     if (seen.has(id)) continue;
     seen.add(id);
-    core.push([e.dutch, e.english, GENDER_CODE[e.gender] ?? ""].join(FIELD));
+    const code = GENDER_CODE[e.gender];
+    if (!code) {
+      throw new Error(
+        `"${e.dutch}" has gender ${JSON.stringify(e.gender)} — expected "de", "het", "none" or "unknown"`
+      );
+    }
+    core.push([e.dutch, e.english, code].join(FIELD));
     examples.push([e.example, e.exampleEn].join(FIELD));
   }
   const richCount = core.length;
@@ -90,13 +100,22 @@ try {
       continue;
     }
     seen.add(id);
-    core.push([dutch, english, ""].join(FIELD));
+    // FreeDict carries no gender field at all, so strictly nothing here is
+    // established. But "unknown" should mean "this might be a noun and we
+    // don't know its article", not "we know nothing about this word" — and
+    // FreeDict's own gloss settles the question for verbs, which it writes in
+    // the infinitive ("to walk"). Marking those "none" keeps the unknown
+    // count meaning what it says: nouns still missing an article, which is
+    // work to be done, rather than verbs that were never going to have one.
+    const looksLikeVerb = /^to\s/.test(english);
+    core.push([dutch, english, looksLikeVerb ? GENDER_CODE.none : GENDER_CODE.unknown].join(FIELD));
   }
 
   writeFileSync(
     "src/data/core.generated.ts",
     tsModule(
-      "// Every word: Dutch, English gloss, gender code (d = de, h = het, empty = neither).",
+      "// Every word: Dutch, English gloss, gender code\n" +
+        "// (d = de, h = het, n = takes no article, u = article not established).",
       "CORE",
       core.join(RECORD)
     ) + `\n/** Words carrying an example sentence — the curated core, always first. */\nexport const RICH_COUNT = ${richCount};\n`

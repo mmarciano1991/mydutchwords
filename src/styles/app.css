@@ -191,13 +191,6 @@ input {
   padding-top: max(54px, env(safe-area-inset-top));
 }
 
-/* Headerless screens whose first element is a card, not a title — top
-   clearance should read as the same gutter as the card's sides, not the
-   taller space reserved for a title row. */
-.pad-top-tight {
-  padding-top: max(var(--space-5), env(safe-area-inset-top));
-}
-
 .gutter {
   padding-left: var(--space-5);
   padding-right: var(--space-5);
@@ -369,105 +362,6 @@ input {
 
 .card--warm {
   border-color: var(--border-warm);
-}
-
-/* Daily-practice hero card */
-.hero {
-  display: flex;
-  flex-direction: column;
-  gap: 22px;
-  background: var(--primary);
-  color: var(--on-primary);
-  border-radius: var(--radius-card);
-  padding: 20px 21px;
-}
-
-.hero__content {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.hero__label {
-  font-size: 12px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  opacity: 0.78;
-  font-weight: 700;
-}
-
-.hero__stat {
-  font-family: var(--font-serif);
-  font-size: var(--size-hero-stat);
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.hero__note {
-  font-size: 13.5px;
-  opacity: 0.82;
-}
-
-/* Calm variant — the "all caught up" state: cream card with primary outline
-   and dark text, so it reads as a rest state rather than a call to act
-   (Figma 163:334). */
-.hero--calm {
-  background: var(--semantic-surface-default);
-  color: var(--text-body);
-  border: 1px solid var(--primary);
-}
-.hero__label--ink {
-  color: var(--primary);
-  opacity: 1;
-}
-.hero__stat--ink {
-  color: var(--text-display);
-}
-.hero__stat--set {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-}
-.hero__check {
-  color: var(--success-solid);
-  flex-shrink: 0;
-}
-.hero__note--ink {
-  color: var(--text-muted);
-  opacity: 1;
-}
-
-.hero__cta {
-  width: 100%;
-  border: none;
-  background: var(--surface-card);
-  color: var(--primary);
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: var(--size-body);
-  padding: 16px;
-  border-radius: var(--radius-input);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: background var(--motion-base) var(--ease-standard),
-    transform var(--motion-base) var(--ease-standard);
-}
-
-.hero__cta:active {
-  background: var(--surface-tint);
-  transform: translateY(1px);
-  transition-duration: var(--motion-fast);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .hero__cta {
-    transition: none;
-  }
-  .hero__cta:active {
-    transform: none;
-  }
 }
 
 /* ── Word rows ── */
@@ -665,6 +559,97 @@ input {
 .mastery--mastering .mastery__fill,
 .mastery--mastered .mastery__fill {
   background: var(--mastery-masterd);
+}
+
+/* ── ProgressBar — deck-level progress track + caption (Figma 304:1081) ──
+   The track is a pill; the fill is rounded on its leading edge only and is
+   squared off where it stops, so partial progress reads as a segment rather
+   than a floating lozenge. `--inverted` (Figma 304:1198) is the dark-surface
+   version: slimmer track, smaller light caption. */
+.progressbar {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+}
+.progressbar__track {
+  width: 100%;
+  height: var(--space-5);
+  background: var(--bg-canvas-deep);
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.progressbar__fill {
+  height: 100%;
+  /* Figma binds this to a variable named `primary-border` whose value there
+     is #3e7a57 — the mastery green, not the blue `--primary-border` in
+     tokens.json. Using the token that matches the design's colour. */
+  background: var(--mastery-masterd);
+  border-radius: var(--radius-pill) 0 0 var(--radius-pill);
+  transition: width var(--motion-base) var(--ease-standard);
+}
+@media (prefers-reduced-motion: reduce) {
+  .progressbar__fill {
+    transition: none;
+  }
+}
+.progressbar__label {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--size-body);
+  line-height: 1.55;
+  color: var(--text-body);
+  overflow-wrap: anywhere;
+}
+.progressbar--inverted .progressbar__track {
+  height: var(--space-4);
+}
+.progressbar--inverted .progressbar__label {
+  font-size: var(--size-body-sm);
+  line-height: 1.45;
+  color: var(--surface-tint);
+}
+
+/* ── LearningDash — two-up session scoreboard on navy (Figma 311:1256) ── */
+.learning-dash {
+  display: flex;
+  gap: var(--space-2);
+  width: 100%;
+  text-align: center;
+}
+.learning-dash__tile {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2);
+  background: var(--blue-900);
+  border-radius: var(--radius-chip);
+}
+.learning-dash__value {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-word-hero);
+  line-height: 1.1;
+}
+/* Figma uses a raw #34935b here (no variable behind it yet) — a brighter
+   green than --success-solid, which it needs to carry on the navy tile. */
+.learning-dash__value--known {
+  color: #34935b;
+}
+.learning-dash__value--learning {
+  color: var(--error-solid);
+}
+.learning-dash__label {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--size-body-sm);
+  line-height: 1.45;
+  color: var(--surface-tint);
 }
 
 /* ── Opened (pressed) state: in-context example inside the same card ── */
@@ -1015,31 +1000,87 @@ input {
   padding-bottom: max(var(--space-5), env(safe-area-inset-bottom));
 }
 .bottomnav__pill {
+  position: relative;
   flex: 1;
   min-width: 0;
+  /* Figma 251:3389 — pill is a fixed 62 tall, padded 4/8 from the frame edge
+     with its 1px stroke drawn inside that, so the CSS border eats 1px of each. */
+  height: 62px;
   display: flex;
   align-items: center;
-  gap: var(--space-4);
+  gap: var(--space-2);
   background: var(--surface-card);
   border: 1px solid var(--border-cool);
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-card);
-  padding: var(--space-2) var(--space-6);
+  padding: 3px 7px;
+}
+/* The travelling active pill. Sized and animated from TabBar.tsx against the
+   measured tab rects — CSS only owns how it looks. 48 tall, centred in the
+   54px content band, so it clears the pill edge by 6 top and bottom. */
+.bottomnav__glass {
+  position: absolute;
+  top: 6px;
+  left: 0;
+  z-index: 0;
+  height: 48px;
+  border-radius: var(--radius-pill);
+  background: var(--primary);
+  /* Reads as a lens rather than a flat swatch, but softly — a faint specular
+     top edge and a diffuse cast beneath, no hard rim. */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 4px 14px rgba(27, 64, 121, 0.2);
+  overflow: hidden;
+  pointer-events: none;
+  /* Animated by its edges (left/width), not by transform — see TabBar.tsx. */
+  will-change: left, width;
+}
+/* Specular highlight, swept in the direction of travel during a hop. */
+.bottomnav__sheen {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  opacity: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 32%,
+    rgba(255, 255, 255, 0.55) 50%,
+    transparent 68%
+  );
 }
 .tab {
+  position: relative;
+  z-index: 1;
   flex: 1;
-  min-width: 56px;
+  min-width: 0;
+  align-self: stretch;
   border: none;
   background: transparent;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: var(--space-1);
-  padding: 6px 0;
+  justify-content: center;
+  /* Figma Tab 62:8 — pad [0,·,4,·]. Its 22px side padding only applies in the
+     component's hug state; inside the nav every tab is an equal FILL third. */
+  padding: 0 0 4px;
   color: var(--primary);
+  font-family: var(--font-sans);
   font-size: var(--size-label);
   font-weight: 700;
-  letter-spacing: var(--tracking-label);
+  letter-spacing: 0.02em;
+  line-height: 16px;
+  /* Leaving a tab un-inverts immediately; arriving waits for the glass to get
+     there, so a label is never white on white mid-flight. */
+  transition: color var(--motion-base) var(--ease-standard);
+}
+.tab--active {
+  color: var(--cream-000);
+  transition-delay: 160ms;
+}
+/* Figma sets a -4 item gap so the label tucks up under the icon well. */
+.tab__label {
+  margin-top: -4px;
 }
 .tab svg {
   width: 24px;
@@ -1051,14 +1092,14 @@ input {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 32px;
+  height: 32px;
   padding: var(--space-1);
   border-radius: var(--radius-button);
   color: inherit;
 }
-.tab--active .tab__icon {
-  background: var(--primary);
-  color: var(--on-primary);
-}
+/* The icon well no longer carries the active fill — the travelling glass
+   pill does, wrapping icon and label together as designed. */
 
 /* ── Floating add button ──
    Width/margin animate so the pill beside it (flex:1) grows and shrinks in
@@ -1108,6 +1149,14 @@ input {
 /* The + spins away as it goes, so the exit reads as deliberate. */
 .fab--hidden svg {
   transform: rotate(-90deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* The glass still moves (it marks where you are) but arrives at once:
+     TabBar.tsx skips the flight animation, so the label must not lag. */
+  .tab--active {
+    transition-delay: 0ms;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1163,6 +1212,73 @@ input {
   color: var(--text-faint);
 }
 
+/* Grammar footnote — “nederzettingen” → nederzetting (plural).
+   Plain text at the foot of the answer rather than an info box above it: the
+   card is what was asked for, and how the typed word maps onto its headword
+   is a note on that answer, not an interruption before it. Same quiet
+   register as .source-note for the same reason — context, not a warning. */
+.wordcard__note {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-faint);
+  margin: 10px 0 0;
+}
+
+/* ── Searching ── stands in for the WordCard while an online lookup is in
+   flight. It borrows .wordcard's own surface, border and padding and lays
+   out bars at the heights of the real chip / word / gloss / example, so the
+   answer lands in the space already held for it rather than shoving the
+   screen down. Only shown once a lookup is genuinely slow — see
+   WordLookupResult — so a fast answer never flashes it. ── */
+.wordcard--loading {
+  gap: 9px;
+}
+.skeleton {
+  background: var(--line-cool);
+  border-radius: var(--radius-chip);
+  /* Breathing, not shimmering: a sweep animation would be the loudest thing
+     on a porcelain screen. */
+  animation: skeleton-breathe 1700ms var(--ease-standard) infinite;
+}
+.skeleton--chip {
+  width: 46px;
+  height: 27px;
+}
+.skeleton--word {
+  width: 62%;
+  height: 30px;
+  margin-top: 4px;
+  animation-delay: 140ms;
+}
+.skeleton--gloss {
+  width: 38%;
+  height: 18px;
+  animation-delay: 280ms;
+}
+.skeleton--line {
+  width: 100%;
+  height: 13px;
+  animation-delay: 420ms;
+}
+.skeleton--line-short {
+  width: 55%;
+  animation-delay: 520ms;
+}
+@keyframes skeleton-breathe {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
 /* ── Add from text (item 02a) — pasted reading rendered as tap targets, one
    button per word, so tapping runs it through the same lookup pipeline as
    typing it into Capture. ── */
@@ -1174,15 +1290,40 @@ input {
   margin: 0;
 }
 .readtext__word {
+  position: relative;
   background: none;
   border: none;
-  padding: 1px 3px;
-  margin: -1px -3px;
+  padding: 1px 3px 1px 7px;
+  margin: -1px -3px -1px -3px;
   border-radius: 5px;
   font: inherit;
   color: inherit;
   cursor: pointer;
   transition: background var(--motion-base) var(--ease-standard);
+}
+/* The divider between two tappable words: a 2px dotted rule, drawn as a
+   pseudo-element rather than a border for two reasons — it's sized to the
+   text instead of the (line-height-tall) button box, and the dots are round
+   in every browser, which `border-style: dotted` doesn't guarantee. */
+.readtext__word::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 1.05em;
+  /* 2px round dots, 2px apart. */
+  background-image: radial-gradient(circle, var(--blue-300) 0 1px, transparent 1px);
+  background-size: 2px 4px;
+  background-repeat: repeat-y;
+}
+/* Nothing to divide before the first word of the text. */
+.readtext__word:first-of-type {
+  padding-left: 3px;
+}
+.readtext__word:first-of-type::before {
+  content: none;
 }
 .readtext__word:active {
   background: var(--surface-tint);
@@ -1262,6 +1403,89 @@ input {
 }
 
 /* ── Add-a-word flow states (Figma 252:3612) ── */
+/* ── Add choice (AddChoice) — the fork between looking a word up and pasting
+   something you're reading. Card rows, not stacked buttons: each option
+   carries a line of explanation under its title. ── */
+.addchoice {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.addchoice__option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  text-align: left;
+  padding: 16px;
+  background: var(--surface-card);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card-sm);
+  cursor: pointer;
+  transition:
+    background var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+.addchoice__option:hover {
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-card);
+}
+.addchoice__option:active {
+  background: var(--semantic-button-pressed-light);
+  border-color: var(--primary-border);
+  transform: translateY(1px);
+  box-shadow: var(--shadow-card-sm);
+  transition-duration: var(--motion-fast);
+}
+.addchoice__option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
+}
+.addchoice__icon {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-chip);
+  background: var(--surface-tint);
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.addchoice__text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.addchoice__title {
+  font-size: var(--size-body);
+  font-weight: 700;
+  color: var(--text-display);
+}
+.addchoice__desc {
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--text-faint);
+}
+.addchoice__chevron {
+  flex: none;
+  margin-left: auto;
+  color: var(--ink-300);
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .addchoice__option,
+  .addchoice__option:hover,
+  .addchoice__option:active {
+    transition: none;
+    transform: none;
+  }
+}
+
 .addword__block {
   display: flex;
   flex-direction: column;
@@ -1480,6 +1704,10 @@ input {
   box-shadow: 0 0 0 3px var(--blue-100);
   border-radius: var(--radius-input);
 }
+/* Match the travelling pill it sits on. */
+.tab:focus-visible {
+  border-radius: var(--radius-pill);
+}
 
 /* Respect users who prefer reduced motion: keep the app static. */
 @media (prefers-reduced-motion: reduce) {
@@ -1496,5 +1724,298 @@ input {
   .icon-btn:active,
   .tab:active {
     transform: none !important;
+  }
+}
+
+/* ── Compound breakdown ─────────────────────────────────────────────────
+   Shown when a word missed the dictionary because Dutch built it rather
+   than listed it ("belastingaanslag" = belasting + aanslag). The breakdown
+   line is the payload: it turns an unreadable 16-letter word into two words
+   the learner can already look up, so it gets the most visual weight, with
+   the addable parts as ordinary sense-style cards beneath it. */
+.compound__breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  padding: 14px 16px;
+  background: var(--surface-tint);
+  border-radius: var(--radius-card);
+  line-height: 1.5;
+}
+.compound__word {
+  font-weight: 700;
+  color: var(--text-strong, var(--ink-900));
+  word-break: break-word;
+}
+.compound__equals,
+.compound__plus {
+  color: var(--text-faint);
+  margin: 0 4px;
+}
+.compound__part {
+  font-weight: 600;
+  color: var(--text-strong, var(--ink-900));
+  border-bottom: 2px solid var(--border-cool);
+  word-break: break-word;
+}
+.compound__note {
+  font-size: 14px;
+  margin: 10px 2px 0;
+}
+
+/* ── Unknown article ────────────────────────────────────────────────────
+   A noun whose de/het nobody has established yet. Deliberately visible and
+   deliberately NOT styled like de or het: it's a question, not an answer, so
+   it reads as muted and dashed rather than as a third article. Before this,
+   an unknown article rendered as empty space — indistinguishable from a verb
+   that correctly has none, which is how 118 words stayed article-less
+   without anyone noticing. */
+.chip--unknown {
+  background: transparent;
+  color: var(--text-faint);
+  box-shadow: inset 0 0 0 1.4px var(--border-cool);
+  border-radius: var(--radius-chip);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  cursor: help;
+}
+.chip--unknown.chip--sm {
+  font-size: 11px;
+}
+
+/* ── Sense cards: extra states ──────────────────────────────────────────
+   A meaning already saved stays visible rather than disappearing — seeing
+   which meanings you have is part of choosing the one you don't. */
+.sensecard--indeck {
+  opacity: 0.72;
+}
+.sensecard--indeck .sensecard__btn {
+  cursor: default;
+}
+.sensecard__context {
+  font-size: 13px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+
+/* ── Provenance ─────────────────────────────────────────────────────────
+   One line explaining why an entry is thinner than a curated one. Quiet by
+   design: it's context for a gap, not a warning about a mistake. */
+.source-note {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--text-faint);
+  margin: 10px 0 0;
+}
+
+/* ── Dashboard (Figma 300:727) ─────────────────────────────────────────────
+   The masthead runs edge to edge at the top; the practice card sits on the
+   canvas below it, inset by one gutter. The spacer takes the remaining
+   height so the card stays put as the space between it and the bottom
+   navigation grows on taller screens. */
+.dashboard {
+  display: flex;
+  flex-direction: column;
+}
+.dashboard__spacer {
+  flex: 1;
+  min-height: 0;
+  padding: var(--space-5);
+}
+
+/* ── Insights — streak strip + progress card (Figma 317:1416) ──
+   The two pieces are flush, so the card is square on top and rounded at the
+   bottom, and both carry side borders: the block is full-bleed and those
+   borders are what give it edges against the canvas. */
+.insights {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+/* Figma 311:1388 — sits at the very top of the frame, so on a device it
+   also owns the safe-area inset and extends up under the status bar. */
+.insights__topbar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-5);
+  padding-top: max(var(--space-2), env(safe-area-inset-top));
+  background: var(--bg-canvas);
+  border-left: 1px solid var(--bg-canvas-deep);
+  border-right: 1px solid var(--bg-canvas-deep);
+}
+.insights__flame {
+  flex-shrink: 0;
+  color: var(--caution-solid);
+}
+.insights__streak {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--size-body-sm);
+  line-height: 1.45;
+  color: var(--text-body);
+}
+
+/* Figma 311:1392 */
+.insights__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-5);
+  padding: var(--space-6) var(--grid-gutter) var(--grid-gutter);
+  background: var(--surface-card);
+  border: 1px solid var(--bg-canvas-deep);
+  border-top: none;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+}
+.insights__top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  color: var(--text-body);
+  overflow-wrap: anywhere;
+}
+.insights__eyebrow {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: var(--size-body-sm);
+  line-height: 1.45;
+}
+.insights__stat {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-hero-stat);
+  line-height: 1.1;
+}
+
+/* ── PracticeCard — the flashcard session entry point (Figma 304:1067) ── */
+.practice-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-4);
+  background: var(--primary);
+  color: var(--on-primary);
+  border-radius: var(--radius-card);
+  overflow: hidden;
+}
+.practice-card__top {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+}
+.practice-card__icon {
+  flex-shrink: 0;
+}
+.practice-card__kind,
+.practice-card__length {
+  margin: 0;
+  flex: 1;
+  min-width: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--size-body-sm);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+.practice-card__length {
+  text-align: right;
+}
+.practice-card__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+.practice-card__title {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-word-hero);
+  line-height: 1.1;
+}
+.practice-card__body {
+  margin: 0;
+  width: 100%;
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: var(--size-body);
+  line-height: 1.55;
+}
+/* Done state's follow-ups: the primary re-drill, and a quieter text link
+   under it for repeating the whole set (Figma 311:1276). */
+.practice-card__actions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+.practice-card__link {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: none;
+  border: none;
+  border-radius: var(--radius-input);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--on-primary);
+  transition: opacity var(--motion-base) var(--ease-standard);
+}
+.practice-card__link:active {
+  opacity: 0.7;
+  transition-duration: var(--motion-fast);
+}
+@media (prefers-reduced-motion: reduce) {
+  .practice-card__link {
+    transition: none;
+  }
+}
+
+.practice-card__cta {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--cream-000);
+  border: 1.5px solid var(--primary);
+  border-radius: var(--radius-input);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--primary);
+  transition: background var(--motion-base) var(--ease-standard),
+    transform var(--motion-base) var(--ease-standard);
+}
+.practice-card__cta:active {
+  background: var(--surface-tint);
+  transform: translateY(1px);
+  transition-duration: var(--motion-fast);
+}
+@media (prefers-reduced-motion: reduce) {
+  .practice-card__cta {
+    transition: none;
+  }
+  .practice-card__cta:active {
+    transform: none;
   }
 }

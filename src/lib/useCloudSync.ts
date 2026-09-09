@@ -10,6 +10,7 @@
 
    Does nothing when cloud sync isn't configured or nobody is logged in. */
 import { useEffect, useRef } from "react";
+import type { DailySet, PracticeRun } from "./dailySet";
 import type { DeckItem, PracticeResult } from "./types";
 import { getCustomEntries, setCustomEntries } from "./wordSources";
 import { fetchRemoteState, mergeState, pushState, type AppState } from "./cloudState";
@@ -26,13 +27,20 @@ export function useCloudSync({
   userId,
   deck,
   results,
+  dailySet,
+  run,
   applyMerged,
 }: {
   /** The signed-in user's id, or null when logged out / unconfigured. */
   userId: string | null;
   deck: DeckItem[];
   results: PracticeResult[];
-  /** Applies a merged snapshot to app state (setDeck/setResults + custom words). */
+  /** Today's drawn practice set, or null before the first draw. */
+  dailySet: DailySet | null;
+  /** The current or most recent practice run. */
+  run: PracticeRun | null;
+  /** Applies a merged snapshot to app state (setDeck/setResults/setDailySet
+   *  + custom words). */
   applyMerged: (state: AppState) => void;
 }) {
   // The user id whose initial pull+merge has completed. Pushing is gated on
@@ -44,8 +52,8 @@ export function useCloudSync({
   // the network, so anything added while that request was in flight is
   // merged rather than overwritten — capturing deck/results in the effect
   // closure silently discarded those edits.
-  const localRef = useRef({ deck, results });
-  localRef.current = { deck, results };
+  const localRef = useRef({ deck, results, dailySet, run });
+  localRef.current = { deck, results, dailySet, run };
 
   // Pull + merge + push once per login. A failed pull is retried rather than
   // treated as "no remote data" — conflating the two would let a merge fall
@@ -91,8 +99,8 @@ export function useCloudSync({
     if (!supabase || !userId || hydratedFor.current !== userId) return;
     window.clearTimeout(pushTimer.current);
     pushTimer.current = window.setTimeout(() => {
-      void pushState(userId, { deck, results, customWords: getCustomEntries() });
+      void pushState(userId, { deck, results, dailySet, run, customWords: getCustomEntries() });
     }, PUSH_DEBOUNCE_MS);
     return () => window.clearTimeout(pushTimer.current);
-  }, [deck, results, userId]);
+  }, [deck, results, dailySet, run, userId]);
 }

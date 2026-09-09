@@ -219,6 +219,33 @@ export function buildRestudySession(report: SessionReport, config?: SessionConfi
   return fillSession(report.dontKnowWords, [], resolved);
 }
 
+export interface DueBreakdown {
+  /** Due, and the most recent grade was "dontKnow" — reps resets to 0 on a
+   *  miss, so a due word still sitting at 0 hasn't been re-confirmed since. */
+  missed: Word[];
+  /** Due, and the most recent grade was "know". */
+  reviewDue: Word[];
+}
+
+/** Splits the words currently due into "missed last time" vs "correct last
+ *  time, due again" — the two groups the dashboard shows separately so a
+ *  miss doesn't hide inside a single undifferentiated due count. */
+export function dueBreakdown(allWords: Word[], now: Date): DueBreakdown {
+  const due = dueReviews(allWords, now);
+  return {
+    missed: due.filter((w) => w.reps === 0),
+    reviewDue: due.filter((w) => w.reps > 0),
+  };
+}
+
+/** Session scoped to just the missed group — no new words blended in, so
+ *  it's a distinct entry point from `buildSession`'s full due set. */
+export function buildMissedSession(allWords: Word[], now: Date, config?: SessionConfig): Word[] {
+  const resolved = resolveConfig(config);
+  const { missed } = dueBreakdown(allWords, now);
+  return fillSession(missed, [], resolved);
+}
+
 /**
  * Same selection as `buildSession` (due reviews first, then new words,
  * capped at `maxHardCap`), excluding words already covered earlier in this

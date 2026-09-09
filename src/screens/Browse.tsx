@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
 import { useWordLookup } from "../lib/useWordLookup";
+import { parseSenseKey } from "../lib/wordSources";
 import { Appbar } from "../components/Appbar";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
@@ -139,6 +140,13 @@ export function Browse({
                         <span className="wordrow__head">
                           <GenderChip gender={e.gender} size="sm" />
                           <span className="wordrow__dutch">{e.dutch}</span>
+                          {/* A word can now sit in the deck under more than one
+                              meaning, so two rows can share a spelling. Without
+                              a mark they read as an accidental duplicate rather
+                              than as the deliberate second meaning they are. */}
+                          {parseSenseKey(e.id).index > 0 && (
+                            <span className="sensecard__tag">2nd meaning</span>
+                          )}
                           {tricky.has(e.id) && <span className="tricky-tag">Tricky</span>}
                         </span>
                         <span className="wordrow__gloss">{e.english}</span>

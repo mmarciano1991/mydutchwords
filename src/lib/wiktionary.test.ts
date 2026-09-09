@@ -42,7 +42,11 @@ describe("lookupWiktionary", () => {
     // The Verb sense never had a gender to find, and the French homograph's
     // "feminine" earlier on the same page must not have leaked in either.
     expect(entry!.senses![2].label).toBe("verb");
-    expect(entry!.senses![2].gender).toBeNull();
+    // "none", not "unknown": a verb takes no article, which is a fact about
+    // the word rather than a gap in what we know about it. Those were the
+    // same value before, which is why a noun missing its article looked
+    // exactly like this.
+    expect(entry!.senses![2].gender).toBe("none");
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
     expect(fetchMock.mock.calls[0][0]).toContain("/page/definition/huis");
@@ -69,7 +73,8 @@ describe("lookupWiktionary", () => {
 
     const entry = await lookupWiktionary("wandelen");
 
-    expect(entry!.gender).toBeNull();
+    // A verb: no article applies, and nothing was left undetermined.
+    expect(entry!.gender).toBe("none");
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
@@ -83,7 +88,11 @@ describe("lookupWiktionary", () => {
     const entry = await lookupWiktionary("huis");
 
     expect(entry).not.toBeNull();
-    expect(entry!.gender).toBeNull();
+    // "huis" IS a noun, so it definitely has an article — the request that
+    // would have told us which one failed. "unknown" records exactly that,
+    // and is what lets the UI say so instead of rendering a blank that reads
+    // as "this word takes no article".
+    expect(entry!.gender).toBe("unknown");
     // The example still came through — it rides on the definition response,
     // not the failed one.
     expect(entry!.example).not.toBe("");

@@ -8,7 +8,8 @@
    where a save's result goes, not in what a resolved word looks like. */
 import type { DictionaryEntry } from "../lib/types";
 import type { WordLookup } from "../lib/useWordLookup";
-import { entryForSense, lookupLocal } from "../lib/wordSources";
+import { entryForSense, lookupLocal, parseSenseKey, senseKey } from "../lib/wordSources";
+import { CompoundCard } from "./CompoundCard";
 import { DeinflectionCard } from "./DeinflectionCard";
 import { GenderChip } from "./GenderChip";
 import { MasteryBar } from "./MasteryBar";
@@ -38,6 +39,7 @@ export function WordLookupResult({
     entry,
     deinflections,
     deinflectionAmbiguous,
+    compounds,
     suggestions,
     showSuggestions,
     searching,
@@ -46,7 +48,26 @@ export function WordLookupResult({
     failed,
     retry,
   } = lookup;
-  const inDeck = entry ? deckIds.has(entry.id) : false;
+  // Every meaning of the resolved word, each with its own deck key and its
+  // own answer to "is this saved yet". Reviewed meanings (authored, with an
+  // example) are offered as the real choice; provisional ones — split out of
+  // a packed gloss and not yet given an example — are offered below them.
+  const baseId = entry ? parseSenseKey(entry.id).baseId : "";
+  const senseOptions = (entry?.senses ?? []).map((sense, index) => {
+    const key = senseKey(baseId, index);
+    return { sense, index, key, inDeck: deckIds.has(key) };
+  });
+  const reviewed = senseOptions.filter((o) => !o.sense.provisional);
+  const provisional = senseOptions.filter((o) => o.sense.provisional);
+
+  // Why the headword on screen isn't what was typed. It reads as a footnote
+  // on the answer rather than a banner above it: an info box before the card
+  // interrupts the one thing the learner came for, and the grammar is a
+  // detail about how they got here, so it sits after the content instead.
+  const grammarNote =
+    deinflections.length === 1 && entry
+      ? `\u201C${trimmed}\u201D \u2192 ${deinflections[0].lemma} (${deinflections[0].reason})`
+      : undefined;
 
   return (
     <>
@@ -65,12 +86,26 @@ export function WordLookupResult({
         </div>
       )}
 
-      {/* Spinner only for genuinely slow responses (>180ms) — fast ones
-          resolve before it ever appears, so there's no flash. */}
+      {/* ── Searching ── only for genuinely slow responses (>180ms); fast ones
+          resolve before this ever appears, so there's no flash. A line of text
+          alone left the screen looking empty on a slow connection, so the
+          placeholder card carries the wait and holds the space the answer will
+          occupy. The bars are decorative (aria-hidden): the wrapper's status
+          role announces the sentence, which is the part worth hearing. */}
       {searching && slow && (
-        <p className="muted" role="status" style={{ fontSize: 14, margin: "4px 2px" }}>
-          Searching the online dictionary…
-        </p>
+        <div className="addword__block" role="status">
+          <div className="wordcard wordcard--loading" aria-hidden="true">
+            <div className="skeleton skeleton--chip" />
+            <div className="skeleton skeleton--word" />
+            <div className="skeleton skeleton--gloss" />
+            <div className="wordcard__rule" />
+            <div className="skeleton skeleton--line" />
+            <div className="skeleton skeleton--line skeleton--line-short" />
+          </div>
+          <p className="muted" style={{ fontSize: 14, margin: "-4px 2px 0", textAlign: "center" }}>
+            Searching the online dictionary…
+          </p>
+        </div>
       )}
 
       {/* ── Ambiguous deinflection ── Dutch can inflect two unrelated words
@@ -98,63 +133,104 @@ export function WordLookupResult({
         </div>
       )}
 
-      {/* ── Deinflected (single candidate) ── explains why a word that
-          wasn't typed exactly is what's being shown. */}
-      {deinflections.length === 1 && entry && (
-        <div className="addword__block">
-          <Notice type="info">
-            &ldquo;{trimmed}&rdquo; → <strong>{deinflections[0].lemma}</strong> ({deinflections[0].reason})
-          </Notice>
-        </div>
+      {/* ── Compound ── the word isn't missing, it's built: Dutch writes
+          "belasting" + "aanslag" as one word, and no dictionary of any size
+          can hold every combination. Shown only once an exact match and
+          deinflection have both failed, so a real headword is never
+          re-explained as a compound of two others. */}
+      {compounds.length > 0 && (
+        <CompoundCard
+          word={trimmed}
+          compound={compounds[0]}
+          resolve={lookupLocal}
+          onAdd={onSave}
+        />
       )}
 
-      {/* ── Found, multiple senses ── every meaning gets its own card and
-          Add button, instead of picking one silently. */}
-      {entry && !inDeck && (entry.senses?.length ?? 0) > 1 && (
-        <div className="addword__block">
-          <div className="eyebrow">Which meaning fits?</div>
-          <div className="sense-list">
-            {entry.senses!.map((sense, i) => (
-              <SenseCard
-                key={i}
-                dutch={entry.dutch}
-                sense={sense}
-                onAdd={() => onSave(entryForSense(entry, sense))}
-              />
-            ))}
-          </div>
-        </div>
-      )}
+      {/* ── Found ──────────────────────────────────────────────────────
+          Meanings, each with its own place in the deck.
 
-      {/* ── Found, one sense ── */}
-      {entry && !inDeck && (entry.senses?.length ?? 0) <= 1 && (
-        <div className="addword__block">
-          <WordCard entry={entry} />
-          <button className="btn btn--primary" onClick={() => onSave(entry)}>
-            Add to deck
-          </button>
-        </div>
-      )}
+          The old shape of this screen asked "is this WORD in your deck?" and
+          ended the interaction if it was. That was the dead end: a learner
+          who saved "aanslag" as a tax assessment and later met it meaning an
+          attack was told they already had the word, with nothing to tap. Now
+          each meaning is its own card with its own key (see lib/wordSources),
+          so the answer is per-meaning and the other ones stay addable. */}
+      {entry && (
+        <>
+          {reviewed.length > 1 && (
+            <div className="addword__block">
+              <div className="eyebrow">Which meaning fits?</div>
+              <div className="sense-list">
+                {reviewed.map(({ sense, index, inDeck: senseInDeck }) => (
+                  <SenseCard
+                    key={index}
+                    dutch={entry.dutch}
+                    sense={sense}
+                    inDeck={senseInDeck}
+                    onAdd={() => onSave(entryForSense(entry, index))}
+                  />
+                ))}
+              </div>
+              {grammarNote && <p className="wordcard__note">{grammarNote}</p>}
+            </div>
+          )}
 
-      {/* ── Already in deck ── */}
-      {entry && inDeck && (
-        <div className="addword__block">
-          <div className="wordrow">
-            <div className="wordrow__row">
-              <div className="wordrow__main">
-                <div className="wordrow__content">
-                  <span className="wordrow__head">
-                    <GenderChip gender={entry.gender} size="sm" />
-                    <span className="wordrow__dutch">{entry.dutch}</span>
-                  </span>
-                  <span className="wordrow__gloss">{entry.english}</span>
+          {/* One reviewed meaning: the ordinary card, or the deck row when
+              it's already saved. */}
+          {reviewed.length === 1 && !reviewed[0].inDeck && (
+            <div className="addword__block">
+              <WordCard entry={entry} note={grammarNote} />
+              <button className="btn btn--primary" onClick={() => onSave(entryForSense(entry, reviewed[0].index))}>
+                Add to deck
+              </button>
+            </div>
+          )}
+
+          {reviewed.length === 1 && reviewed[0].inDeck && (
+            <div className="addword__block">
+              <div className="wordrow">
+                <div className="wordrow__row">
+                  <div className="wordrow__main">
+                    <div className="wordrow__content">
+                      <span className="wordrow__head">
+                        <GenderChip gender={entry.gender} size="sm" />
+                        <span className="wordrow__dutch">{entry.dutch}</span>
+                      </span>
+                      <span className="wordrow__gloss">{entry.english}</span>
+                    </div>
+                  </div>
+                  <MasteryBar level={levels.get(reviewed[0].key) ?? 0} withLabel />
                 </div>
               </div>
-              <MasteryBar level={levels.get(entry.id) ?? 0} withLabel />
+              {grammarNote && <p className="wordcard__note">{grammarNote}</p>}
+              <Notice type="info">You already have this meaning in your deck</Notice>
             </div>
-          </div>
-          <Notice type="info">You already have this word in your deck</Notice>
-        </div>
+          )}
+
+          {/* ── Other meanings ── the ones split mechanically out of a packed
+              gloss ("to park; to put away"). Real meanings, but nobody has
+              reviewed them and they have no example sentence yet, so they sit
+              below the reviewed ones rather than competing with them as equal
+              choices. Still addable: a meaning you can see and can't save is
+              the same dead end in a smaller form. */}
+          {provisional.length > 0 && (
+            <div className="addword__block">
+              <div className="eyebrow">Also means</div>
+              <div className="sense-list">
+                {provisional.map(({ sense, index, inDeck: senseInDeck }) => (
+                  <SenseCard
+                    key={index}
+                    dutch={entry.dutch}
+                    sense={sense}
+                    inDeck={senseInDeck}
+                    onAdd={() => onSave(entryForSense(entry, index))}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {/* ── Not found ── the near-matches are rendered once, above, for

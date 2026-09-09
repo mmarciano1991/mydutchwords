@@ -52,12 +52,14 @@ function stripHtml(html: string): string {
 /** Maps a headword line's `<abbr title="…">` to a Dutch article: "neuter
  *  gender" is the one case that's `het`; masculine, feminine, and the
  *  merged "common gender" (the historical m/f merger most nl-noun entries
- *  actually carry) all take `de`. */
+ *  actually carry) all take `de`. An unrecognised title is "unknown", not
+ *  "none": the headword line said something about gender, we just couldn't
+ *  read it, and claiming the word takes no article would be a fabrication. */
 function genderFromAbbrTitle(title: string): Gender {
   const t = title.toLowerCase();
   if (t.includes("neuter")) return "het";
   if (t.includes("masculine") || t.includes("feminine") || t.includes("common")) return "de";
-  return null;
+  return "unknown";
 }
 
 /** One retry, after a brief pause, for the kind of failure that's usually
@@ -95,16 +97,16 @@ async function fetchGender(term: string, signal: AbortSignal): Promise<Gender> {
       `https://en.wiktionary.org/api/rest_v1/page/html/${encodeURIComponent(term)}`,
       { signal, headers: { Accept: "text/html" } }
     );
-    if (!res.ok) return null;
+    if (!res.ok) return "unknown";
     const html = await res.text();
     const doc = new DOMParser().parseFromString(html, "text/html");
     const section = doc.getElementById("Dutch")?.closest("section");
     const title = section?.querySelector(".headword-line .gender abbr[title]")?.getAttribute("title");
-    return title ? genderFromAbbrTitle(title) : null;
+    return title ? genderFromAbbrTitle(title) : "unknown";
   } catch {
     // Best-effort: a failed enrichment request shouldn't fail a lookup that
     // otherwise already succeeded on the definition endpoint.
-    return null;
+    return "unknown";
   }
 }
 
@@ -160,12 +162,18 @@ export async function lookupWiktionary(
         // senses don't have one (see the file header), so this is often
         // still empty.
         const example = def.parsedExamples?.[0];
+        // A noun's article is genuinely not established yet at this point —
+        // it isn't in this response at all, and the extra request below may
+        // still fail. Anything that isn't a noun takes no article, which is a
+        // fact rather than a gap. Recording those as the same value is what
+        // used to make a missing article invisible.
         senses.push({
           english,
           example: example ? stripHtml(example.example) : "",
           exampleEn: example ? stripHtml(example.translation) : "",
-          gender: null,
+          gender: label === "noun" ? "unknown" : "none",
           label,
+          source: "online",
         });
       }
     }
@@ -176,11 +184,13 @@ export async function lookupWiktionary(
     // to receive it.
     if (senses.some((s) => s.label === "noun")) {
       const gender = await fetchGender(term, controller.signal);
-      if (gender) {
+      if (gender !== "unknown") {
         for (const sense of senses) {
           if (sense.label === "noun") sense.gender = gender;
         }
       }
+      // Left as "unknown" otherwise — the UI says so rather than showing
+      // nothing, and the learner can supply it.
     }
 
     // These mirror senses[0] exactly — see DictionaryEntry's own doc comment

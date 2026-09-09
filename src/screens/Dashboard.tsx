@@ -1,28 +1,51 @@
+/* Dashboard (Figma 300:727) — the home screen. Two blocks: the Insights
+   masthead pinned to the top, and a single PracticeCard floating in the
+   space below it. The bottom navigation is the app shell's, not this
+   screen's.
+
+   Everything shown here is derived from the deck and the practice log, both
+   of which are synced to the user's Supabase row (see lib/cloudState), so
+   the numbers follow the account rather than the device. */
 import { TulipMedallion } from "../components/brand";
-import { CheckCircle } from "../icons";
+import { Insights } from "../components/Insights";
+import { PracticeCard } from "../components/PracticeCard";
+import type { RunProgress } from "../lib/dailySet";
 
 export function Dashboard({
   deckCount,
-  dueCount,
+  masteredCount,
+  setSize,
+  progress,
   nextDueLabel,
   streak,
   onPractice,
+  onPractiseLearning,
+  onPractiseAll,
   onPracticeAhead,
   onAddWord,
 }: {
   deckCount: number;
-  /** Cards the scheduler would put in a session right now (due reviews + new). */
-  dueCount: number;
-  /** When nothing is due: human label for the next unlock, e.g. "tomorrow". */
+  /** Deck words that have reached the top of the ladder. */
+  masteredCount: number;
+  /** Words drawn for today — the size of the day, independent of any one
+   *  sitting. Drives "N words are ready" and "Practise all N again". */
+  setSize: number;
+  /** What the user actually did in their current or most recent sitting. */
+  progress: RunProgress;
+  /** When there was nothing to draw: label for the next unlock, e.g. "tomorrow". */
   nextDueLabel: string | null;
-  /** Consecutive practice days; 0 hides the streak. */
+  /** Consecutive practice days. */
   streak: number;
+  /** Starts, or resumes, today's set. */
   onPractice: () => void;
+  onPractiseLearning: () => void;
+  onPractiseAll: () => void;
   onPracticeAhead: () => void;
   /** Receives the button, so the Add-a-word screen can expand out of it. */
   onAddWord: (origin: HTMLElement) => void;
 }) {
-  // ── Empty deck: invite to build it ──
+  // ── Empty deck: invite to build it. There is no progress to report and no
+  //    set to practise, so the masthead and the card have nothing to say. ──
   if (deckCount === 0) {
     return (
       <div className="screen pad-top">
@@ -47,44 +70,26 @@ export function Dashboard({
     );
   }
 
-  const caughtUp = dueCount === 0;
-  const streakSuffix = streak > 1 ? ` · 🔥 ${streak}-day streak` : "";
-
   return (
-    <div className="screen pad-top-tight">
-      <div className="screen__body gutter" style={{ paddingBottom: 26, display: "flex", flexDirection: "column", gap: 20 }}>
-        {caughtUp ? (
-          // ── All caught up: calm cream card; practising ahead is optional (Figma 163:334) ──
-          <section className="hero hero--calm">
-            <div className="hero__content">
-              <div className="hero__label hero__label--ink">Daily practice</div>
-              <div className="hero__stat hero__stat--ink hero__stat--set">
-                <CheckCircle size={26} className="hero__check" />
-                You&rsquo;re all set!
-              </div>
-              <div className="hero__note hero__note--ink">
-                {nextDueLabel ? `Your next review is ${nextDueLabel}.` : "Nothing scheduled."} You have{" "}
-                {deckCount} word{deckCount === 1 ? "" : "s"} ready to go.{streakSuffix}
-              </div>
-            </div>
-            <button className="btn btn--secondary" onClick={onPracticeAhead}>
-              Prepare in advance
-            </button>
-          </section>
-        ) : (
-          <section className="hero">
-            <div className="hero__content">
-              <div className="hero__label">Daily practice</div>
-              <div className="hero__stat">
-                You have {dueCount} word{dueCount === 1 ? "" : "s"} ready to review in your deck.
-              </div>
-              {streakSuffix && <div className="hero__note">{streakSuffix.replace(" · ", "")}</div>}
-            </div>
-            <button className="hero__cta" onClick={onPractice}>
-              Start practice
-            </button>
-          </section>
-        )}
+    <div className="screen">
+      <div className="screen__body dashboard">
+        <Insights deckCount={deckCount} masteredCount={masteredCount} streak={streak} />
+        <div className="dashboard__spacer">
+          <PracticeCard
+            // Nothing drawn at all is the only state the run can't describe.
+            status={setSize === 0 ? "caught-up" : progress.status}
+            setSize={setSize}
+            total={progress.total}
+            answered={progress.answered}
+            knownCount={progress.knownIds.length}
+            learningCount={progress.learningIds.length}
+            nextDueLabel={nextDueLabel}
+            onStart={onPractice}
+            onPractiseLearning={onPractiseLearning}
+            onPractiseAll={onPractiseAll}
+            onPractiseAhead={onPracticeAhead}
+          />
+        </div>
       </div>
     </div>
   );

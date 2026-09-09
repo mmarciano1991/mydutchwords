@@ -20,15 +20,59 @@ picking the words you want to learn.
 
 ## The dictionary
 
-14,193 Dutch→English words, fully bundled and offline.
+14,211 Dutch→English words and 16,017 distinct meanings, fully bundled and
+offline.
+
+### Completeness
+
+The dictionary is checked, not trusted. `npm run validate` fails the build if
+any word is missing a meaning, a translation, an example or (for a noun) its
+article — and `npm run build` runs it first, so an incomplete entry cannot
+ship. Two ideas do most of the work:
+
+- **An article is `de`, `het`, `none` or `unknown`.** "Takes no article" and
+  "nobody established the article" used to be the same value, so a noun with a
+  missing `de/het` looked exactly like a verb that never needed one. Separating
+  them made the gap countable (80 words today, and capped), and lets the app
+  show a `de/het?` chip instead of silence.
+- **You cannot list the words that are missing.** So completeness is measured
+  instead: `data/coverage-corpus.txt` holds real Dutch — municipal letters,
+  news, everyday speech — and the validator requires that a set percentage of
+  it resolves through the real lookup pipeline. That check is what catches a
+  missing word; no rule about the shape of the data ever could.
+
+### Meanings
+
+A word is not the unit of meaning — a sense is. `aanslag` is a tax assessment
+*and* an attack, and each meaning carries its own article, example sentence and
+optional context note. Deck cards are keyed by meaning (`aanslag`,
+`aanslag#1`), so the same Dutch word can be learned twice with independent
+progress instead of the second meeting being answered with "you already have
+this word".
+
+### Finding a word
+
+Real Dutch text almost never contains a headword. Three layers sit in front of
+the dictionary, in order of how much they can be trusted:
+
+1. **`src/lib/deinflect.ts`** — verb, noun and adjective morphology, plus
+   tables for what no rule can derive (`gelopen` → `lopen`).
+2. **`src/lib/decompose.ts`** — compound splitting. Dutch builds words
+   productively, so `belastingaanslag` can never be in any list; it is
+   `belasting` + `aanslag`, and the last part carries the meaning and article.
+3. Spelling suggestions, then the online dictionary.
+
+Each step short-circuits the ones below it: a guess about typing must never be
+offered next to an answer grammar can justify.
 
 ### Authoring
 
 Sources live in `data/` and are **build inputs — never shipped as-is**:
 
-- **`data/curated.ts`** — the hand-authored core: 14,075 words with
-  `{ dutch, english, gender, example, exampleEn }`, i.e. correct `de/het`
-  gender and a natural example sentence. Add words by appending here.
+- **`data/curated.ts`** — the hand-authored core: `{ dutch, english, gender,
+  example, exampleEn }`, i.e. correct `de/het` gender and a natural example
+  sentence. Add words by appending here. `gender` is never blank: use `"none"`
+  for anything that isn't a noun.
 - **`data/freedict.source.ts`** — the open **FreeDict nld-eng** dataset
   (CC-BY-SA), translations only. Regenerate with `node scripts/gen-freedict.mjs`
   (reads the FreeDict TEI).
@@ -57,7 +101,35 @@ files as delimited strings rather than object literals, which roughly halves
 the bytes and parses far faster than 14k object literals.
 
 Flashcards work for every word (Dutch ⇄ translation); the example sentence and
-gender chip show only where present (the curated core).
+gender chip show only where present. Where an entry is thinner than the curated
+core — from the FreeDict import, split out of a packed gloss, or fetched
+online — the app says so in one line rather than leaving it looking damaged.
+
+### Filling the gaps
+
+The validator names roughly 2,750 remaining gaps (meanings with no example,
+articles never established, examples that don't use their word). Too many to
+write by hand, so there is a pipeline — and it cannot ship anything unreviewed:
+
+```bash
+npm run complete -- --kind=article --limit=20        # dry run, costs nothing
+npm run complete -- --kind=article --limit=20 --run  # asks the model
+npm run promote                                      # dry run
+npm run promote -- --write                           # applies what you approved
+```
+
+Proposals pass a mechanical gate first (`src/lib/proposalCheck.ts`, unit
+tested): the article must be real and must agree with the sentence, and the
+example must actually use an inflected form of its own headword. What survives
+lands in `data/generated/pending.json` with `"approved": false` and goes no
+further until a person changes that. Anything promoted is marked
+`source: "generated"` so the app can say where it came from.
+
+The reason for the two gates is the failure this app has already had: a wrong
+meaning that arrived looking exactly like a right one (`aanslag` glossed as an
+assassination on a letter about a tax bill). Generating at scale without review
+would trade missing information for confident misinformation, which is worse
+for a learner who cannot yet tell the difference.
 
 ## Develop
 

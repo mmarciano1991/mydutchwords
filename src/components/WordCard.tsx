@@ -3,8 +3,9 @@
    sentence when the entry has one. */
 import type { DictionaryEntry } from "../lib/types";
 import { GenderChip } from "./GenderChip";
+import { SourceNote } from "./SourceNote";
 
-export function WordCard({ entry }: { entry: DictionaryEntry }) {
+export function WordCard({ entry, note }: { entry: DictionaryEntry; note?: string }) {
   return (
     <div className="wordcard">
       <GenderChip gender={entry.gender} />
@@ -18,6 +19,12 @@ export function WordCard({ entry }: { entry: DictionaryEntry }) {
           <div className="wordcard__example-en">{entry.exampleEn}</div>
         </>
       )}
+      {/* Grammar footnote — why the headword differs from what was typed.
+          It belongs after the word, not in a banner above it: the answer is
+          the card, and the inflection is a detail about how you got here. */}
+      {note && <p className="wordcard__note">{note}</p>}
+      {/* Why this card may be thinner than the last one. */}
+      <SourceNote source={entry.senses[0]?.source} />
     </div>
   );
 }

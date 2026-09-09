@@ -1,0 +1,55 @@
+# Runs on every push and pull request.
+#
+# The dictionary validation step is the point of this file. Every gap the
+# vocabulary audit found — 118 words with no article, words with no example,
+# an article contradicting its own example sentence, the ten commonest words
+# in Dutch missing entirely — got there because nothing checked, and none of
+# them broke anything visibly enough to be noticed by hand. So they're
+# checked here, and a failure blocks the merge rather than printing a warning
+# nobody reads.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npx tsc -b
+
+      - name: Unit tests
+        run: npm test
+
+      # Completeness: shape checks on every entry, plus a coverage score over
+      # real Dutch text (data/coverage-corpus.txt). The coverage floor is the
+      # only check that can catch a missing WORD — nothing about the shape of
+      # the data can see a word that was never added.
+      - name: Validate dictionary
+        run: npm run validate
+
+      # The generated modules are committed, so a change to data/curated.ts
+      # that wasn't followed by `npm run dictionary` would ship the old
+      # dictionary silently. Regenerate and fail if anything moved.
+      - name: Dictionary is up to date with its source
+        run: |
+          npm run dictionary
+          if ! git diff --quiet -- src/data/core.generated.ts src/data/examples.generated.ts; then
+            echo "::error::src/data/*.generated.ts is stale — run 'npm run dictionary' and commit the result."
+            git --no-pager diff --stat -- src/data/core.generated.ts src/data/examples.generated.ts
+            exit 1
+          fi

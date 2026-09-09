@@ -108,8 +108,11 @@ export function Capture({
             <p className="muted" style={{ fontSize: 15, lineHeight: 1.55, margin: 0 }}>
               Look up a Dutch word in the dictionary, then add it to your deck.
             </p>
-            <button className="link-btn" style={{ marginTop: 14 }} onClick={onAddFromText}>
-              Or add several words from something you're reading →
+            {/* A secondary button, not a text link: this is the second real
+                way in to adding words, and it was reading as a footnote to
+                the sentence above it. */}
+            <button className="btn btn--secondary" style={{ marginTop: 16 }} onClick={onAddFromText}>
+              Add a full sentence
             </button>
           </div>
         )}

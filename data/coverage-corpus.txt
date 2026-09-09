@@ -1,0 +1,86 @@
+# Coverage corpus — real Dutch the app has to be able to look up.
+#
+# You cannot write a list of the words that are MISSING from a dictionary:
+# that's the nature of the problem. So completeness is measured the only way
+# it can be — by running ordinary Dutch text through the real lookup pipeline
+# (exact match → deinflection → decomposition) and requiring that a set
+# percentage of the words resolve.
+#
+# `npm run validate` scores this file and fails the build if the rate drops
+# below the floor in scripts/validate-dictionary.mjs. That check is what
+# catches "some words are missing" — no rule about the data's shape ever
+# could, because a missing word breaks no schema.
+#
+# The text is deliberately weighted towards what the walkthrough studies
+# found people actually bring to the app: municipal and administrative
+# letters (docs/studies/run-04-795d03e.md), then news, then everyday speech.
+# Lines starting with # are comments; blank lines are ignored.
+#
+# When you add a section, add real sentences you have actually met — not
+# sentences written to pass. The number is only worth having if the text is.
+
+# ── Municipal / administrative letters ──────────────────────────────────
+Geachte heer, mevrouw,
+Hierbij ontvangt u de aanslag gemeentelijke belastingen voor dit jaar.
+U moet het bedrag binnen zes weken na dagtekening betalen.
+Als u het niet eens bent met deze beslissing, kunt u bezwaar maken.
+Uw bezwaarschrift moet uiterlijk 30 september bij ons binnen zijn.
+Wij hebben uw aanvraag voor huurtoeslag ontvangen en in behandeling genomen.
+De gemeente heeft besloten uw verzoek toe te wijzen.
+U kunt een betalingsregeling aanvragen als u niet in één keer kunt betalen.
+Neem uw identiteitsbewijs mee naar de afspraak.
+De inburgeringscursus begint in januari en duurt achttien maanden.
+Vergeet niet uw zorgverzekering door te geven aan de gemeente.
+Wij verzoeken u vriendelijk het formulier volledig ingevuld terug te sturen.
+Op grond van artikel 12 wordt deze beschikking ingetrokken.
+De termijn voor het indienen van een bezwaarschrift is verstreken.
+U ontvangt binnen vier weken bericht over de uitkomst.
+Bent u het niet eens met de beslissing, dan kunt u in beroep gaan.
+De kosten worden verrekend met uw volgende betaling.
+Uw huurcontract is opgezegd per 1 december.
+Ik heb een brief van de Belastingdienst gekregen over mijn aangifte.
+Het bedrag is inmiddels afgeschreven van uw rekening.
+
+# ── News and public information ─────────────────────────────────────────
+Het aantal inwoners van de stad is vorig jaar gestegen.
+De regering heeft nieuwe maatregelen aangekondigd.
+Door het slechte weer rijden er minder treinen.
+De prijzen van huizen zijn opnieuw toegenomen.
+Onderzoekers hebben een verband gevonden tussen slaap en gezondheid.
+De minister sprak gisteren met vertegenwoordigers van de gemeenten.
+Volgens het rapport wonen steeds meer mensen alleen.
+Het museum is tijdelijk gesloten wegens verbouwing.
+De brand werd snel geblust door de brandweer.
+Er zijn afspraken gemaakt over de verdeling van de kosten.
+De werkloosheid is licht gedaald in het derde kwartaal.
+Veel scholen kampen met een tekort aan leraren.
+Het kabinet wil de belasting op arbeid verlagen.
+De politie heeft twee verdachten aangehouden.
+Wetenschappers waarschuwen voor de gevolgen van droogte.
+
+# ── Everyday speech ─────────────────────────────────────────────────────
+Ik ben mijn sleutels weer kwijt.
+Zullen we vanavond samen koken?
+Hij heeft de hele dag gewerkt en is nu moe.
+We zijn met de fiets naar het station gegaan.
+De kinderen spelen buiten in de tuin.
+Ik heb gisteren een nieuwe jas gekocht.
+Kun je me even helpen met deze tas?
+Zij woont al jaren in dezelfde straat.
+Het eten staat om zes uur op tafel.
+Ik weet niet of ik morgen kan komen.
+We hebben lang gewacht op de bus.
+Mijn buurman heeft zijn auto verkocht.
+Ze schreef een lange brief aan haar moeder.
+Hij liep snel naar de trein en kwam net op tijd.
+De winkel gaat om negen uur open.
+Ik heb het boek al twee keer gelezen.
+Wil je nog een kopje koffie?
+Het is vandaag kouder dan gisteren.
+Zij is de beste van de klas.
+We moesten lang in de rij staan.
+Hij vergat zijn paraplu mee te nemen.
+De hond blafte de hele nacht door.
+Ik heb de rekening al betaald.
+Ze zijn vorige maand verhuisd naar Utrecht.
+Dat is het grootste huis van de straat.

@@ -7,6 +7,7 @@
    has practised more. Results are an append-only event log, so their union
    (deduped) is lossless. This can resurrect a word deleted on one device
    only — an accepted trade-off for a simple, data-preserving sync. */
+import { runAnswerCount, type DailySet, type PracticeRun } from "./dailySet";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./types";
 import { supabase } from "./supabase";
 
@@ -16,6 +17,11 @@ export interface AppState {
   deck: DeckItem[];
   results: PracticeResult[];
   customWords: DictionaryEntry[];
+  /** The day's drawn practice set, or null before the first one. */
+  dailySet: DailySet | null;
+  /** The current (or last) run through a set of words — what the dashboard's
+   *  practice card reports. Null before the first practice. */
+  run: PracticeRun | null;
 }
 
 /** How much practice history a deck item carries — higher wins a conflict. */
@@ -37,6 +43,29 @@ function pickDeckItem(a: DeckItem, b: DeckItem): DeckItem {
   const bt = reviewedAt(b);
   if (at !== bt) return bt > at ? b : a;
   return b.dateAdded > a.dateAdded ? b : a;
+}
+
+/** The daily set to keep. A newer date always wins — yesterday's draw is
+ *  spent. Within the same day, an empty draw carries no information: a
+ *  device that had nothing to draw yet (a deck that hasn't synced) must not
+ *  overwrite the real set. */
+function pickDailySet(a: DailySet | null, b: DailySet | null): DailySet | null {
+  if (!a) return b;
+  if (!b) return a;
+  if (a.date !== b.date) return a.date > b.date ? a : b;
+  if (a.wordIds.length === 0) return b;
+  if (b.wordIds.length === 0) return a;
+  return a;
+}
+
+/** The run to keep. Newer day wins; within a day, the one that got further.
+ *  Runs are not unioned: each is one sitting's record, and blending two
+ *  would invent a session that never happened. */
+function pickRun(a: PracticeRun | null, b: PracticeRun | null): PracticeRun | null {
+  if (!a) return b;
+  if (!b) return a;
+  if (a.date !== b.date) return a.date > b.date ? a : b;
+  return runAnswerCount(b) > runAnswerCount(a) ? b : a;
 }
 
 /** Offline-first union of two snapshots. Pure; order-independent per word. */
@@ -64,6 +93,8 @@ export function mergeState(a: AppState, b: AppState): AppState {
     deck: [...deck.values()].sort((x, y) => y.dateAdded - x.dateAdded),
     results: [...results.values()].sort((x, y) => x.timestamp - y.timestamp),
     customWords: [...custom.values()],
+    dailySet: pickDailySet(a.dailySet, b.dailySet),
+    run: pickRun(a.run, b.run),
   };
 }
 
@@ -81,7 +112,7 @@ export async function fetchRemoteState(userId: string): Promise<RemoteFetchResul
   try {
     const { data, error } = await supabase
       .from(TABLE)
-      .select("deck, results, custom_words")
+      .select("deck, results, custom_words, daily_set, practice_run")
       .eq("user_id", userId)
       .maybeSingle();
     if (error) return { ok: false };
@@ -92,6 +123,8 @@ export async function fetchRemoteState(userId: string): Promise<RemoteFetchResul
         deck: (data.deck as DeckItem[]) ?? [],
         results: (data.results as PracticeResult[]) ?? [],
         customWords: (data.custom_words as DictionaryEntry[]) ?? [],
+        dailySet: (data.daily_set as DailySet | null) ?? null,
+        run: (data.practice_run as PracticeRun | null) ?? null,
       },
     };
   } catch {
@@ -109,6 +142,8 @@ export async function pushState(userId: string, state: AppState): Promise<boolea
         deck: state.deck,
         results: state.results,
         custom_words: state.customWords,
+        daily_set: state.dailySet,
+        practice_run: state.run,
         updated_at: new Date().toISOString(),
       },
       { onConflict: "user_id" }

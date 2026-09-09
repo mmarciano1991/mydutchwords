@@ -24,6 +24,8 @@ const EXTRA_SENSES: Record<string, WordSense[]> = {
       exampleEn: "I received a tax assessment from the municipality.",
       gender: "de",
       label: "tax / municipal",
+      source: "authored",
+      context: "on letters from the gemeente or the Belastingdienst",
     },
   ],
   weken: [
@@ -33,6 +35,8 @@ const EXTRA_SENSES: Record<string, WordSense[]> = {
       exampleEn: "You have six weeks to respond.",
       gender: "de",
       label: "noun, plural",
+      source: "authored",
+      context: "in deadlines — \"binnen zes weken\"",
     },
   ],
   uiterlijk: [
@@ -42,12 +46,19 @@ const EXTRA_SENSES: Record<string, WordSense[]> = {
       exampleEn: "Her appearance didn't change.",
       gender: "het",
       label: "noun",
+      source: "authored",
+      context: "about someone's appearance, not a deadline",
     },
   ],
 };
 
-/** Senses beyond a word's own default gloss, or [] for the ~14,190 words
- *  that only have one. */
+/** Senses beyond a word's own default gloss, or [] for the words that have
+ *  no reviewed alternative.
+ *
+ *  These rank ABOVE the provisional senses that data/dictionary.ts splits out
+ *  of a packed gloss: both are extra meanings, but these were written by a
+ *  person, carry their own example sentence and context, and have been
+ *  checked. See lib/wordSources, which assembles the two. */
 export function extraSensesFor(id: string): WordSense[] {
   return EXTRA_SENSES[id] ?? [];
 }

@@ -24,6 +24,25 @@ const DICT = new Set([
   "bek",
   "beek",
   "aanhoudend",
+  // — added with the wider rule set (Phase A) —
+  "lopen",
+  "betalen",
+  "verhuizen",
+  "leven",
+  "huren",
+  "opnemen",
+  "aankomen",
+  "uitleggen",
+  "zoeken",
+  "opzoeken",
+  "kind",
+  "ei",
+  "stad",
+  "museum",
+  "auto",
+  "hoog",
+  "goed",
+  "sluiten",
 ]);
 const lookup = (term: string) => DICT.has(term);
 
@@ -103,17 +122,23 @@ describe("deinflect", () => {
   });
 
   describe("ambiguous inflections — the run-05 finding", () => {
-    it("returns BOTH real candidates for sloten (locks, plural of slot; ditches, plural of sloot)", () => {
+    it("returns EVERY real candidate for sloten (slot, sloot, and sluiten)", () => {
       // Run 05: this used to return only "slot" (lock) — silently wrong for
       // an article that meant "sloot" (ditch) — because the old contract
-      // stopped at the first dictionary hit. Both are real words, so both
-      // come back; the caller decides, it isn't guessed here.
+      // stopped at the first dictionary hit. All are real words, so all come
+      // back; the caller decides, it isn't guessed here.
+      //
+      // Phase A added a third genuine reading: "sloten" is also the past
+      // tense of "sluiten" (to close). That it appears here is the rule set
+      // getting MORE right, not less — the whole point of this contract is
+      // that a real reading is never dropped to make the answer look tidy.
       const hits = deinflect("sloten", lookup);
-      expect(hits).toHaveLength(2);
+      expect(hits.map((h) => h.lemma).sort()).toEqual(["sloot", "slot", "sluiten"]);
       expect(hits).toEqual(
         expect.arrayContaining([
           { lemma: "slot", reason: "plural" },
           { lemma: "sloot", reason: "plural" },
+          { lemma: "sluiten", reason: "past tense" },
         ])
       );
     });
@@ -175,4 +200,111 @@ describe("deinflect", () => {
       ]);
     });
   });
+  describe("verb forms — the bulk of what real Dutch writes", () => {
+    it("resolves the bare present stem, respelling the syllable (loop → lopen)", () => {
+      expect(deinflect("loop", lookup)).toEqual([{ lemma: "lopen", reason: "present tense" }]);
+    });
+
+    it("resolves a -t present form (loopt → lopen, werkt → werken)", () => {
+      expect(deinflect("loopt", lookup)).toEqual([{ lemma: "lopen", reason: "present tense" }]);
+      expect(deinflect("werkt", lookup)).toEqual([{ lemma: "werken", reason: "present tense" }]);
+    });
+
+    it("doubles the consonant back on a short stem (belt → bellen)", () => {
+      expect(deinflect("belt", lookup)).toEqual([{ lemma: "bellen", reason: "present tense" }]);
+    });
+
+    it("resolves weak past tense, singular and plural", () => {
+      expect(deinflect("werkte", lookup)).toEqual([{ lemma: "werken", reason: "past tense" }]);
+      expect(deinflect("werkten", lookup)).toEqual([{ lemma: "werken", reason: "past tense" }]);
+      expect(deinflect("betaalde", lookup)).toEqual([{ lemma: "betalen", reason: "past tense" }]);
+      expect(deinflect("huurden", lookup)).toEqual([{ lemma: "huren", reason: "past tense" }]);
+    });
+
+    it("resolves strong past tense from the table (liep → lopen)", () => {
+      expect(deinflect("liep", lookup)).toEqual([{ lemma: "lopen", reason: "past tense" }]);
+    });
+
+    it("resolves a strong participle from the table (gelopen → lopen)", () => {
+      expect(deinflect("gelopen", lookup)).toEqual([{ lemma: "lopen", reason: "past participle" }]);
+    });
+
+    it("resolves a participle whose prefix blocks ge- (betaald, verhuisd)", () => {
+      // "be-"/"ver-" already occupy the slot "ge-" would take, so these look
+      // exactly like a present-tense -t/-d form and used to resolve to nothing.
+      expect(deinflect("betaald", lookup)).toEqual([
+        { lemma: "betalen", reason: "past participle" },
+      ]);
+      expect(deinflect("verhuisd", lookup)).toEqual([
+        { lemma: "verhuizen", reason: "past participle" },
+      ]);
+    });
+
+    it("un-devoices a final s/f back to z/v (verhuis → verhuizen, leef → leven)", () => {
+      expect(deinflect("verhuis", lookup)).toEqual([
+        { lemma: "verhuizen", reason: "present tense" },
+      ]);
+      expect(deinflect("leef", lookup)).toEqual([{ lemma: "leven", reason: "present tense" }]);
+    });
+
+    it("peels a separable prefix and puts it back (opgenomen → opnemen)", () => {
+      // The "ge-" sits INSIDE the compound, so no rule that expects a
+      // word-initial "ge-" can see it.
+      expect(deinflect("opgenomen", lookup)).toEqual([
+        { lemma: "opnemen", reason: "past participle" },
+      ]);
+      expect(deinflect("aangekomen", lookup)).toEqual([
+        { lemma: "aankomen", reason: "past participle" },
+      ]);
+      expect(deinflect("uitgelegd", lookup)).toEqual([
+        { lemma: "uitleggen", reason: "past participle" },
+      ]);
+      expect(deinflect("opgezocht", lookup)).toEqual([
+        { lemma: "opzoeken", reason: "past participle" },
+      ]);
+    });
+
+    it("does not peel a prefix off an ordinary word that merely starts with one", () => {
+      // "inkomen" and "overleg" begin with separable prefixes but are plain
+      // words; only the "ge-" shape is ever peeled.
+      const dict = new Set(["komen", "leg"]);
+      expect(deinflect("inkomen", (t) => dict.has(t))).toEqual([]);
+      expect(deinflect("overleg", (t) => dict.has(t))).toEqual([]);
+    });
+  });
+
+  describe("noun plurals beyond -s and -en", () => {
+    it("resolves an -eren plural (kinderen → kind, eieren → ei)", () => {
+      expect(deinflect("kinderen", lookup)).toEqual([{ lemma: "kind", reason: "plural" }]);
+      expect(deinflect("eieren", lookup)).toEqual([{ lemma: "ei", reason: "plural" }]);
+    });
+
+    it("resolves a stem-changing plural from the table (steden → stad)", () => {
+      expect(deinflect("steden", lookup)).toEqual([{ lemma: "stad", reason: "plural" }]);
+    });
+
+    it("resolves a Latin plural (musea → museum)", () => {
+      expect(deinflect("musea", lookup)).toEqual([{ lemma: "museum", reason: "plural" }]);
+    });
+
+    it("resolves an apostrophe plural, which isn't plain letters (auto's → auto)", () => {
+      expect(deinflect("auto's", lookup)).toEqual([{ lemma: "auto", reason: "plural" }]);
+    });
+  });
+
+  describe("superlatives", () => {
+    it("strips a bare -st and an inflected -ste", () => {
+      expect(deinflect("hoogst", lookup)).toEqual([{ lemma: "hoog", reason: "superlative" }]);
+      expect(deinflect("kleinste", lookup)).toEqual([{ lemma: "klein", reason: "superlative" }]);
+    });
+
+    it("doubles the vowel back (grootst → groot)", () => {
+      expect(deinflect("grootst", lookup)).toEqual([{ lemma: "groot", reason: "superlative" }]);
+    });
+
+    it("resolves a suppletive superlative (beste → goed)", () => {
+      expect(deinflect("beste", lookup)).toEqual([{ lemma: "goed", reason: "superlative" }]);
+    });
+  });
+
 });

@@ -1,8 +1,11 @@
+import type { DailySet, PracticeRun } from "./dailySet";
 import { intervalForLevel, LADDER, MAX_LEVEL } from "./learningEngine";
 import type { DeckItem, PracticeResult } from "./types";
 
 const DECK_KEY = "woordkast.deck";
 const RESULTS_KEY = "woordkast.results";
+const DAILY_SET_KEY = "woordkast.dailySet";
+const RUN_KEY = "woordkast.practiceRun";
 
 /** A freshly-added deck item: no spaced-repetition history yet, due immediately. */
 export function newDeckItem(entryId: string, now: Date): DeckItem {
@@ -88,4 +91,31 @@ export function loadResults(): PracticeResult[] {
 
 export function saveResults(results: PracticeResult[]): void {
   write(RESULTS_KEY, results);
+}
+
+/** Today's draw, if one has been made and saved. Null before the first
+ *  practice day, or when the saved value is from an older schema. */
+export function loadDailySet(): DailySet | null {
+  const raw = read<DailySet | null>(DAILY_SET_KEY, null);
+  if (!raw || typeof raw.date !== "string" || !Array.isArray(raw.wordIds)) return null;
+  return raw;
+}
+
+export function saveDailySet(set: DailySet | null): void {
+  write(DAILY_SET_KEY, set);
+}
+
+/** The current (or last) run through a set of words. Null before the first
+ *  practice, or when the saved value is from an older schema. */
+export function loadRun(): PracticeRun | null {
+  const raw = read<PracticeRun | null>(RUN_KEY, null);
+  if (!raw || typeof raw.date !== "string" || !Array.isArray(raw.wordIds)) return null;
+  // `answers` was added with the run itself; guard anyway so a hand-edited or
+  // partially-written value degrades to "nothing answered" rather than
+  // throwing on every render.
+  return { ...raw, answers: raw.answers && typeof raw.answers === "object" ? raw.answers : {} };
+}
+
+export function saveRun(run: PracticeRun | null): void {
+  write(RUN_KEY, run);
 }
