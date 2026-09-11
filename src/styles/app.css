@@ -251,20 +251,29 @@ input {
   color: var(--text-faint);
 }
 
-/* ── Buttons ──
-   States: default · hover · pressed (:active) · focus-visible · disabled.
-   Transitions animate background / border / shadow / colour / transform with
-   short Material-inspired easing. */
+/* ── Buttons (Figma 61:15) ──
+   Pill-shaped and capped at 46px tall at every size. Type: primary
+   (contained) · secondary (outlined, with no fill of its own). Property:
+   default · inverted — the treatment for the cobalt surfaces, e.g.
+   PracticeCard. States: default · hover · pressed (:active) · focus-visible ·
+   disabled. Transitions animate background / border / shadow / colour /
+   transform with short Material-inspired easing. */
 .btn {
   width: 100%;
-  border: none;
-  border-radius: var(--radius-button);
+  /* The design draws the button at 45px and 46 is its ceiling; the
+     transparent border keeps contained and outlined variants the same
+     height, whatever their size. */
+  min-height: 45px;
+  max-height: 46px;
+  padding: var(--space-3) var(--space-4);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-pill);
+  background: none;
   font: var(--type-button);
-  padding: 17px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: var(--space-2);
+  gap: var(--space-3);
   transition:
     background var(--motion-base) var(--ease-standard),
     border-color var(--motion-base) var(--ease-standard),
@@ -280,6 +289,12 @@ input {
 .btn:active {
   transition-duration: var(--motion-fast);
 }
+/* Disabled: flat and unpressable — no lift, no shadow, no press feedback. */
+.btn:disabled {
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+}
 
 /* primary — contained, lifts on hover, depresses + lowers shadow on press */
 .btn--primary {
@@ -287,10 +302,10 @@ input {
   color: var(--semantic-button-onbutton-default);
   box-shadow: var(--shadow-primary);
 }
-.btn--primary:hover {
+.btn--primary:hover:not(:disabled) {
   transform: translateY(-1px);
 }
-.btn--primary:active {
+.btn--primary:active:not(:disabled) {
   transform: translateY(1px);
   background: var(--semantic-button-pressed-strong);
   box-shadow: var(--shadow-pressed);
@@ -298,38 +313,76 @@ input {
 .btn--primary:focus-visible {
   box-shadow: var(--shadow-primary), 0 0 0 3px var(--blue-100);
 }
-
-/* secondary — outlined. Hover lifts (keeps the white surface) so the PRESSED
-   state — a distinct surface-tint fill per the design — is clearly visible. */
-.btn--secondary {
-  background: var(--semantic-surface-subdle);
-  color: var(--semantic-button-outline-default);
-  border: 1.5px solid var(--line-cool-strong);
-  box-shadow: none;
-  padding: 13px;
-  border-radius: var(--radius-input);
+.btn--primary:disabled {
+  background: var(--line-cool-strong);
+  color: var(--surface-card);
 }
-.btn--secondary:hover {
+
+/* secondary — outlined, and unfilled in its default state (Figma 61:9), so the
+   PRESSED state's surface-tint fill is what reads as the press. Hover keeps
+   the lift the contained button has. */
+.btn--secondary {
+  background: none;
+  color: var(--semantic-button-outline-default);
+  border-color: var(--semantic-button-outline-default);
+  box-shadow: none;
+  gap: var(--space-2);
+}
+.btn--secondary:hover:not(:disabled) {
   transform: translateY(-1px);
 }
-.btn--secondary:active {
+.btn--secondary:active:not(:disabled) {
   background: var(--semantic-button-pressed-light);
   transform: translateY(1px);
 }
+.btn--secondary:disabled {
+  border-color: var(--line-cool-strong);
+  color: var(--ink-300);
+}
 
-/* success — contained (Practice "I knew it"), side-by-side with .btn--difficult/.btn--still */
+/* inverted — the on-cobalt property (Figma 324:1918 / 324:1992): the contained
+   button turns porcelain, the outlined one draws in white. Both press to the
+   same surface tint, which is what makes the press visible on a dark card. */
+.btn--inverted.btn--primary {
+  background: var(--semantic-button-inverted);
+  color: var(--primary);
+  box-shadow: none;
+}
+.btn--inverted.btn--primary:active:not(:disabled) {
+  background: var(--semantic-button-pressed-light);
+}
+.btn--inverted.btn--secondary {
+  color: var(--semantic-button-inverted);
+  border-color: var(--semantic-button-inverted);
+}
+.btn--inverted.btn--secondary:active:not(:disabled) {
+  background: var(--semantic-button-pressed-light);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+/* A blue focus ring would vanish into the cobalt card. */
+.btn--inverted:focus-visible {
+  box-shadow: 0 0 0 3px var(--primary-border);
+}
+
+/* success — contained (Practice "I knew it"), side-by-side with .btn--difficult.
+   The pair shares one row on a phone, so they keep the tighter icon gap and
+   trim their side padding: at 46px there is no room for a label to wrap. */
+.btn--success,
+.btn--difficult {
+  gap: var(--space-2);
+  padding-inline: var(--space-2);
+}
 .btn--success {
   flex: 1;
-  padding: 15px;
-  border-radius: var(--radius-input);
   background: var(--semantic-success-success-default);
   color: var(--semantic-success-onsuccess-default);
   box-shadow: var(--shadow-success);
 }
-.btn--success:hover {
+.btn--success:hover:not(:disabled) {
   transform: translateY(-1px);
 }
-.btn--success:active {
+.btn--success:active:not(:disabled) {
   transform: translateY(1px);
   box-shadow: var(--shadow-pressed);
 }
@@ -337,17 +390,15 @@ input {
 /* difficult — outlined error (Practice "Still learning"; Figma type=difficult) */
 .btn--difficult {
   flex: 1;
-  padding: 15px;
-  border-radius: var(--radius-input);
-  border: 1.5px solid var(--semantic-error-outline-default);
+  border-color: var(--semantic-error-outline-default);
   background: var(--semantic-surface-subdle);
   color: var(--semantic-error-onerror-default);
   box-shadow: none;
 }
-.btn--difficult:hover {
+.btn--difficult:hover:not(:disabled) {
   background: var(--semantic-error-error-default);
 }
-.btn--difficult:active {
+.btn--difficult:active:not(:disabled) {
   background: var(--semantic-error-error-default);
   transform: translateY(1px);
 }
@@ -681,41 +732,54 @@ input {
   color: var(--text-muted);
 }
 
+/* ── InputField (Figma 225:1314) ──
+   A pill on the porcelain card surface: hairline cool border at rest, the
+   soft blue border once it is active, and the same 12/16 padding the search
+   field in the Appbar uses, so the two read as one component. Multi-line
+   fields keep a card radius — a pill only works on a single line. */
 .text-input {
   width: 100%;
-  border: 1.5px solid var(--line-cool-strong);
-  border-radius: 14px;
+  min-height: 45px;
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-pill);
   background: var(--surface-card);
-  font-family: var(--font-serif);
-  font-size: 20px;
-  color: var(--text-display);
-  padding: 15px 16px;
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  line-height: 1.55;
+  color: var(--text-muted);
+  padding: var(--space-3) var(--space-4);
   outline: none;
   transition: border-color 0.12s ease;
 }
 .text-input::placeholder {
-  color: var(--ink-300);
+  color: var(--text-faint);
 }
 .text-input:focus {
-  border-color: var(--primary);
+  border-color: var(--primary-border);
+}
+.text-input:disabled {
+  background: var(--bg-canvas);
+  color: var(--text-faint);
+  cursor: not-allowed;
+}
+textarea.text-input {
+  border-radius: var(--radius-card);
 }
 
 /* ── Auth (sign in / create account) ── */
+/* Label + field, the InputField's own stack (Figma 225:1314). */
 .auth-field {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: var(--space-1);
 }
 .auth-field__label {
-  font: var(--type-label);
-  text-transform: uppercase;
-  letter-spacing: var(--tracking-label);
-  color: var(--text-faint);
-  margin-left: 2px;
-}
-.auth-field .text-input {
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-weight: 700;
+  font-size: var(--size-body-sm);
+  line-height: 1.45;
+  text-transform: uppercase;
+  color: var(--text-faint);
 }
 /* "or" rule between email and Google sign-in */
 .auth-divider {
@@ -856,13 +920,15 @@ input {
   width: 38px;
   flex-shrink: 0;
 }
+/* The Appbar's search field is the InputField with both icon slots filled
+   (Figma 225:1314), so it carries the same pill, border and padding. */
 .appbar__search {
   display: flex;
   align-items: center;
   gap: var(--space-2);
   background: var(--surface-card);
   border: 1px solid var(--border-cool);
-  border-radius: var(--radius-button);
+  border-radius: var(--radius-pill);
   padding: var(--space-3) var(--space-4);
   box-shadow: var(--shadow-field);
   transition: border-color 0.12s ease;
@@ -898,13 +964,16 @@ input {
 }
 
 /* ── IconButton (add · close · remove) — default / pressed / success ──
-   Merged from the former IconButton + AddButton (Figma node 61:22). */
+   Merged from the former IconButton + AddButton (Figma node 61:22). A circle
+   at every size: the radius is a full round rather than a fixed value, so a
+   larger button stays circular, and the fixed square box plus centring keeps
+   the 24px glyph optically centred. */
 .icon-btn {
   width: 38px;
   height: 38px;
   flex-shrink: 0;
   padding: 0;
-  border-radius: var(--radius-input);
+  border-radius: 50%;
   border: 1.5px solid var(--line-cool-strong);
   background: var(--surface-card);
   color: var(--primary);
@@ -1502,7 +1571,8 @@ input {
 .suggestion-row .btn {
   flex: 1;
   min-width: 0;
-  padding: 16px 8px;
+  /* Horizontal only — the shared button owns its height. */
+  padding-inline: var(--space-2);
 }
 /* State 3b — the same words, offered more quietly beneath a "not found". */
 .suggestion-chips {
@@ -1708,6 +1778,10 @@ input {
 .tab:focus-visible {
   border-radius: var(--radius-pill);
 }
+/* …and the circle it is. */
+.icon-btn:focus-visible {
+  border-radius: 50%;
+}
 
 /* Respect users who prefer reduced motion: keep the app static. */
 @media (prefers-reduced-motion: reduce) {
@@ -1825,10 +1899,11 @@ input {
   padding: var(--space-5);
 }
 
-/* ── Insights — streak strip + progress card (Figma 317:1416) ──
-   The two pieces are flush, so the card is square on top and rounded at the
-   bottom, and both carry side borders: the block is full-bleed and those
-   borders are what give it edges against the canvas. */
+/* ── Insights — streak strip + progress block (Figma 317:1416) ──
+   One porcelain masthead running off both edges of the screen: the streak
+   strip, then the deck total and the mastery bar. Square on every corner —
+   it is a full-bleed sheet, not a card — with warm hairlines under each of
+   the two pieces doing the separating. */
 .insights {
   display: flex;
   flex-direction: column;
@@ -1844,9 +1919,8 @@ input {
   gap: var(--space-1);
   padding: var(--space-2) var(--space-5);
   padding-top: max(var(--space-2), env(safe-area-inset-top));
-  background: var(--bg-canvas);
-  border-left: 1px solid var(--bg-canvas-deep);
-  border-right: 1px solid var(--bg-canvas-deep);
+  background: var(--surface-card);
+  border-bottom: 1px solid var(--border-warm);
 }
 .insights__flame {
   flex-shrink: 0;
@@ -1869,9 +1943,7 @@ input {
   gap: var(--space-5);
   padding: var(--space-6) var(--grid-gutter) var(--grid-gutter);
   background: var(--surface-card);
-  border: 1px solid var(--bg-canvas-deep);
-  border-top: none;
-  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  border-bottom: 1px solid var(--border-warm);
 }
 .insights__top {
   display: flex;
@@ -1955,67 +2027,20 @@ input {
   font-size: var(--size-body);
   line-height: 1.55;
 }
-/* Done state's follow-ups: the primary re-drill, and a quieter text link
-   under it for repeating the whole set (Figma 311:1276). */
+/* Done state's follow-ups: the primary re-drill and, under it, the outlined
+   button for repeating the whole set (Figma 311:1276). Both are the shared
+   Button in its inverted property — the card supplies only the stacking. */
 .practice-card__actions {
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
   width: 100%;
 }
-.practice-card__link {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
-  padding: var(--space-2);
-  background: none;
-  border: none;
-  border-radius: var(--radius-input);
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 16px;
-  color: var(--on-primary);
-  transition: opacity var(--motion-base) var(--ease-standard);
-}
-.practice-card__link:active {
-  opacity: 0.7;
-  transition-duration: var(--motion-fast);
-}
-@media (prefers-reduced-motion: reduce) {
-  .practice-card__link {
-    transition: none;
-  }
-}
 
-.practice-card__cta {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: var(--space-2);
-  padding: var(--space-3);
-  background: var(--cream-000);
-  border: 1.5px solid var(--primary);
-  border-radius: var(--radius-input);
-  font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: 16px;
+/* Inactive (Figma 322:1880) — too few words in the deck to draw a set from.
+   The card drops to the pale blue rule colour and everything on it, the
+   contained "Add a word" button included, goes back to the ink treatment. */
+.practice-card--inactive {
+  background: var(--blue-rule);
   color: var(--primary);
-  transition: background var(--motion-base) var(--ease-standard),
-    transform var(--motion-base) var(--ease-standard);
-}
-.practice-card__cta:active {
-  background: var(--surface-tint);
-  transform: translateY(1px);
-  transition-duration: var(--motion-fast);
-}
-@media (prefers-reduced-motion: reduce) {
-  .practice-card__cta {
-    transition: none;
-  }
-  .practice-card__cta:active {
-    transform: none;
-  }
 }

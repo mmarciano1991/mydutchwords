@@ -533,7 +533,6 @@ export default function App() {
                   onSave={saveCapturedWord}
                   onUndo={(entryId) => setDeck((prev) => prev.filter((d) => d.id !== entryId))}
                   onViewDeck={() => setRoute("browse")}
-                  onAddFromText={() => setRoute("add-from-text")}
                   onBack={() => setRoute("add-choice")}
                 />
               )}

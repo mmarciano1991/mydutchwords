@@ -40,14 +40,3 @@ export function TulipMedallion({ size = 172 }: { size?: number }) {
     </svg>
   );
 }
-
-/** Faint tulip watermark for the dashboard hero card. */
-export function HeroOrnament() {
-  return (
-    <svg className="hero__ornament" width="120" height="120" viewBox="0 0 120 120" fill="none">
-      <path d="M60 110 V58" stroke="#fff" strokeWidth="3" strokeLinecap="round" />
-      <path d="M60 58 C42 58 36 30 42 16 C48 30 54 32 60 30 C66 32 72 30 78 16 C84 30 78 58 60 58Z" fill="#fff" />
-      <path d="M60 100 C42 96 30 78 28 56 C50 62 56 78 60 100Z" fill="#fff" />
-    </svg>
-  );
-}

@@ -23,7 +23,6 @@ export function Capture({
   onSave,
   onUndo,
   onViewDeck,
-  onAddFromText,
   onBack,
 }: {
   deckIds: Set<string>;
@@ -33,9 +32,6 @@ export function Capture({
   /** Takes the last-added word back out of the deck. */
   onUndo: (entryId: string) => void;
   onViewDeck: () => void;
-  /** Opens "Add from text" (2a) — offered only on the blank start state, the
-   *  same place the screen already explains what typing here does. */
-  onAddFromText: () => void;
   onBack: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -101,19 +97,12 @@ export function Capture({
         {/* ── 1. Start ── the screen is otherwise blank before anything is
             typed, which left "add a word" meaning whatever the user assumed.
             One line, naming both halves: where the word comes from, and
-            where it goes — plus the door into capturing several words at
-            once from something you're already reading. */}
+            where it goes. */}
         {!hasBody && (
           <div style={{ padding: "24px 6px", textAlign: "center" }}>
             <p className="muted" style={{ fontSize: 15, lineHeight: 1.55, margin: 0 }}>
               Look up a Dutch word in the dictionary, then add it to your deck.
             </p>
-            {/* A secondary button, not a text link: this is the second real
-                way in to adding words, and it was reading as a footnote to
-                the sentence above it. */}
-            <button className="btn btn--secondary" style={{ marginTop: 16 }} onClick={onAddFromText}>
-              Add a full sentence
-            </button>
           </div>
         )}
 

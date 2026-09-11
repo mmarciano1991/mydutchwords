@@ -8,7 +8,7 @@
    the numbers follow the account rather than the device. */
 import { TulipMedallion } from "../components/brand";
 import { Insights } from "../components/Insights";
-import { PracticeCard } from "../components/PracticeCard";
+import { MIN_PRACTICE_WORDS, PracticeCard } from "../components/PracticeCard";
 import type { RunProgress } from "../lib/dailySet";
 
 export function Dashboard({
@@ -76,8 +76,17 @@ export function Dashboard({
         <Insights deckCount={deckCount} masteredCount={masteredCount} streak={streak} />
         <div className="dashboard__spacer">
           <PracticeCard
-            // Nothing drawn at all is the only state the run can't describe.
-            status={setSize === 0 ? "caught-up" : progress.status}
+            // Too thin a deck to practise from outranks everything the run
+            // could say; after that, nothing drawn at all is the only state
+            // the run can't describe itself.
+            status={
+              deckCount < MIN_PRACTICE_WORDS
+                ? "inactive"
+                : setSize === 0
+                  ? "caught-up"
+                  : progress.status
+            }
+            deckCount={deckCount}
             setSize={setSize}
             total={progress.total}
             answered={progress.answered}
@@ -88,6 +97,7 @@ export function Dashboard({
             onPractiseLearning={onPractiseLearning}
             onPractiseAll={onPractiseAll}
             onPractiseAhead={onPracticeAhead}
+            onAddWord={onAddWord}
           />
         </div>
       </div>

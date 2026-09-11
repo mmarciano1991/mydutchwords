@@ -1,11 +1,10 @@
-/* Insights — the dashboard's header block (Figma 317:1416): a streak strip
-   on the canvas colour, and beneath it a porcelain card, square at the top
-   and rounded at the bottom, carrying the deck total and the mastery bar.
+/* Insights — the dashboard's header block (Figma 317:1416): a streak strip,
+   and beneath it the deck total and the mastery bar, both on porcelain.
 
    The two sit flush so they read as one masthead running off both edges of
-   the screen — hence the side borders and the bottom-only radius. Everything
-   it shows is derived from the synced deck + practice log, so it needs no
-   state of its own. */
+   the screen — square on every corner, with a warm hairline under each piece
+   doing the separating. Everything it shows is derived from the synced deck
+   + practice log, so it needs no state of its own. */
 import { ModeHeat } from "../icons";
 import { ProgressBar } from "./ProgressBar";
 
