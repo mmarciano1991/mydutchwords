@@ -6,7 +6,7 @@
      2. Commitment   — "How much Dutch fits your day?"
      3. Time         — "When will you do your Dutch?"
      4. Plan         — the choice read back as one sentence: "Every day at
-                       08:00, I learn 5 Dutch words."
+                       08:00, I learn 10 Dutch words."
 
    Nothing else is asked. The last button starts the first session directly;
    the dashboard is seen for the first time after the first win, not before.

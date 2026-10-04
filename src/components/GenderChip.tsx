@@ -5,9 +5,10 @@ import type { Gender } from "../lib/types";
  *  de = filled chip, het = inset-outlined chip (per the Delft Blue design).
  *
  *  "unknown" gets a chip of its own rather than rendering as nothing. That is
- *  the whole point of separating it from "none": a noun whose article nobody
- *  has established used to look identical to a verb that never needed one, so
- *  the gap was invisible to the learner and uncountable for everyone else.
+ *  the whole point of separating it from "none": otherwise a noun whose
+ *  article nobody has established looks identical to a verb that never needs
+ *  one, and the gap is invisible to the learner and uncountable for everyone
+ *  else.
  *  Showing it turns a silent hole into something a learner can see — and,
  *  through Edit translation, fix.
  *

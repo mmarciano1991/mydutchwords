@@ -13,7 +13,7 @@ import App from "./App";
 import { newDeckItem } from "./lib/storage";
 import { dayKey } from "./lib/dailySet";
 import { newHabit, type HabitState } from "./lib/habit";
-import { ADVANCE_AFTER_CORRECT_MS } from "./screens/Practice";
+import { ADVANCE_AFTER_CORRECT_MS, FLASHCARD_GRADE_LOCK_MS } from "./screens/Practice";
 
 // The dictionary chunk is irrelevant here and pulls in ~1MB of examples.
 vi.mock("./data/examples", () => ({
@@ -28,6 +28,10 @@ vi.mock("./lib/wordSources", () => ({
   editEntry: () => {},
   getCustomEntries: () => [],
   setCustomEntries: () => {},
+  useCustomEntriesVersion: () => 0,
+  pinSenseEntries: () => {},
+  entriesGlossed: () => [],
+  parseSenseKey: (id: string) => ({ baseId: id, index: 0 }),
 }));
 
 /* jsdom 30 under vitest 2 ships no localStorage, and the app persists
@@ -147,6 +151,8 @@ function respond(id: string, right: boolean) {
     act(() => input.form!.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
   } else {
     click(right ? "I knew it" : "Still learning");
+    // Past the double-tap guard, so the next card takes a deliberate tap.
+    act(() => vi.advanceTimersByTime(FLASHCARD_GRADE_LOCK_MS));
     return;
   }
   // A miss waits for Continue; a right answer moves on by itself.
@@ -511,6 +517,25 @@ describe("4. coming back", () => {
     expect(cardText()).toContain("5 words");
   });
 
+  it("closes on Escape, as Not now does", () => {
+    render();
+    const dialog = container.querySelector("[role=dialog]")!;
+    act(() => {
+      dialog.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+    });
+    expect(container.querySelector("[role=dialog]")).toBeNull();
+  });
+
+  it("keeps Tab inside the popup", () => {
+    render();
+    const buttons = [...container.querySelectorAll<HTMLButtonElement>("[role=dialog] button")];
+    buttons[buttons.length - 1].focus();
+    act(() => {
+      container.querySelector("[role=dialog]")!.dispatchEvent(new KeyboardEvent("keydown", { key: "Tab", bubbles: true }));
+    });
+    expect(document.activeElement).toBe(buttons[0]);
+  });
+
   it("isn't shown after a short gap", () => {
     seedResults([{ entryId: "w0", grade: "know", timestamp: Date.now() - DAY }]);
     render();
@@ -584,5 +609,36 @@ describe("6. settings", () => {
     click("Home");
     click("Start");
     expect(practiceCounter()).toBe("0/20");
+  });
+});
+
+describe("7. the deck", () => {
+  beforeEach(() => {
+    seedHabit();
+  });
+
+  it("puts a removed word back, progress and all, on Undo", () => {
+    const practised = { ...newDeckItem("w0", new Date()), level: 4, reps: 4, state: "learning" as const };
+    localStorage.setItem("woordkast.deck", JSON.stringify([practised, newDeckItem("w1", new Date(Date.now() - 1))]));
+    render();
+    click("Deck");
+    click("Remove w0 from deck");
+    expect(screenText()).toContain("w0 removed from your deck");
+    expect(JSON.parse(localStorage.getItem("woordkast.deck")!).map((d: { id: string }) => d.id)).toEqual(["w1"]);
+
+    click("Undo");
+    const deck = JSON.parse(localStorage.getItem("woordkast.deck")!);
+    expect(deck.map((d: { id: string }) => d.id)).toEqual(["w0", "w1"]);
+    expect(deck[0]).toMatchObject({ level: 4, reps: 4 });
+  });
+
+  it("keeps the settings time field editable through a half-typed value", () => {
+    seedNewDeck(5);
+    render();
+    click("Settings");
+    setTime("");
+    expect(container.querySelector<HTMLInputElement>('input[type="time"]')!.value).toBe("");
+    setTime("19:15");
+    expect(storedHabit().time).toBe("19:15");
   });
 });

@@ -344,7 +344,7 @@ export function cueLine(habit: HabitState): string {
   return `${timeEmoji(habit.time)} Your Dutch at ${habit.time}`;
 }
 
-/** The commitment as one sentence: "Every day at 08:00, I learn 5 Dutch words." */
+/** The commitment as one sentence: "Every day at 08:00, I learn 10 Dutch words." */
 export function planSentence(commitment: Commitment, time: HabitTime): string {
   const c = commitmentOf(commitment);
   return `Every day at ${time}, I learn ${c.words} Dutch words.`;

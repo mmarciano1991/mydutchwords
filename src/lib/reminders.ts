@@ -10,7 +10,7 @@
    a push backend can only notify while a tab is alive (open or
    backgrounded). The timing and copy live here, separate from delivery, so
    a real push channel can reuse them unchanged. */
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { commitmentOf, timeEmoji, timeNudge, timeParts, type HabitState } from "./habit";
 
 export interface ReminderCopy {
@@ -52,6 +52,11 @@ export async function requestReminderPermission(): Promise<boolean> {
  *  whenever the habit or today's done-ness changes, so finishing the day
  *  cancels a pending reminder. */
 export function useDailyReminder(habit: HabitState | null, todayDone: boolean): void {
+  // Moved on by each reminder that fires, so the next day's is scheduled —
+  // nothing else changes at that moment to re-run the effect, and an app
+  // left open for days would otherwise remind only once.
+  const [fired, setFired] = useState(0);
+
   useEffect(() => {
     if (!habit?.reminders || !notificationsSupported()) return;
     if (Notification.permission !== "granted") return;
@@ -66,7 +71,8 @@ export function useDailyReminder(habit: HabitState | null, todayDone: boolean): 
         // Some mobile browsers only allow notifications from a service
         // worker. Nothing to fall back to; the home screen carries the cue.
       }
+      setFired((n) => n + 1);
     }, at.getTime() - Date.now());
     return () => window.clearTimeout(timer);
-  }, [habit, todayDone]);
+  }, [habit, todayDone, fired]);
 }

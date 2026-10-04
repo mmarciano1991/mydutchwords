@@ -102,7 +102,7 @@ export function WordLookupResult({
             <div className="skeleton skeleton--line" />
             <div className="skeleton skeleton--line skeleton--line-short" />
           </div>
-          <p className="muted" style={{ fontSize: 14, margin: "-4px 2px 0", textAlign: "center" }}>
+          <p className="muted lookup-note">
             Searching the online dictionary…
           </p>
         </div>
@@ -125,6 +125,7 @@ export function WordLookupResult({
                   key={d.lemma}
                   entry={candidate}
                   reason={d.reason}
+                  inDeck={deckIds.has(candidate.id)}
                   onAdd={() => onSave(candidate)}
                 />
               );
@@ -143,6 +144,7 @@ export function WordLookupResult({
           word={trimmed}
           compound={compounds[0]}
           resolve={lookupLocal}
+          isInDeck={(id) => deckIds.has(id)}
           onAdd={onSave}
         />
       )}

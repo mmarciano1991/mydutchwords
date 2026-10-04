@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { lookupLocal, parseSenseKey, resolveEntry, senseKey } from "./wordSources";
+import { entriesGlossed, lookupLocal, parseSenseKey, resolveEntry, senseKey } from "./wordSources";
 
 describe("sense keys", () => {
   it("gives the primary meaning the bare word as its key", () => {
@@ -90,5 +90,18 @@ describe("every entry is complete", () => {
       expect(entry!.senses.length, word).toBeGreaterThan(0);
       expect(entry!.senses[0].english, word).not.toBe("");
     }
+  });
+});
+
+describe("entriesGlossed", () => {
+  // Typing "buur" for "neighbour" is right even when only "buurman" is in
+  // the deck: the synonyms come from the whole dictionary.
+  it("finds every bundled word with the same gloss", () => {
+    const words = entriesGlossed("Neighbour").map((e) => e.dutch);
+    expect(words).toEqual(expect.arrayContaining(["buurman", "buur"]));
+  });
+
+  it("finds nothing for a gloss no word has", () => {
+    expect(entriesGlossed("zzz not a gloss")).toEqual([]);
   });
 });

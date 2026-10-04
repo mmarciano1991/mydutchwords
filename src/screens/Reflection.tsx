@@ -68,7 +68,7 @@ export function Reflection({
         <p className="reflect__close">That&rsquo;s what a few minutes a day does.</p>
       </div>
 
-      <div className="gutter" style={{ padding: "12px 22px 32px" }}>
+      <div className="gutter reflection-actions">
         <button className="btn btn--primary" onClick={onDone}>
           See you tomorrow
         </button>

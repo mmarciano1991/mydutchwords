@@ -22,6 +22,13 @@ export async function signUpEmail(email: string, password: string): Promise<Auth
   if (!supabase) return { error: NOT_CONFIGURED };
   const { data, error } = await supabase.auth.signUp({ email, password });
   if (error) return { error: error.message };
+  // An address that already has an account gets a stand-in user with no
+  // identities and no error (so sign-up can't be used to probe addresses),
+  // and no email is sent — saying "we've sent a code" would leave the user
+  // waiting for nothing.
+  if (data.user && data.user.identities?.length === 0) {
+    return { error: "There’s already an account with this email. Log in instead — or reset your password." };
+  }
   // With email confirmation on, a user is created but there's no session yet.
   const needsConfirmation = Boolean(data.user && !data.session);
   return { error: null, needsConfirmation };

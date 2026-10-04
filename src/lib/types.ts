@@ -4,8 +4,8 @@ import type { Grade, Word } from "./learningEngine";
  * Dutch grammatical article.
  *
  * The two real articles, plus the two different reasons a word might not
- * show one — which used to be the same value, `null`, and that was the root
- * of the "missing article" problem:
+ * show one. They are kept apart because a single "no article" value makes a
+ * noun with an unestablished article look complete:
  *
  *   "none"     this word takes no article. Verbs, adjectives, adverbs,
  *              prepositions. Correct, complete, nothing to fix.
@@ -77,8 +77,8 @@ export interface WordSense {
  * DERIVED from that at decode time (see data/dictionary.ts, which splits a
  * gloss like "to park; to put away" into two). Making authors hand-write a
  * senses array would be asking them to maintain the derivation by hand, and
- * making DictionaryEntry.senses optional would put the old bug back — an
- * entry with no meanings at all would typecheck.
+ * making DictionaryEntry.senses optional would let an entry with no meanings
+ * at all typecheck.
  */
 export interface CuratedEntry {
   dutch: string;
@@ -122,8 +122,8 @@ export interface DictionaryEntry {
  *  The id is a SENSE key, not a word (see lib/wordSources): "aanslag" is the
  *  primary meaning and "aanslag#1" the second, so the same Dutch word can sit
  *  in the deck twice under two meanings with independent progress. Keys for
- *  the primary sense are the bare word, which is exactly what every deck
- *  saved before this change already contains — so nothing needed migrating. */
+ *  the primary sense are the bare word, so ids saved before senses existed
+ *  still resolve, to the primary meaning, without a migration. */
 export interface DeckItem extends Word {
   dateAdded: number;
 }

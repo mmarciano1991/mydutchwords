@@ -20,9 +20,31 @@ export interface AuthState {
   clearRecovery: () => void;
 }
 
+/* The recovery link's session is an ordinary one once it's stored, so a
+   reload mid-recovery would land in the app with the old password still set.
+   The fact that a recovery is under way is kept for the tab's lifetime. */
+const RECOVERY_KEY = "woordkast.recovering";
+
+function readRecovering(): boolean {
+  try {
+    return sessionStorage.getItem(RECOVERY_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function writeRecovering(on: boolean): void {
+  try {
+    if (on) sessionStorage.setItem(RECOVERY_KEY, "1");
+    else sessionStorage.removeItem(RECOVERY_KEY);
+  } catch {
+    // Private mode: recovery then lasts until a reload, as before.
+  }
+}
+
 export function useAuth(): AuthState {
   const [session, setSession] = useState<Session | null>(null);
-  const [recovering, setRecovering] = useState(false);
+  const [recovering, setRecovering] = useState(readRecovering);
   const [ready, setReady] = useState(!isSupabaseConfigured);
 
   useEffect(() => {
@@ -32,12 +54,20 @@ export function useAuth(): AuthState {
     supabase.auth
       .getSession()
       .then(({ data }) => active && setSession(data.session))
-      .catch(() => {})
+      .catch((err) => console.warn("[woordkast] could not read the saved session", err))
       .finally(() => active && setReady(true));
 
     const { data } = supabase.auth.onAuthStateChange((event, next) => {
       if (!active) return;
-      if (event === "PASSWORD_RECOVERY") setRecovering(true);
+      if (event === "PASSWORD_RECOVERY") {
+        writeRecovering(true);
+        setRecovering(true);
+      }
+      // Signed out (or the session lapsed): nothing is being recovered.
+      if (!next) {
+        writeRecovering(false);
+        setRecovering(false);
+      }
       setSession(next);
     });
     return () => {
@@ -46,7 +76,10 @@ export function useAuth(): AuthState {
     };
   }, []);
 
-  const clearRecovery = useCallback(() => setRecovering(false), []);
+  const clearRecovery = useCallback(() => {
+    writeRecovering(false);
+    setRecovering(false);
+  }, []);
 
   return {
     session,

@@ -4,6 +4,7 @@ import type { DeckItem, DictionaryEntry, PracticeResult } from "./types";
 
 const maybeSingleMock = vi.fn();
 const upsertMock = vi.fn();
+const rpcMock = vi.fn();
 
 vi.mock("./supabase", () => ({
   supabase: {
@@ -11,6 +12,7 @@ vi.mock("./supabase", () => ({
       select: () => ({ eq: () => ({ maybeSingle: maybeSingleMock }) }),
       upsert: upsertMock,
     }),
+    rpc: rpcMock,
   },
 }));
 
@@ -194,7 +196,7 @@ describe("fetchRemoteState", () => {
   it("reports ok:true with a null state for a brand-new user", async () => {
     maybeSingleMock.mockResolvedValueOnce({ data: null, error: null });
     const result = await fetchRemoteState("user-1");
-    expect(result).toEqual({ ok: true, state: null });
+    expect(result).toEqual({ ok: true, state: null, version: 0 });
   });
 
   it("reports ok:true with the saved state when a row exists", async () => {
@@ -221,19 +223,57 @@ describe("fetchRemoteState", () => {
 });
 
 describe("pushState", () => {
+  const legacy = { version: null, serverResults: new Set<string>() };
+
   beforeEach(() => {
     upsertMock.mockReset();
+    rpcMock.mockReset();
   });
 
-  it("resolves true on a clean upsert", async () => {
+  it("upserts the whole snapshot on a pre-versioning server", async () => {
     upsertMock.mockResolvedValueOnce({ error: null });
-    const ok = await pushState("user-1", state());
-    expect(ok).toBe(true);
+    expect(await pushState("user-1", state(), legacy)).toEqual({ status: "ok", version: null });
+    expect(rpcMock).not.toHaveBeenCalled();
   });
 
-  it("resolves false (never throws) on an upsert error", async () => {
+  it("reports an error (never throws) on an upsert error", async () => {
     upsertMock.mockResolvedValueOnce({ error: new Error("network down") });
-    const ok = await pushState("user-1", state());
-    expect(ok).toBe(false);
+    expect(await pushState("user-1", state(), legacy)).toEqual({ status: "error" });
+  });
+
+  it("sends only the results the server doesn't have yet", async () => {
+    rpcMock.mockResolvedValueOnce({ data: { status: "ok", version: 4 }, error: null });
+    const old = result("huis", 1);
+    const fresh = result("boek", 2);
+    const pushed = await pushState("user-1", state({ results: [old, fresh] }), {
+      version: 3,
+      serverResults: new Set(["huis|1|know"]),
+    });
+    expect(pushed).toEqual({ status: "ok", version: 4 });
+    const [fn, args] = rpcMock.mock.calls[0];
+    expect(fn).toBe("sync_user_state");
+    expect(args.p_expected_version).toBe(3);
+    expect(args.p_new_results).toEqual([fresh]);
+  });
+
+  it("hands back the newer row on a version conflict", async () => {
+    rpcMock.mockResolvedValueOnce({
+      data: { status: "conflict", row: { deck: [deckItem("kat")], results: [], custom_words: [], version: 7 } },
+      error: null,
+    });
+    const pushed = await pushState("user-1", state(), { version: 3, serverResults: new Set() });
+    expect(pushed.status).toBe("conflict");
+    expect(pushed.status === "conflict" && pushed.version).toBe(7);
+    expect(pushed.status === "conflict" && pushed.remote?.deck.map((d) => d.id)).toEqual(["kat"]);
+  });
+
+  it("falls back to an upsert when the sync function isn't deployed", async () => {
+    rpcMock.mockResolvedValueOnce({ data: null, error: { code: "PGRST202", message: "not found" } });
+    upsertMock.mockResolvedValue({ error: null });
+    expect(await pushState("user-1", state(), { version: 0, serverResults: new Set() })).toEqual({
+      status: "ok",
+      version: null,
+    });
+    expect(upsertMock).toHaveBeenCalledTimes(1);
   });
 });
