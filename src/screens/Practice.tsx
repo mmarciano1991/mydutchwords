@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import type { DictionaryEntry } from "../lib/types";
-import { applyGrade, type Grade, type ReviewedCard, type Word } from "../lib/learningEngine";
+import { gradeForSchedule, type Grade, type ReviewedCard, type Word } from "../lib/learningEngine";
 import {
   advanceQueue,
   buildChoices,
@@ -11,6 +11,7 @@ import {
   type ExerciseKind,
   type TypedVerdict,
 } from "../lib/exercises";
+import { entriesGlossed } from "../lib/wordSources";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
 import { Divider } from "../components/Divider";
@@ -25,6 +26,11 @@ export interface PracticeCard {
 /** How long a correct answer stays on screen before the next exercise —
  *  long enough to register the green, short enough not to wait for. */
 export const ADVANCE_AFTER_CORRECT_MS = 900;
+
+/** How long a flashcard's grade buttons ignore taps after the card changes.
+ *  "I knew it" sits in the same spot on every card, so a double-tap would
+ *  otherwise grade the next word before it has even been read. */
+export const FLASHCARD_GRADE_LOCK_MS = 350;
 
 type Feedback =
   | { kind: "choice"; picked: string; correct: boolean }
@@ -47,7 +53,27 @@ function withArticle(entry: DictionaryEntry): string {
    answers. A retry minutes after seeing the answer is practice, not
    evidence of knowing it: grading it too would move a word up the ladder on
    the strength of a reminder. The retry only clears the word (onCleared). */
-export function Practice({
+type PracticeProps = Parameters<typeof PracticeSession>[0];
+
+export function Practice(props: PracticeProps) {
+  // Nothing to ask (every word in the sitting failed to resolve): a sitting
+  // with no first card has nothing to render, so offer the way back instead.
+  if (props.queue.length === 0) {
+    return (
+      <div className="screen pad-top">
+        <div className="topbar">
+          <IconButton action="close" onClick={props.onClose} aria-label="Close practice" />
+        </div>
+        <div className="screen__body gutter">
+          <Notice type="info">There are no words to practise right now.</Notice>
+        </div>
+      </div>
+    );
+  }
+  return <PracticeSession {...props} />;
+}
+
+function PracticeSession({
   queue,
   pool = [],
   scheduling = true,
@@ -78,7 +104,7 @@ export function Practice({
   /** Fired for every first answer that is graded onto the ladder. Not called
    *  in warm-up: those answers deliberately don't move the schedule. */
   onGrade?: (card: ReviewedCard) => void;
-  onFinish: (reviewedCards: ReviewedCard[]) => void;
+  onFinish: () => void;
   onClose: () => void;
 }) {
   const cards = useMemo(() => new Map(queue.map((c) => [c.word.id, c])), [queue]);
@@ -94,8 +120,16 @@ export function Practice({
   // Snapshot at mount: grades given during this sitting are tracked below.
   const [skipLadder] = useState(() => new Set(alreadyGraded ?? []));
   const attempted = useRef(new Set<string>());
-  const reviewed = useRef<ReviewedCard[]>([]);
   const continueRef = useRef<HTMLButtonElement>(null);
+  // True for a moment after each new card (see FLASHCARD_GRADE_LOCK_MS). The
+  // first card arrives by navigation, not by a tap, so it isn't locked.
+  const gradeLocked = useRef(false);
+  useEffect(() => {
+    if (step === 0) return;
+    gradeLocked.current = true;
+    const t = window.setTimeout(() => (gradeLocked.current = false), FLASHCARD_GRADE_LOCK_MS);
+    return () => window.clearTimeout(t);
+  }, [step]);
 
   const item = pending[0];
   const { entry, word } = cards.get(item.id)!;
@@ -115,10 +149,9 @@ export function Practice({
       attempted.current.add(id);
       const g: Grade = correct ? "know" : "dontKnow";
       const ladder = scheduling && !skipLadder.has(id);
-      const updated = ladder ? applyGrade(word, g, new Date()) : word;
+      const updated = ladder ? gradeForSchedule(word, g, new Date()) : word;
       onAnswer?.(id, g);
       if (ladder) onGrade?.({ word: updated, grade: g });
-      reviewed.current.push({ word: updated, grade: g });
     }
     if (correct) {
       onCleared?.(id);
@@ -130,7 +163,7 @@ export function Practice({
   function advance(correct: boolean) {
     const rest = advanceQueue(pending, correct, kind);
     if (rest.length === 0) {
-      onFinish(reviewed.current);
+      onFinish();
       return;
     }
     setPending(rest);
@@ -157,6 +190,7 @@ export function Practice({
   }, [feedback]);
 
   function gradeFlashcard(g: Grade) {
+    if (gradeLocked.current) return;
     settle(g === "know");
     advance(g === "know");
   }
@@ -171,7 +205,9 @@ export function Practice({
   function submitTyped(e: FormEvent) {
     e.preventDefault();
     if (feedback || !typed.trim()) return;
-    const verdict = checkTyped(typed, entry.dutch, synonymsOf(entry, pool));
+    // Same-gloss words anywhere in the dictionary are right too, not only
+    // the ones that happen to be in this learner's deck.
+    const verdict = checkTyped(typed, entry.dutch, synonymsOf(entry, [...pool, ...entriesGlossed(entry.english)]));
     settle(verdict !== "wrong");
     setFeedback({ kind: "typing", typed, verdict });
   }
@@ -200,7 +236,7 @@ export function Practice({
         >
           <div className="progress__fill" style={{ width: `${progress}%` }} />
         </div>
-        <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-muted)" }}>
+        <span className="practice-count">
           {cleared}/{total}
         </span>
       </div>
@@ -211,10 +247,9 @@ export function Practice({
         <>
           <div
             key={step}
-            className="screen__body gutter exercise"
-            style={{ padding: "14px 22px 4px", display: "flex", flexDirection: "column" }}
+            className="screen__body gutter exercise exercise--flashcard"
           >
-            <div className="eyebrow" style={{ textAlign: "center" }}>
+            <div className="eyebrow eyebrow--center">
               {flipped ? "Translation" : retry ? "Back again — do you know it now?" : "Do you know this word?"}
             </div>
 
@@ -253,7 +288,7 @@ export function Practice({
               you either had the word or you didn't — so a learner who knows it
               can answer straight away instead of flipping to a translation they
               didn't need. The card itself stays the only reveal affordance. */}
-          <div className="gutter" style={{ padding: "12px 22px 32px", display: "flex", gap: 12 }}>
+          <div className="gutter exercise__grades">
             <button className="btn btn--difficult" onClick={() => gradeFlashcard("dontKnow")}>
               <Close size={16} />
               Still learning

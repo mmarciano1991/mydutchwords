@@ -1,7 +1,7 @@
 /* exercises — what one step of a practice sitting asks, and the queue that
    decides which word comes next.
 
-   A sitting is no longer a fixed list walked once. It is a queue: a word
+   A sitting is a queue, not a fixed list walked once: a word
    leaves it only when it is answered correctly. A miss (or a skip) puts the
    word back a few places later — far enough that other words come in
    between, so the retry is recall and not a reflex — and the sitting ends

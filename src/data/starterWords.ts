@@ -4,8 +4,8 @@
    onboarding ended on an empty deck, which is the opposite of "the first
    thing you do is learn some Dutch". These are everyday words a newcomer
    meets in their first weeks — home, getting around, and the letters that
-   land on the doormat — in the order they are introduced (the first five
-   are the first session). The learner's own captured words take over from
+   land on the doormat — in the order they are introduced (the first
+   ones are the first session, as many as the commitment asks for). The learner's own captured words take over from
    here; these are only a running start, and can be removed like any other.
 
    Deck ids: "aanslag#1" is the tax-assessment sense (see data/senses.ts),

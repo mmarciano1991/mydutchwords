@@ -12,7 +12,7 @@
    it's frozen. Reuses the exact same lookup pipeline and result rendering as
    Capture (useWordLookup / WordLookupResult) — only how a word gets chosen,
    and what happens to it once resolved, differs. */
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
 import { tokenizeText, type TextToken } from "../lib/tokenizeText";
 import { useWordLookup } from "../lib/useWordLookup";
@@ -79,17 +79,15 @@ export function AddFromText({
       <div className="screen">
         <Appbar title="Add from text" onBack={onBack} />
         <div
-          className="screen__body gutter"
-          style={{ paddingTop: 16, paddingBottom: 20, display: "flex", flexDirection: "column", gap: 14 }}
+          className="screen__body gutter add-body add-body--compose"
         >
-          <p className="muted" style={{ fontSize: 15, lineHeight: 1.55, margin: 0 }}>
+          <p className="muted add-lede">
             Paste or type a bit of Dutch — an article, a letter, a sign. Once
             you&rsquo;re reading it here, tap any word to look it up and add it,
             with the sentence you found it in kept alongside.
           </p>
           <textarea
-            className="text-input"
-            style={{ minHeight: 220, resize: "vertical", fontFamily: "var(--font-sans)", fontSize: 16, lineHeight: 1.5 }}
+            className="text-input text-input--area"
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             placeholder="Paste or type a piece of Dutch text here…"
@@ -111,42 +109,47 @@ export function AddFromText({
   return (
     <div className="screen">
       <Appbar title="Add from text" onBack={onBack} />
-      <div className="screen__body gutter" style={{ paddingTop: 16, paddingBottom: 24 }}>
+      <div className="screen__body gutter add-body">
         {addedCount > 0 && (
           <Notice type="success">
             {addedCount} word{addedCount === 1 ? "" : "s"} added this visit
           </Notice>
         )}
 
-        <p className="readtext" style={{ marginTop: addedCount > 0 ? 14 : 0 }}>
-          {tokens.map((t, i) =>
-            t.isWord ? (
-              <button
-                key={i}
-                className={[
-                  "readtext__word",
-                  active?.index === i ? "readtext__word--active" : "",
-                  addedIndices.has(i) ? "readtext__word--added" : "",
-                ]
-                  .filter(Boolean)
-                  .join(" ")}
-                onClick={() => setActive({ token: t, index: i })}
-                aria-label={addedIndices.has(i) ? `${t.text}, already added to your deck` : undefined}
-              >
-                {t.text}
-              </button>
-            ) : (
-              <span key={i}>{t.text}</span>
-            )
-          )}
+        <p className="readtext">
+          {tokens.map((t, i) => (
+            <Fragment key={i}>
+              {/* tokenizeText drops the whitespace between sentences, so it
+                  is put back here — otherwise "Utrecht. Mijn" reads as
+                  "Utrecht.Mijn". */}
+              {i > 0 && t.sentenceIndex !== tokens[i - 1].sentenceIndex && " "}
+              {t.isWord ? (
+                <button
+                  className={[
+                    "readtext__word",
+                    active?.index === i ? "readtext__word--active" : "",
+                    addedIndices.has(i) ? "readtext__word--added" : "",
+                  ]
+                    .filter(Boolean)
+                    .join(" ")}
+                  onClick={() => setActive({ token: t, index: i })}
+                  aria-label={addedIndices.has(i) ? `${t.text}, already added to your deck` : undefined}
+                >
+                  {t.text}
+                </button>
+              ) : (
+                <span>{t.text}</span>
+              )}
+            </Fragment>
+          ))}
         </p>
 
-        <button className="link-btn" style={{ marginTop: 16 }} onClick={editText}>
+        <button className="link-btn readtext__edit" onClick={editText}>
           Edit the text
         </button>
 
         {active && (
-          <div className="addword__block" style={{ marginTop: 20 }}>
+          <div className="addword__block readtext__lookup">
             <div className="eyebrow">&ldquo;{active.token.text}&rdquo;</div>
             <WordLookupResult lookup={lookup} deckIds={deckIds} levels={levels} onSave={save} />
           </div>

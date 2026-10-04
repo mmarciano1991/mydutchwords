@@ -52,6 +52,9 @@ export function Capture({
 
   /** Adds the word and stays put, ready for the next one. */
   function save(entryToSave: DictionaryEntry) {
+    // A word already in the deck isn't added again, so there is nothing to
+    // confirm — and an Undo here would delete the copy that was already there.
+    if (deckIds.has(entryToSave.id)) return;
     onSave(entryToSave);
     setAdded(entryToSave);
     setAddedCount((n) => n + 1);
@@ -93,14 +96,14 @@ export function Capture({
         }}
       />
 
-      <div className="screen__body gutter" style={{ paddingTop: 16, paddingBottom: 16 }}>
+      <div className="screen__body gutter capture-body">
         {/* ── 1. Start ── the screen is otherwise blank before anything is
             typed, which left "add a word" meaning whatever the user assumed.
             One line, naming both halves: where the word comes from, and
             where it goes. */}
         {!hasBody && (
-          <div style={{ padding: "24px 6px", textAlign: "center" }}>
-            <p className="muted" style={{ fontSize: 15, lineHeight: 1.55, margin: 0 }}>
+          <div className="capture-empty">
+            <p className="muted add-lede">
               Look up a Dutch word in the dictionary, then add it to your deck.
             </p>
           </div>
@@ -114,7 +117,7 @@ export function Capture({
               <strong>{added.dutch}</strong> added to your deck
               {addedCount > 1 ? ` · ${addedCount} words this visit` : ""}
             </Notice>
-            <div style={{ display: "flex", gap: 18, justifyContent: "center", marginTop: 2 }}>
+            <div className="capture-empty__actions">
               <button className="link-btn" onClick={undo}>
                 Undo
               </button>

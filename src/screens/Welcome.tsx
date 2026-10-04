@@ -19,19 +19,18 @@ export function Welcome({
 }) {
   return (
     <div className="screen pad-top">
-      <div className="screen__body center-col gutter" style={{ justifyContent: "center", flex: 1, paddingBottom: 24 }}>
-        <div style={{ marginBottom: 26 }}>
+      <div className="screen__body center-col gutter intro-body">
+        <div className="intro-mark">
           <TulipMedallion />
         </div>
         <div className="display--lg">Woordkast</div>
         <p
-          className="title-serif"
-          style={{ color: "var(--text-muted)", textAlign: "center", marginTop: 22, maxWidth: 286, lineHeight: 1.3 }}
+          className="title-serif welcome-tagline"
         >
           Capture the Dutch words you meet, then practise them as flashcards.
         </p>
       </div>
-      <div className="gutter" style={{ paddingBottom: 30, display: "flex", flexDirection: "column", gap: 22 }}>
+      <div className="gutter intro-actions intro-actions--stack">
         <button className="btn btn--primary" onClick={onCreateAccount}>
           Create an account
         </button>

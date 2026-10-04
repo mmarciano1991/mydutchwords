@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Appbar } from "../components/Appbar";
 import { CommitmentIcon } from "../components/CommitmentIcon";
 import { DICTIONARY } from "../data/dictionary";
@@ -10,6 +10,7 @@ import {
   type HabitState,
 } from "../lib/habit";
 import { notificationsSupported, requestReminderPermission } from "../lib/reminders";
+import { Notice } from "../components/Notice";
 
 export type HabitPrefs = Pick<HabitState, "commitment" | "time" | "weeklyTarget" | "reminders">;
 
@@ -31,9 +32,27 @@ export function Settings({
   habit: HabitState | null;
   /** Changes a preference. History (done days, the week) is untouched. */
   onHabitChange: (prefs: Partial<HabitPrefs>) => void;
-  onSignOut: () => void;
+  /** Resolves false, without signing out, when the latest progress couldn't
+   *  be saved first — unless `force`d. */
+  onSignOut: (opts?: { force?: boolean }) => Promise<boolean>;
 }) {
   const [reminderNote, setReminderNote] = useState<string | null>(null);
+  // What the time field shows, which may briefly be half-typed (""). Bound
+  // to the saved time directly, a half-typed value was rejected and the
+  // field snapped straight back, so the time couldn't be typed over.
+  const [timeInput, setTimeInput] = useState(habit?.time ?? "");
+  const savedTime = habit?.time;
+  useEffect(() => {
+    // Follows a change made elsewhere (another device, via sync).
+    if (savedTime) setTimeInput((shown) => (isHabitTime(shown) || shown === "" ? savedTime : shown));
+  }, [savedTime]);
+  const [signOut, setSignOut] = useState<"idle" | "saving" | "unsaved">("idle");
+
+  async function logOut(force = false) {
+    setSignOut("saving");
+    const done = await onSignOut({ force });
+    if (!done) setSignOut("unsaved");
+  }
 
   async function toggleReminders(on: boolean) {
     setReminderNote(null);
@@ -50,7 +69,7 @@ export function Settings({
     <div className="screen">
       <Appbar title="Settings" />
 
-      <div className="screen__body gutter" style={{ paddingBottom: 26 }}>
+      <div className="screen__body gutter settings-body">
         {habit && (
           <div className="card card--warm settings-habit">
             <p className="settings-habit__heading">Your daily Dutch</p>
@@ -79,8 +98,12 @@ export function Settings({
               id="set-time"
               type="time"
               className="time-field"
-              value={habit.time}
-              onChange={(e) => isHabitTime(e.target.value) && onHabitChange({ time: e.target.value })}
+              value={timeInput}
+              onChange={(e) => {
+                setTimeInput(e.target.value);
+                if (isHabitTime(e.target.value)) onHabitChange({ time: e.target.value });
+              }}
+              onBlur={() => !isHabitTime(timeInput) && habit.time && setTimeInput(habit.time)}
             />
 
             <p className="settings-habit__label" id="set-week">Days a week</p>
@@ -100,7 +123,7 @@ export function Settings({
 
             {notificationsSupported() && (
               <>
-                <div className="divider" style={{ margin: "16px 0 14px" }} />
+                <div className="divider settings-habit__divider" />
                 <label className="toggle-row">
                   <span>
                     <span className="toggle-row__title">Gentle reminder</span>
@@ -127,35 +150,53 @@ export function Settings({
 
         {/* Account — only shown when cloud sync is set up for this build. */}
         {configured && (
-          <div className="card card--warm" style={{ padding: 20, marginBottom: 14 }}>
+          <div className="card card--warm settings-card settings-card--account">
             <div className="account-row">
               <span className="account-avatar">{email?.[0]?.toUpperCase() ?? "?"}</span>
-              <div style={{ minWidth: 0 }}>
-                <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text-body)", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div className="account-row__text">
+                <div className="account-row__email">
                   {email}
                 </div>
-                <div className="faint" style={{ fontSize: 12.5 }}>Progress syncs to your account</div>
+                <div className="faint account-row__sub">Progress syncs to your account</div>
               </div>
             </div>
-            <button className="btn btn--secondary" style={{ marginTop: 16 }} onClick={onSignOut}>
-              Log out
-            </button>
+            {signOut === "unsaved" ? (
+              <div className="settings-signout">
+                <Notice type="caution">
+                  Your latest progress couldn’t be saved — check your connection. Logging out now would lose it.
+                </Notice>
+                <button className="btn btn--secondary" onClick={() => void logOut()}>
+                  Try again
+                </button>
+                <button className="link-btn" onClick={() => void logOut(true)}>
+                  Log out anyway
+                </button>
+              </div>
+            ) : (
+              <button
+                className="btn btn--secondary settings-signout__btn"
+                onClick={() => void logOut()}
+                disabled={signOut === "saving"}
+              >
+                {signOut === "saving" ? "Saving…" : "Log out"}
+              </button>
+            )}
           </div>
         )}
 
-        <div className="card card--warm" style={{ padding: 20 }}>
+        <div className="card card--warm settings-card">
           <div className="spread">
-            <span className="muted" style={{ fontSize: 14 }}>Words in the dictionary</span>
-            <span style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: "var(--text-display)" }}>{DICTIONARY.length}</span>
+            <span className="muted settings-stat__label">Words in the dictionary</span>
+            <span className="settings-stat__value">{DICTIONARY.length}</span>
           </div>
-          <div className="divider" style={{ margin: "12px 0" }} />
+          <div className="divider settings-stat__divider" />
           <div className="spread">
-            <span className="muted" style={{ fontSize: 14 }}>Words in your deck</span>
-            <span style={{ fontFamily: "var(--font-serif)", fontWeight: 600, color: "var(--text-display)" }}>{deckCount}</span>
+            <span className="muted settings-stat__label">Words in your deck</span>
+            <span className="settings-stat__value">{deckCount}</span>
           </div>
         </div>
 
-        <p className="faint" style={{ fontSize: 12, lineHeight: 1.5, marginTop: 18, textAlign: "center" }}>
+        <p className="faint settings-foot">
           Woordkast · Dutch words, kept like fine china.
         </p>
       </div>

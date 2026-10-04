@@ -5,6 +5,7 @@ import {
   buildRestudySession,
   buildSession,
   buildSessionReport,
+  gradeForSchedule,
   intervalForLevel,
   isLeech,
   LADDER,
@@ -260,5 +261,43 @@ describe("buildNextSession", () => {
     const next = buildNextSession(due, reviewedIds, NOW, { maxHardCap: 12 });
     expect(next).toHaveLength(12);
     expect(next.some((w) => reviewedIds.includes(w.id))).toBe(false);
+  });
+});
+
+describe("gradeForSchedule", () => {
+  const ahead = () =>
+    makeWord({
+      id: "early",
+      state: "learning",
+      level: 2,
+      interval: 7,
+      dueDate: new Date(NOW.getTime() + 3 * 86_400_000).toISOString(),
+    });
+
+  it("doesn't promote a word recalled before it is due", () => {
+    expect(gradeForSchedule(ahead(), "know", NOW)).toEqual(ahead());
+  });
+
+  it("still counts a miss on a word that isn't due yet", () => {
+    const missed = gradeForSchedule(ahead(), "dontKnow", NOW);
+    expect(missed.level).toBe(1);
+    expect(missed.lapses).toBe(ahead().lapses + 1);
+  });
+
+  it("grades a due or new word as usual", () => {
+    const fresh = makeWord({ id: "new", state: "new", level: 0 });
+    expect(gradeForSchedule(fresh, "know", NOW)).toEqual(applyGrade(fresh, "know", NOW));
+  });
+
+  // Daily practice of a deck no bigger than the day's goal tops the set up
+  // with words that aren't due; grading those walked every word to the top
+  // of the ladder in six days.
+  it("doesn't let a small deck practised daily reach the top in a week", () => {
+    let word = makeWord({ id: "w", state: "new", level: 0 });
+    for (let day = 0; day < 7; day++) {
+      word = gradeForSchedule(word, "know", new Date(NOW.getTime() + day * 86_400_000));
+    }
+    expect(word.level).toBeLessThan(MAX_LEVEL);
+    expect(word.level).toBe(3); // new → 1 (day 0) → 2 (day 3) → 3 (day 6)
   });
 });

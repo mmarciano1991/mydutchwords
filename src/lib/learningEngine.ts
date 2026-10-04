@@ -89,6 +89,22 @@ export function applyGrade(word: Word, grade: Grade, reviewedAt: Date): Word {
   };
 }
 
+/** True when the scheduler is actually asking for this word now: it is new,
+ *  or its review date has arrived. */
+export function isDue(word: Word, now: Date): boolean {
+  return word.state === "new" || new Date(word.dueDate).getTime() <= now.getTime();
+}
+
+/** A graded answer, minding the schedule. Recalling a word BEFORE it is due
+ *  is not evidence for the next, longer interval — the daily set tops up
+ *  with words pulled forward, and promoting those would walk a small deck to
+ *  the top of the ladder in a week of daily practice. So an early "know"
+ *  leaves the word where it is; an early miss is real evidence and counts. */
+export function gradeForSchedule(word: Word, grade: Grade, reviewedAt: Date): Word {
+  if (grade === "know" && !isDue(word, reviewedAt)) return word;
+  return applyGrade(word, grade, reviewedAt);
+}
+
 const LEECH_LAPSE_THRESHOLD = 4;
 
 /** True once a word has been answered "I don't know" 4+ times. Pure derived check. */

@@ -26,6 +26,7 @@ export function CompoundCard({
   word,
   compound,
   resolve,
+  isInDeck,
   onAdd,
 }: {
   /** The word as the learner typed or tapped it. */
@@ -33,6 +34,8 @@ export function CompoundCard({
   compound: Compound;
   /** Turns a part's base form into its dictionary entry. */
   resolve: (id: string) => DictionaryEntry | undefined;
+  /** Whether a part is already saved — it is then shown, not offered. */
+  isInDeck: (id: string) => boolean;
   onAdd: (entry: DictionaryEntry) => void;
 }) {
   const entries = compound.parts
@@ -68,6 +71,7 @@ export function CompoundCard({
             key={part}
             entry={entry}
             reason={i === entries.length - 1 ? "main word" : "describes the main word"}
+            inDeck={isInDeck(entry.id)}
             onAdd={() => onAdd(entry)}
           />
         ))}

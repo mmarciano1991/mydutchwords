@@ -2,6 +2,7 @@ import { lazy, StrictMode, Suspense, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { applyTokens } from "./lib/applyTokens";
 import { Splash } from "./components/Splash";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 import "./styles/app.css";
 
 applyTokens();
@@ -33,9 +34,11 @@ function Root() {
     <>
       {/* If the chunk load somehow outlasts the splash, the splash simply
           stays up (fully faded in) until the app is ready. */}
-      <Suspense fallback={<Splash />}>
-        <App />
-      </Suspense>
+      <ErrorBoundary>
+        <Suspense fallback={<Splash />}>
+          <App />
+        </Suspense>
+      </ErrorBoundary>
       {phase !== "done" && <Splash out={phase === "out"} />}
     </>
   );

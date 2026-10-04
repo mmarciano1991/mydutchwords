@@ -19,3 +19,8 @@ woordkast-design/
 # Editor / OS
 .DS_Store
 .vscode/
+
+# Local tooling state
+.claude/worktrees/
+.claude/settings.local.json
+supabase/.temp/
