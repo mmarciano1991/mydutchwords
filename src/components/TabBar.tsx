@@ -40,8 +40,8 @@ const TABS: { id: Tab; label: string; Icon: ComponentType<IconProps> }[] = [
 
    Scaling the blob instead would squash its 999px caps into ellipses;
    animating the edges keeps them perfectly round the whole way. */
-const SPRING_LEAD = 240; // stiffness of the edge facing the destination
-const SPRING_TRAIL = 100; // …and of the one dragging behind it
+const SPRING_LEAD = 296; // stiffness of the edge facing the destination
+const SPRING_TRAIL = 123; // …and of the one dragging behind it
 const DAMPING_RATIO = 0.9; // <1 overshoots, 1 is critical; 0.9 settles softly
 const MAX_THIN = 3; // px the blob narrows as it stretches, like a drawn droplet
 const STEP = 1 / 60; // fixed timestep, so the feel doesn't vary with framerate
@@ -185,7 +185,7 @@ export function TabBar({
           { opacity: 0.28, offset: 0.45 },
           { transform: `translateX(${60 * dir}%)`, opacity: 0 },
         ],
-        { duration: 560, easing: "linear" },
+        { duration: 504, easing: "linear" },
       );
     }
 

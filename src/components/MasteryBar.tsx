@@ -1,25 +1,19 @@
 /* MasteryBar — word progress indicator (Figma node 114:202).
    Shows the word's position on the spaced-repetition ladder (level 0–6,
    see lib/learningEngine): the fill width is level / MAX_LEVEL and the
-   colour tier steps from grey-blue (new) through gold (learning) to green
-   (mature). With `withLabel`, the tier name is shown beneath the bar
+   colour tier is gold while learning and green once mastered. With `withLabel`, the tier name is shown beneath the bar
    (as in the WordRow, Figma 104:161). */
 import { MAX_LEVEL } from "../lib/learningEngine";
 
-type Tier = "weak" | "medium" | "mastering" | "mastered";
+type Tier = "learning" | "mastered";
 
 function tierFor(level: number): Tier {
-  if (level >= MAX_LEVEL) return "mastered";
-  if (level >= 4) return "mastering";
-  if (level >= 2) return "medium";
-  return "weak";
+  return level >= MAX_LEVEL ? "mastered" : "learning";
 }
 
 const LABEL: Record<Tier, string> = {
-  weak: "New",
-  medium: "Learning",
-  mastering: "Strong",
-  mastered: "Mature",
+  learning: "Learning",
+  mastered: "Mastered",
 };
 
 export function MasteryBar({

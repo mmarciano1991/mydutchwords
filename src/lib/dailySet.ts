@@ -41,6 +41,13 @@ export interface PracticeRun {
   /** The answer standing for each word. Re-answering a word within a run
    *  replaces its entry, so this is always the run's latest word on it. */
   answers: Record<string, Grade>;
+  /** Words answered correctly at some point in the run — on the first try,
+   *  or on a retry after a miss. A word is only *done* once it is here: a
+   *  miss sends it back into the sitting until it is got right.
+   *
+   *  Absent on runs that don't count toward the day (a re-drill) and on runs
+   *  saved before this existed; both read as "nothing outstanding". */
+  cleared?: string[];
 }
 
 /** Local calendar day as YYYY-MM-DD. Deliberately local, not UTC: a set
@@ -86,8 +93,10 @@ export function buildDailySet(words: Word[], now: Date, size = DAILY_SET_SIZE): 
 /** A run over `wordIds`, with nothing answered yet. Starting a run always
  *  goes through here, so a new run can never inherit the previous one's
  *  answers or its result. */
-export function startRun(wordIds: string[], now: Date): PracticeRun {
-  return { date: dayKey(now), wordIds: [...wordIds], answers: {} };
+export function startRun(wordIds: string[], now: Date, trackCleared = true): PracticeRun {
+  const run: PracticeRun = { date: dayKey(now), wordIds: [...wordIds], answers: {} };
+  if (trackCleared) run.cleared = [];
+  return run;
 }
 
 /** The run with one answer recorded. Pure — returns a new run.
@@ -95,6 +104,13 @@ export function startRun(wordIds: string[], now: Date): PracticeRun {
 export function recordAnswer(run: PracticeRun, id: string, grade: Grade): PracticeRun {
   if (!run.wordIds.includes(id)) return run;
   return { ...run, answers: { ...run.answers, [id]: grade } };
+}
+
+/** The run with `id` marked as answered correctly. Pure. A no-op for an id
+ *  outside the run, one already cleared, or a run that doesn't track it. */
+export function recordCleared(run: PracticeRun, id: string): PracticeRun {
+  if (!run.cleared || !run.wordIds.includes(id) || run.cleared.includes(id)) return run;
+  return { ...run, cleared: [...run.cleared, id] };
 }
 
 /** Drops words that are no longer in the deck, so one deleted mid-run can't
@@ -106,7 +122,8 @@ export function pruneRun(run: PracticeRun, keep: (id: string) => boolean): Pract
   for (const id of wordIds) {
     if (id in run.answers) answers[id] = run.answers[id];
   }
-  return { ...run, wordIds, answers };
+  const cleared = run.cleared?.filter(keep);
+  return cleared ? { ...run, wordIds, answers, cleared } : { ...run, wordIds, answers };
 }
 
 /** Where the run stands.
@@ -125,8 +142,11 @@ export interface RunProgress {
   remaining: string[];
   /** Answered "I knew it". */
   knownIds: string[];
-  /** Answered "Still learning". */
+  /** Answered "Still learning" — missed on the first try. */
   learningIds: string[];
+  /** Missed and not yet got right: the sitting was left before the word
+   *  came back round. Not done — "Continue" leads with these. */
+  outstanding: string[];
 }
 
 const NOTHING: RunProgress = {
@@ -136,6 +156,7 @@ const NOTHING: RunProgress = {
   remaining: [],
   knownIds: [],
   learningIds: [],
+  outstanding: [],
 };
 
 /** Reads a run's state. A run from an earlier day is spent: it reports as
@@ -154,6 +175,8 @@ export function runProgress(run: PracticeRun | null, today: string): RunProgress
   }
 
   const answered = knownIds.length + learningIds.length;
+  const cleared = run.cleared ? new Set(run.cleared) : null;
+  const outstanding = cleared ? learningIds.filter((id) => !cleared.has(id)) : [];
   return {
     status: answered === 0 ? "ready" : remaining.length === 0 ? "done" : "progress",
     total: run.wordIds.length,
@@ -161,6 +184,7 @@ export function runProgress(run: PracticeRun | null, today: string): RunProgress
     remaining,
     knownIds,
     learningIds,
+    outstanding,
   };
 }
 

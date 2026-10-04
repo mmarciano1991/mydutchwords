@@ -5,6 +5,7 @@ import {
   dayKey,
   pruneRun,
   recordAnswer,
+  recordCleared,
   runAnswerCount,
   runProgress,
   startRun,
@@ -283,5 +284,37 @@ describe("pruneRun", () => {
 describe("runAnswerCount", () => {
   it("counts only answers for words the run covers", () => {
     expect(runAnswerCount(runWith(["a", "b"], { a: "know" }))).toBe(1);
+  });
+});
+
+describe("cleared words — a miss is only done once it's right", () => {
+  const now = new Date(2026, 9, 4, 12);
+  const today = dayKey(now);
+
+  it("reports a missed word as outstanding until it is cleared", () => {
+    let run = startRun(["a", "b"], now);
+    run = recordAnswer(run, "a", "dontKnow");
+    run = recordAnswer(run, "b", "know");
+    run = recordCleared(run, "b");
+    expect(runProgress(run, today).outstanding).toEqual(["a"]);
+    run = recordCleared(run, "a");
+    const p = runProgress(run, today);
+    expect(p.outstanding).toEqual([]);
+    // Still reported as missed on the first try.
+    expect(p.learningIds).toEqual(["a"]);
+  });
+
+  it("tracks nothing outstanding for an untracked run (a re-drill) or an old one", () => {
+    let run = startRun(["a"], now, false);
+    run = recordAnswer(run, "a", "dontKnow");
+    expect(runProgress(run, today).outstanding).toEqual([]);
+    expect(recordCleared(run, "a")).toBe(run);
+  });
+
+  it("ignores ids outside the run, and prunes cleared words with the deck", () => {
+    let run = startRun(["a", "b"], now);
+    expect(recordCleared(run, "z")).toBe(run);
+    run = recordCleared(run, "a");
+    expect(pruneRun(run, (id) => id !== "a").cleared).toEqual([]);
   });
 });

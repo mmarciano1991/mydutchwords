@@ -591,23 +591,15 @@ input {
     transition: none;
   }
 }
-.mastery--weak {
-  background: var(--ink-300);
-}
-.mastery--weak .mastery__fill {
-  background: var(--mastery-new-weak-medium);
-}
-.mastery--medium {
+.mastery--learning {
   background: var(--caution-bg);
 }
-.mastery--medium .mastery__fill {
+.mastery--learning .mastery__fill {
   background: var(--caution-solid);
 }
-.mastery--mastering,
 .mastery--mastered {
   background: var(--success-bg);
 }
-.mastery--mastering .mastery__fill,
 .mastery--mastered .mastery__fill {
   background: var(--mastery-masterd);
 }
@@ -1061,12 +1053,79 @@ textarea.text-input {
 /* ── Bottom navigation (Figma 251:3389) — a floating pill of tabs, with an
    optional FAB alongside it that opens the Add-a-word flow. ── */
 .bottomnav {
+  /* Floats over the screen rather than taking its own band in the layout, so
+     no strip of canvas shows behind the pill — content scrolls underneath.
+     The wrapper itself lets taps through; only the pill and FAB catch them. */
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  pointer-events: none;
   display: flex;
   align-items: center;
   /* No `gap` — the FAB owns its own leading margin, so that space can
      collapse with it when it hides (see .fab--hidden). */
   padding: var(--space-5);
   padding-bottom: max(var(--space-5), env(safe-area-inset-bottom));
+}
+.bottomnav > * {
+  pointer-events: auto;
+}
+/* Progressive blur behind the nav: content stays sharp at the top of the band
+   and softens toward the bottom edge. Two stacked layers — a light blur that
+   fades in early, a heavier one only near the bottom — so the blur ramps up
+   rather than switching on at a line. Each carries a faint canvas tint on the
+   same ramp, which separates the nav from busy content without reading as a
+   bar. Both bleed 24px above the band so the ramp has room to start. */
+.bottomnav::before,
+.bottomnav::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  top: -24px;
+  z-index: -1;
+  pointer-events: none;
+}
+.bottomnav::before {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--bg-canvas) 35%, transparent)
+  );
+  -webkit-backdrop-filter: blur(3px);
+  backdrop-filter: blur(3px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 55%);
+  mask-image: linear-gradient(to bottom, transparent, #000 55%);
+}
+.bottomnav::after {
+  background: linear-gradient(
+    to bottom,
+    transparent,
+    color-mix(in srgb, var(--bg-canvas) 45%, transparent)
+  );
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  -webkit-mask-image: linear-gradient(to bottom, transparent 35%, #000 90%);
+  mask-image: linear-gradient(to bottom, transparent 35%, #000 90%);
+}
+/* No backdrop blur available: fall back to the tint alone, a little stronger,
+   so the nav still lifts off the content. */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .bottomnav::after {
+    background: linear-gradient(
+      to bottom,
+      transparent,
+      color-mix(in srgb, var(--bg-canvas) 80%, transparent)
+    );
+  }
+}
+/* Room for the floating nav, so the last row of a screen can scroll clear of
+   it: the 62px pill plus the nav's padding above and below. */
+.phone--tabs .screen__body {
+  padding-bottom: calc(62px + var(--space-5) + max(var(--space-5), env(safe-area-inset-bottom)));
 }
 .bottomnav__pill {
   position: relative;
@@ -1145,7 +1204,7 @@ textarea.text-input {
 }
 .tab--active {
   color: var(--cream-000);
-  transition-delay: 160ms;
+  transition-delay: 144ms;
 }
 /* Figma sets a -4 item gap so the label tucks up under the icon well. */
 .tab__label {
@@ -1581,36 +1640,6 @@ textarea.text-input {
   gap: var(--space-2);
 }
 
-/* Grade feedback toast — transient "Next review in N days" after answering.
-   Removed by a JS timer; the animation is only the visual fade. */
-.grade-toast {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: 118px;
-  z-index: 5;
-  pointer-events: none;
-  white-space: nowrap;
-  background: var(--ink-900);
-  color: var(--cream-050);
-  font-size: 12.5px;
-  font-weight: 700;
-  padding: 8px 15px;
-  border-radius: var(--radius-pill);
-  box-shadow: var(--shadow-card);
-  animation: grade-toast-in var(--motion-base) var(--ease-standard);
-}
-@keyframes grade-toast-in {
-  from {
-    opacity: 0;
-    transform: translateX(-50%) translateY(6px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(-50%) translateY(0);
-  }
-}
-
 /* Tricky (leech) tag — a word missed 4+ times; prioritized in sessions. */
 .tricky-tag {
   flex-shrink: 0;
@@ -1710,6 +1739,277 @@ textarea.text-input {
   font-weight: 600;
   letter-spacing: 0.04em;
 }
+/* ── Exercises — multiple choice and typed translation (Practice) ──
+   The same vocabulary as the flashcard: an English prompt on a porcelain
+   card, Dutch answers in the serif word face, and the semantic success /
+   error colours for the verdict. Each exercise slides in on its own key, so
+   moving between them reads as one continuous sitting. */
+.exercise {
+  display: flex;
+  flex-direction: column;
+  padding-top: 14px;
+  padding-bottom: var(--space-4);
+  animation: exercise-in var(--motion-nav) var(--ease-standard) both;
+}
+@keyframes exercise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.exercise__note {
+  margin: var(--space-2) 0 0;
+  text-align: center;
+  font: var(--type-caption);
+  color: var(--text-faint);
+}
+.exercise__eyebrow {
+  margin: 0 0 var(--space-3);
+  text-align: center;
+}
+.exercise__prompt {
+  min-height: 150px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: 28px var(--space-5);
+  text-align: center;
+  background: var(--surface-card);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-card-lg);
+  box-shadow: var(--shadow-card);
+}
+.exercise__word {
+  margin: 0;
+  font: var(--type-word-hero);
+  color: var(--text-display);
+}
+.exercise__example {
+  margin: 0;
+  font: var(--type-quote);
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* The line above the options: the instruction, then the verdict in its place. */
+.exercise__verdict {
+  margin: var(--space-5) var(--space-1) var(--space-3);
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--text-muted);
+  transition: color var(--motion-base) var(--ease-standard);
+}
+.exercise__verdict--right {
+  color: var(--semantic-success-onsuccess-strong);
+}
+.exercise__verdict--wrong {
+  color: var(--semantic-error-onerror-default);
+}
+
+.answer-options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.answer-option {
+  width: 100%;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 18px;
+  text-align: left;
+  font: var(--type-word-row);
+  color: var(--text-display);
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-cool);
+  border-radius: var(--radius-input);
+  box-shadow: var(--shadow-card-sm);
+  transition:
+    background var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    color var(--motion-base) var(--ease-standard),
+    opacity var(--motion-base) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+.answer-option:hover:not([aria-disabled="true"]) {
+  border-color: var(--line-cool-strong);
+}
+.answer-option:active:not([aria-disabled="true"]) {
+  transform: translateY(1px);
+  background: var(--semantic-button-pressed-light);
+}
+.answer-option:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
+}
+.answer-option[aria-disabled="true"] {
+  cursor: default;
+}
+.answer-option__icon {
+  display: flex;
+  flex-shrink: 0;
+}
+/* Picked, and right. */
+.answer-option.is-right {
+  background: var(--semantic-success-success-subdle);
+  border-color: var(--semantic-success-success-default);
+  color: var(--semantic-success-onsuccess-strong);
+  animation: choice-pop var(--motion-nav) var(--ease-emphasized);
+}
+/* Picked, and wrong. */
+.answer-option.is-wrong {
+  background: var(--semantic-error-error-default);
+  border-color: var(--semantic-error-outline-default);
+  color: var(--semantic-error-onerror-default);
+  animation: choice-shake var(--motion-nav) var(--ease-standard);
+}
+/* Not picked, but the right one: pointed out quietly, not celebrated. */
+.answer-option.is-answer {
+  border-style: dashed;
+  border-color: var(--semantic-success-success-default);
+  color: var(--semantic-success-onsuccess-strong);
+  box-shadow: none;
+}
+.answer-option.is-dim {
+  opacity: 0.5;
+  box-shadow: none;
+}
+@keyframes choice-pop {
+  50% {
+    transform: scale(1.02);
+  }
+}
+@keyframes choice-shake {
+  25% {
+    transform: translateX(-4px);
+  }
+  75% {
+    transform: translateX(4px);
+  }
+}
+
+.exercise__feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-top: var(--space-5);
+  animation: exercise-in var(--motion-base) var(--ease-standard) both;
+}
+.exercise__yours {
+  margin: 0 var(--space-1);
+  font: var(--type-body-sm);
+  color: var(--text-muted);
+}
+.exercise__yours span {
+  font-weight: 700;
+  text-decoration: line-through;
+  color: var(--text-body);
+}
+
+.exercise__actions {
+  padding-top: var(--space-3);
+  padding-bottom: max(32px, env(safe-area-inset-bottom));
+}
+
+/* The answer field: the InputField pill, with the skip link and a round
+   submit inside it — one row, so the keyboard covers nothing that matters. */
+.answer-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 52px;
+  padding: var(--space-1) var(--space-1) var(--space-1) var(--space-4);
+  background: var(--surface-card);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-pill);
+  box-shadow: var(--shadow-field);
+  transition: border-color var(--motion-base) var(--ease-standard);
+}
+.answer-bar:focus-within {
+  border-color: var(--primary-border);
+}
+.answer-bar__input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: none;
+  padding: var(--space-2) 0;
+  /* 16px or more, or iOS zooms the page on focus. */
+  font: var(--type-body);
+  color: var(--text-body);
+}
+.answer-bar__input::placeholder {
+  color: var(--text-faint);
+}
+.answer-bar__skip {
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  padding: var(--space-2);
+  font: var(--type-button);
+  font-size: var(--size-body-sm);
+  color: var(--primary);
+}
+.answer-bar__skip:disabled {
+  color: var(--text-faint);
+  cursor: default;
+}
+.answer-bar__submit {
+  flex-shrink: 0;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--semantic-button-default);
+  color: var(--semantic-button-onbutton-default);
+  box-shadow: var(--shadow-pressed);
+  transition:
+    background var(--motion-base) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+.answer-bar__submit:active:not(:disabled) {
+  transform: translateY(1px);
+  background: var(--semantic-button-pressed-strong);
+}
+.answer-bar__submit:disabled {
+  background: var(--line-cool-strong);
+  color: var(--surface-card);
+  box-shadow: none;
+  cursor: default;
+}
+.answer-bar__skip:focus-visible,
+.answer-bar__submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
+  border-radius: var(--radius-pill);
+}
+
+/* Read by screen readers, invisible on screen. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* Divider component (60×1 rule, blue/200) */
 .divider-rule {
   width: 60px;
@@ -1899,60 +2199,94 @@ textarea.text-input {
   padding: var(--space-5);
 }
 
-/* ── Insights — streak strip + progress block (Figma 317:1416) ──
-   One porcelain masthead running off both edges of the screen: the streak
-   strip, then the deck total and the mastery bar. Square on every corner —
-   it is a full-bleed sheet, not a card — with warm hairlines under each of
-   the two pieces doing the separating. */
+/* ── Insights — greeting, counters + progress block (Figma 317:1416) ──
+   One porcelain masthead running off both edges of the screen: a topbar
+   with the greeting and two counters, then the deck total and the
+   Learning / Mastered pills. Square on every corner — it is a full-bleed
+   sheet, not a card — with warm hairlines under each piece. */
 .insights {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
 }
 
-/* Figma 311:1388 — sits at the very top of the frame, so on a device it
+/* Figma 311:1388. Sits at the very top of the frame, so on a device it
    also owns the safe-area inset and extends up under the status bar. */
 .insights__topbar {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: var(--space-1);
+  gap: var(--space-4);
+  min-height: 40px;
   padding: var(--space-2) var(--space-5);
   padding-top: max(var(--space-2), env(safe-area-inset-top));
   background: var(--surface-card);
   border-bottom: 1px solid var(--border-warm);
 }
-.insights__flame {
-  flex-shrink: 0;
-  color: var(--caution-solid);
-}
-.insights__streak {
+.insights__greeting {
+  flex: 1;
+  min-width: 0;
   margin: 0;
   font-family: var(--font-sans);
-  font-weight: 700;
-  font-size: var(--size-body-sm);
-  line-height: 1.45;
+  font-size: var(--size-body);
+  line-height: 1.55;
   color: var(--text-body);
+}
+.insights__counter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--space-1);
+  min-width: 43px;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--size-body);
+  line-height: 1.55;
+}
+.insights__counter--week {
+  color: var(--primary);
+  /* A button (opens Weekly goal) drawn like the plain counter beside it. */
+  border: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+}
+.insights__counter--week:active {
+  opacity: 0.7;
+}
+.insights__counter--streak {
+  color: var(--caution-solid);
+}
+.insights__counter svg {
+  flex-shrink: 0;
 }
 
 /* Figma 311:1392 */
 .insights__hero {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-5);
-  padding: var(--space-6) var(--grid-gutter) var(--grid-gutter);
+  padding: var(--space-6) var(--grid-gutter);
   background: var(--surface-card);
   border-bottom: 1px solid var(--border-warm);
+  text-align: center;
 }
-.insights__top {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-2);
-  width: 100%;
+.insights__stat {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-word-hero);
+  line-height: 1.1;
   color: var(--text-body);
   overflow-wrap: anywhere;
+}
+/* Figma 360:1187 */
+.insights__progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
 }
 .insights__eyebrow {
   margin: 0;
@@ -1960,13 +2294,42 @@ textarea.text-input {
   font-weight: 400;
   font-size: var(--size-body-sm);
   line-height: 1.45;
+  color: var(--text-body);
 }
-.insights__stat {
-  margin: 0;
+.insights__pills {
+  display: flex;
+  gap: var(--space-3);
+  width: 100%;
+}
+.insights__pill {
+  flex: 1 0 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2) 0;
+  border: 2px solid;
+  border-radius: var(--radius-pill);
+}
+.insights__pill--learning {
+  border-color: var(--caution-solid);
+  color: var(--caution-solid);
+}
+.insights__pill--mastered {
+  border-color: var(--success-solid);
+  color: var(--success-fg);
+}
+.insights__pill-count {
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: var(--size-hero-stat);
   line-height: 1.1;
+}
+.insights__pill-label {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--size-body-sm);
+  line-height: 1.45;
 }
 
 /* ── PracticeCard — the flashcard session entry point (Figma 304:1067) ── */
@@ -2037,10 +2400,686 @@ textarea.text-input {
   width: 100%;
 }
 
-/* Inactive (Figma 322:1880) — too few words in the deck to draw a set from.
-   The card drops to the pale blue rule colour and everything on it, the
-   contained "Add a word" button included, goes back to the ink treatment. */
-.practice-card--inactive {
-  background: var(--blue-rule);
+/* Done state: what was practised past the goal, said once and quietly. */
+.practice-card__extra {
+  margin: 0;
+  font-size: var(--size-body-sm);
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+/* ── Onboarding — the 2-minute promise ── */
+.onb__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 38px;
+}
+.onb__spacer {
+  width: 38px;
+  flex-shrink: 0;
+}
+.onb__steps {
+  display: flex;
+  gap: 6px;
+}
+.onb__step {
+  width: 22px;
+  height: 4px;
+  border-radius: var(--radius-pill);
+  background: var(--line-cool-strong);
+  transition: background var(--motion-base) var(--ease-standard);
+}
+.onb__step.is-on {
+  background: var(--primary);
+}
+.onb__body {
+  display: flex;
+  flex-direction: column;
+  padding-top: var(--space-6);
+  overflow-y: auto;
+}
+.onb__body--center {
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding-top: 0;
+}
+.onb__title {
+  margin-top: 22px;
+}
+.onb__lead {
+  margin: 14px 0 0;
+  max-width: 300px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.onb__question {
+  font-size: 26px;
+  line-height: 1.2;
+}
+.onb__hint {
+  margin: 10px 0 22px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.onb__note {
+  margin: 18px 2px 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+.onb__plan {
+  margin: 12px 0 0;
+  max-width: 310px;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.25;
+  color: var(--text-display);
+}
+.onb__facts {
+  margin: 26px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 310px;
+  text-align: left;
+}
+.onb__facts li {
+  position: relative;
+  padding-left: 22px;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.onb__facts li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--success-fg);
+  font-weight: 700;
+}
+.onb__foot {
+  padding-top: var(--space-3);
+  padding-bottom: max(30px, env(safe-area-inset-bottom));
+}
+
+/* Choice rows — big tap targets, one line of detail each. */
+.choice-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.choice {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  padding: 16px 18px;
+  text-align: left;
+  background: var(--surface-card);
+  border: 1.5px solid var(--border-cool);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card-sm);
+  color: var(--text-body);
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    background var(--motion-base) var(--ease-standard),
+    transform var(--motion-fast) var(--ease-emphasized);
+}
+.choice:active {
+  transform: scale(0.99);
+}
+.choice:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
+}
+.choice.is-selected {
+  border-color: var(--primary);
+  background: var(--surface-tint);
+}
+.choice__icon {
+  flex-shrink: 0;
   color: var(--primary);
+}
+.choice__text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+.choice__title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 19px;
+  color: var(--text-display);
+}
+.choice__sub {
+  font-size: var(--size-body-sm);
+  color: var(--text-muted);
+}
+
+/* ── Modal — the welcome-back popup ── */
+.modal {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.modal__scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 43, 84, 0.32);
+  animation: modal-fade var(--motion-base) var(--ease-standard);
+}
+.modal__sheet {
+  position: relative;
+  width: 100%;
+  padding: 28px var(--grid-gutter) max(28px, env(safe-area-inset-bottom));
+  background: var(--surface-card);
+  border-radius: 28px 28px 0 0;
+  box-shadow: var(--shadow-float);
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: modal-rise var(--motion-expand, 320ms) var(--ease-emphasized);
+}
+.modal__emoji {
+  margin: 0;
+  font-size: 40px;
+}
+.modal__title {
+  margin-top: 8px;
+  font-size: 28px;
+}
+.modal__body {
+  margin: 10px 0 22px;
+  font-size: 16px;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+.modal__later {
+  margin-top: 16px;
+}
+@keyframes modal-fade {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes modal-rise {
+  from {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .modal__scrim,
+  .modal__sheet {
+    animation: none;
+  }
+}
+
+/* ── Session report additions ── */
+.report-new {
+  margin-top: 20px;
+  text-align: center;
+}
+.report-new__label {
+  margin: 0 0 8px;
+  font: var(--type-label);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-label);
+  color: var(--text-faint);
+}
+.report-new__words,
+.reflect__words {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+.report-new__words li,
+.reflect__word {
+  padding: 5px 12px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-tint);
+  color: var(--primary);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 16px;
+}
+.report-week {
+  margin-top: 18px;
+}
+.report-actions {
+  padding-top: 12px;
+  padding-bottom: 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+/* ── Reflection — then vs now ── */
+.reflect {
+  padding-top: 18px;
+  padding-bottom: 12px;
+  overflow-y: auto;
+}
+.reflect__title {
+  margin-top: 10px;
+  font-size: 26px;
+  line-height: 1.2;
+}
+.reflect__now {
+  margin: 8px 0 16px;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--primary);
+}
+.reflect__words {
+  justify-content: flex-start;
+}
+.reflect__word--more {
+  background: none;
+  border: 1px dashed var(--primary-border);
+}
+.reflect__text {
+  margin-top: 24px;
+  padding: 18px;
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-card);
+  background: var(--surface-card);
+}
+.reflect__text-lead {
+  margin: 0 0 12px;
+  font-size: 15.5px;
+  line-height: 1.5;
+  color: var(--text-body);
+}
+.reflect__then {
+  color: var(--text-muted);
+}
+.reflect__passage {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 15px;
+  line-height: 1.65;
+  color: var(--text-faint);
+}
+.reflect__known {
+  background: var(--surface-tint);
+  color: var(--primary);
+  font-weight: 600;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+.reflect__legend {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--text-faint);
+}
+.reflect__retained {
+  margin: 20px 0 0;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+.reflect__close {
+  margin: 14px 0 0;
+  font-family: var(--font-serif);
+  font-style: italic;
+  font-size: 17px;
+  color: var(--text-display);
+}
+
+/* ── Settings — your daily Dutch ── */
+.settings-habit {
+  padding: 20px;
+  margin-bottom: 14px;
+}
+.settings-habit__heading {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 18px;
+  color: var(--text-display);
+}
+.settings-habit__label {
+  display: block;
+  margin: 16px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+.settings-habit__note {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--error-fg);
+}
+.settings-habit__foot {
+  margin: 16px 0 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+.seg {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+/* The habit time — a native time input, so each platform brings its own
+   picker (wheel on iOS, clock on Android), dressed as a selected option. */
+.time-field {
+  display: block;
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border-cool);
+  border-radius: var(--radius-input);
+  background: var(--surface-card);
+  color: var(--text-display);
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.time-field:focus-visible {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--surface-tint);
+}
+.time-field::-webkit-date-and-time-value {
+  text-align: center;
+}
+.time-field--lg {
+  min-height: 64px;
+  margin-top: var(--space-5);
+  border-radius: var(--radius-card);
+  font-size: 30px;
+}
+.seg--row {
+  grid-template-columns: repeat(5, 1fr);
+}
+.seg__opt {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 8px 6px;
+  border: 1.5px solid var(--border-cool);
+  border-radius: var(--radius-input);
+  background: var(--surface-card);
+  color: var(--text-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    background var(--motion-base) var(--ease-standard);
+}
+.seg__opt:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
+}
+.seg__opt.is-selected {
+  border-color: var(--primary);
+  background: var(--surface-tint);
+  color: var(--primary);
+}
+.seg__sub {
+  font-size: 11.5px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+.seg__opt--num {
+  font-family: var(--font-serif);
+  font-size: 17px;
+}
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  cursor: pointer;
+}
+.toggle-row__title {
+  display: block;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-body);
+}
+.toggle-row__sub {
+  display: block;
+  font-size: 12.5px;
+  color: var(--text-faint);
+  margin-top: 2px;
+}
+.toggle {
+  appearance: none;
+  flex-shrink: 0;
+  width: 44px;
+  height: 26px;
+  margin: 0;
+  border-radius: var(--radius-pill);
+  background: var(--line-cool-strong);
+  position: relative;
+  cursor: pointer;
+  transition: background var(--motion-base) var(--ease-standard);
+}
+.toggle::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-card);
+  box-shadow: var(--shadow-card-sm);
+  transition: transform var(--motion-base) var(--ease-emphasized);
+}
+.toggle:checked {
+  background: var(--primary);
+}
+.toggle:checked::after {
+  transform: translateX(18px);
+}
+.toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
+}
+
+/* ── WeeklyGoal (Figma 359:1055) — this week vs target, celebration, rhythm ── */
+.weekgoal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: 24px 16px 40px;
+}
+.weekgoal p {
+  margin: 0;
+}
+.weekgoal__status {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.weekgoal__status p {
+  margin: 0;
+}
+/* On a screen of cards (the session report), the same block on the card
+   surface StatCard uses. */
+.weekgoal__status--card {
+  padding: var(--space-4);
+  background: var(--surface-card);
+  border: 1px solid var(--border-warm);
+  border-radius: 18px;
+}
+.weekgoal__head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.weekgoal__title {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.weekgoal__eyebrow {
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--size-label);
+  letter-spacing: 0.24px;
+  text-transform: uppercase;
+  color: var(--ink-500);
+}
+.weekgoal__count {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-hero-stat);
+  line-height: 1.1;
+  color: var(--blue-900);
+}
+.weekgoal__bar {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: var(--radius-pill);
+  overflow: hidden;
+}
+.weekgoal__seg {
+  flex: 1;
+  min-width: 0;
+  height: 24px;
+  display: flex;
+  justify-content: center;
+  background: var(--bg-canvas-deep);
+}
+.weekgoal__seg.is-done {
+  background: var(--success-solid);
+  color: var(--cream-000);
+}
+.weekgoal__labels {
+  display: flex;
+  gap: var(--space-1);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--size-label);
+  letter-spacing: 0.24px;
+  text-align: center;
+  color: var(--success-fg);
+}
+.weekgoal__labels > span {
+  flex: 1;
+  min-width: 0;
+}
+.weekgoal__celebration {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-5);
+  background: var(--success-bg);
+  border: 1px solid var(--success-border);
+  border-radius: var(--radius-card);
+}
+.weekgoal__celebration > svg {
+  flex-shrink: 0;
+  color: var(--success-solid);
+}
+.weekgoal__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.weekgoal__celebration-title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-title-serif);
+  color: var(--success-fg);
+}
+.weekgoal__celebration-body {
+  font-size: var(--size-body-sm);
+  line-height: 1.45;
+  color: var(--ink-quote);
+}
+.weekgoal__rhythm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  background: var(--cream-000);
+  border: 1px solid var(--line-warm);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+.weekgoal__rhythm-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.weekgoal__rhythm-title {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-title-serif);
+  color: var(--blue-900);
+}
+.weekgoal__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+.weekgoal__row .weekgoal__text {
+  gap: 0;
+}
+.weekgoal__icon {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-pill);
+  background: var(--blue-050);
+  color: var(--blue-900);
+}
+.weekgoal__row-title {
+  font-weight: 700;
+  font-size: var(--size-body);
+  line-height: 1.55;
+  color: var(--blue-900);
+}
+.weekgoal__row-sub {
+  font-size: var(--size-body-sm);
+  line-height: 1.45;
+  color: var(--ink-500);
+}
+.weekgoal__divider {
+  height: 1px;
+  background: var(--line-cool-strong);
 }

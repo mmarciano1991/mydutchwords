@@ -1,53 +1,42 @@
-/* PracticeCard — the dashboard's entry point into the day's flashcard set
-   (Figma 304:1118). One card, five states:
+/* PracticeCard — the dashboard's single entry point into today's Dutch
+   (Figma 304:1118). Three states, all read from the day's GOAL rather than
+   from a fixed-size set:
 
-     ready    — the set is drawn and untouched: how many words, "Start practice"
-     progress — half-done: an inverted ProgressBar, words to go, "Continue"
-     done     — finished: the knew-it / still-learning split and two ways to
-                practise again
-     inactive — too few words in the deck to draw a set from: the card goes
-                pale and points at Add-a-word instead
-     caught-up — nothing was available to draw today (not a Figma variant;
-                the real state the design's four don't cover)
+     ready    — nothing practised yet today: the cue, the size, one button
+     progress — part of the goal done: an inverted ProgressBar, "Continue"
+     done     — the goal is reached. The day is finished, and the card says
+                so plainly. Extra practice is always offered, quietly, as an
+                outlined button — never as the primary action, and never with
+                any suggestion that tomorrow will ask for more.
+
+   The old "caught up / practise ahead" and "add 16 words before you can
+   practise" states are gone: the daily set always tops up from the whole
+   deck, and the goal never exceeds the deck, so there is always a way to
+   finish the day.
 
    Per the component's Figma documentation there is only ever one on the
    dashboard, and everything nested inside it uses the inverted/on-cobalt
-   treatment — hence `btn--inverted` on every action but the inactive card's,
-   which sits on a pale surface and so uses the plain contained button. */
+   treatment. */
 import type { ReactNode } from "react";
 import { CardsStack } from "../icons";
-import { LearningDash } from "./LearningDash";
 import { ProgressBar } from "./ProgressBar";
 
-export type PracticeCardStatus = "ready" | "progress" | "done" | "caught-up" | "inactive";
+export type PracticeCardStatus = "ready" | "progress" | "done";
 
-/** Fewer words than this in the deck and there is nothing worth drawing a
- *  day's set from, so the card is inactive (Figma 322:1880). */
-export const MIN_PRACTICE_WORDS = 16;
-
-/* The design shows "7 min" against 10 queued words. Answering a card is a
-   recall, not a read — a shade under three-quarters of a minute each. */
-const MINUTES_PER_CARD = 0.7;
-
-/** Rough session length in whole minutes, never rounded down to zero. */
+/** Rough session length in whole minutes: about half a minute a card (a
+ *  recall, not a read), rounded down so the promise is never overstated —
+ *  10 words ≈ 5 min, 20 ≈ 10, 30 ≈ 15, matching the commitment options.
+ *  Never zero. */
 export function sessionMinutes(cardCount: number): number {
-  return Math.max(1, Math.round(cardCount * MINUTES_PER_CARD));
+  return Math.max(1, Math.floor(cardCount / 2));
 }
 
-function Shell({
-  length,
-  inactive = false,
-  children,
-}: {
-  length: string | null;
-  inactive?: boolean;
-  children: ReactNode;
-}) {
+function Shell({ length, children }: { length: string | null; children: ReactNode }) {
   return (
-    <section className={`practice-card${inactive ? " practice-card--inactive" : ""}`}>
+    <section className="practice-card">
       <div className="practice-card__top">
         <CardsStack className="practice-card__icon" />
-        <p className="practice-card__kind">Flashcards</p>
+        <p className="practice-card__kind">Today&rsquo;s Dutch</p>
         {length && <p className="practice-card__length">{length}</p>}
       </div>
       {children}
@@ -57,116 +46,66 @@ function Shell({
 
 export function PracticeCard({
   status,
-  deckCount,
-  setSize,
-  total,
-  answered,
-  knownCount,
-  learningCount,
-  nextDueLabel,
+  goal,
+  towardGoal,
+  extra,
+  cue,
+  tomorrow,
+  canExtra,
   onStart,
-  onPractiseLearning,
-  onPractiseAll,
-  onPractiseAhead,
-  onAddWord,
+  onExtra,
 }: {
   status: PracticeCardStatus;
-  /** Words saved in the deck. Inactive-only: what "you have only N" reports. */
-  deckCount: number;
-  /** Words drawn for today — the size of the day, not of the sitting. */
-  setSize: number;
-  /** Words in the current or most recent sitting. */
-  total: number;
-  /** How many of them are answered. */
-  answered: number;
-  knownCount: number;
-  learningCount: number;
-  /** Caught-up only: when the next review unlocks, e.g. "tomorrow". */
-  nextDueLabel: string | null;
-  /** Starts, or resumes, today's set. */
+  /** Words that make today done. */
+  goal: number;
+  /** Of those, how many are done. */
+  towardGoal: number;
+  /** Practised past the goal today. */
+  extra: number;
+  /** "☀️ Your Dutch at 08:00" */
+  cue: string;
+  /** "at 08:00" — completes "See you tomorrow …". */
+  tomorrow: string;
+  /** Whether there is anything to practise at all (a non-empty deck). */
+  canExtra: boolean;
+  /** Starts, or continues, today's goal. */
   onStart: () => void;
-  /** Re-drills just the still-learning words. Ungraded. */
-  onPractiseLearning: () => void;
-  /** Re-drills the whole set. Ungraded. */
-  onPractiseAll: () => void;
-  /** Caught-up only: practise ahead of schedule. Ungraded. */
-  onPractiseAhead: () => void;
-  /** Inactive only: opens Add-a-word. Takes the button so the screen can
-   *  expand out of it, the same way the dashboard's empty state does. */
-  onAddWord: (origin: HTMLElement) => void;
+  /** A few more words, past the goal. */
+  onExtra: () => void;
 }) {
-  // ── Inactive: the deck is too thin to practise from. No session length to
-  //    report, and the only action is to keep adding words. ──
-  if (status === "inactive") {
-    return (
-      <Shell length={null} inactive>
-        <div className="practice-card__content">
-          <p className="practice-card__title">Add more words</p>
-          <p className="practice-card__body">
-            You need at least {MIN_PRACTICE_WORDS} words to begin practising — you
-            have only {deckCount}.
-          </p>
-        </div>
-        <button className="btn btn--primary" onClick={(e) => onAddWord(e.currentTarget)}>
-          Add a word
-        </button>
-      </Shell>
-    );
-  }
-
-  if (status === "caught-up") {
-    return (
-      <Shell length={null}>
-        <div className="practice-card__content">
-          <p className="practice-card__title">You&rsquo;re all set</p>
-          <p className="practice-card__body">
-            {nextDueLabel
-              ? `Your next set is ${nextDueLabel}. Get a head start whenever you like.`
-              : "Nothing is scheduled. Get a head start whenever you like."}
-          </p>
-        </div>
-        <button className="btn btn--primary btn--inverted" onClick={onPractiseAhead}>
-          Practise ahead
-        </button>
-      </Shell>
-    );
-  }
-
   if (status === "done") {
     return (
-      <Shell length={`${sessionMinutes(total)} min`}>
+      <Shell length="✓ Done">
         <div className="practice-card__content">
-          <p className="practice-card__title">Mooi gedaan!</p>
-          <p className="practice-card__body">Practice done for today.</p>
-          <LearningDash known={knownCount} learning={learningCount} knownLabel="Knew it" />
+          <p className="practice-card__title">Done for today</p>
+          <p className="practice-card__body">
+            Today&rsquo;s {goal} word{goal === 1 ? "" : "s"} are done. See you tomorrow {tomorrow}.
+          </p>
+          {extra > 0 && <p className="practice-card__extra">+{extra} extra today</p>}
         </div>
-        <div className="practice-card__actions">
-          {learningCount > 0 && (
-            <button className="btn btn--primary btn--inverted" onClick={onPractiseLearning}>
-              Practise {learningCount === 1 ? "this one" : `these ${learningCount}`} again
-            </button>
-          )}
-          <button className="btn btn--secondary btn--inverted" onClick={onPractiseAll}>
-            Practise all {setSize} again
+        {canExtra && (
+          <button className="btn btn--secondary btn--inverted" onClick={onExtra}>
+            A few more, just for fun
           </button>
-        </div>
+        )}
       </Shell>
     );
   }
 
+  const left = goal - towardGoal;
+
   if (status === "progress") {
-    const left = total - answered;
     return (
-      <Shell length={`${sessionMinutes(left)} min left`}>
+      <Shell length={`~${sessionMinutes(left)} min left`}>
         <div className="practice-card__content">
-          <p className="practice-card__title">Your daily practice</p>
+          <p className="practice-card__title">Almost there</p>
           <p className="practice-card__body">Pick up where you left off.</p>
         </div>
         {/* Forward-looking caption, per the ProgressBar's Figma notes: the
             filled part already carries what is done. */}
         <ProgressBar
-          value={answered}
-          max={total}
+          value={towardGoal}
+          max={goal}
           label={`${left} word${left === 1 ? "" : "s"} to go`}
           variant="inverted"
         />
@@ -178,15 +117,15 @@ export function PracticeCard({
   }
 
   return (
-    <Shell length={`${sessionMinutes(setSize)} min`}>
+    <Shell length={`~${sessionMinutes(goal)} min`}>
       <div className="practice-card__content">
-        <p className="practice-card__title">Your daily practice</p>
-        <p className="practice-card__body">
-          {setSize} word{setSize === 1 ? " is" : "s are"} ready for you.
+        <p className="practice-card__title">
+          {goal} word{goal === 1 ? "" : "s"}
         </p>
+        <p className="practice-card__body">{cue}</p>
       </div>
       <button className="btn btn--primary btn--inverted" onClick={onStart}>
-        Start practice
+        Start
       </button>
     </Shell>
   );

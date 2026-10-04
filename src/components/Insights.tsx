@@ -1,48 +1,78 @@
-/* Insights — the dashboard's header block (Figma 317:1416): a streak strip,
-   and beneath it the deck total and the mastery bar, both on porcelain.
+/* Insights — the dashboard's header block (Figma 317:1416): a topbar with a
+   greeting and two counters (days done this week, current streak), and
+   beneath it the deck total split into Learning and Mastered.
 
-   The two sit flush so they read as one masthead running off both edges of
-   the screen — square on every corner, with a warm hairline under each piece
-   doing the separating. Everything it shows is derived from the synced deck
-   + practice log, so it needs no state of its own. */
-import { ModeHeat } from "../icons";
-import { ProgressBar } from "./ProgressBar";
+   Everything shown is derived from synced state, so it needs no state of
+   its own. */
+import { Event, ModeHeat } from "../icons";
+
+/** Greeting for the hour: morning until 12, afternoon until 18. */
+function greeting(now: Date): string {
+  const h = now.getHours();
+  if (h >= 6 && h < 12) return "Good morning";
+  if (h >= 12 && h < 18) return "Good afternoon";
+  return "Good evening";
+}
 
 export function Insights({
   deckCount,
   masteredCount,
+  weekDone,
   streak,
+  onOpenWeek,
 }: {
   /** Words saved in the deck. */
   deckCount: number;
   /** Of those, how many have reached the top of the ladder. */
   masteredCount: number;
-  /** Consecutive practice days. 0 turns the strip into an invitation. */
+  /** Days done this week. */
+  weekDone: number;
+  /** Consecutive done days. */
   streak: number;
+  /** The calendar counter opens the Weekly goal screen. */
+  onOpenWeek: () => void;
 }) {
+  const learningCount = deckCount - masteredCount;
+
   return (
     <section className="insights">
       <div className="insights__topbar">
-        <ModeHeat className="insights__flame" />
-        <p className="insights__streak">
-          {streak > 0
-            ? `${streak}-day streak — goed bezig!`
-            : "Practise today to start a streak"}
-        </p>
+        <p className="insights__greeting">{greeting(new Date())}</p>
+        <button
+          type="button"
+          className="insights__counter insights__counter--week"
+          onClick={onOpenWeek}
+          aria-label={`${weekDone} day${weekDone === 1 ? "" : "s"} done this week`}
+        >
+          {weekDone}
+          <Event />
+        </button>
+        <span
+          className="insights__counter insights__counter--streak"
+          aria-label={`${streak} day streak`}
+        >
+          {streak}
+          <ModeHeat />
+        </span>
       </div>
 
       <div className="insights__hero">
-        <div className="insights__top">
+        <p className="insights__stat">
+          {deckCount} word{deckCount === 1 ? "" : "s"} in your deck
+        </p>
+        <div className="insights__progress">
           <p className="insights__eyebrow">Your progress</p>
-          <p className="insights__stat">
-            {deckCount} word{deckCount === 1 ? "" : "s"} in your deck
-          </p>
+          <div className="insights__pills">
+            <div className="insights__pill insights__pill--learning">
+              <span className="insights__pill-count">{learningCount}</span>
+              <span className="insights__pill-label">Learning</span>
+            </div>
+            <div className="insights__pill insights__pill--mastered">
+              <span className="insights__pill-count">{masteredCount}</span>
+              <span className="insights__pill-label">Mastered</span>
+            </div>
+          </div>
         </div>
-        <ProgressBar
-          value={masteredCount}
-          max={deckCount}
-          label={`${masteredCount} mastered so far`}
-        />
       </div>
     </section>
   );

@@ -1,4 +1,5 @@
 import type { DailySet, PracticeRun } from "./dailySet";
+import { normalizeHabit, type HabitState } from "./habit";
 import { intervalForLevel, LADDER, MAX_LEVEL } from "./learningEngine";
 import type { DeckItem, PracticeResult } from "./types";
 
@@ -6,6 +7,7 @@ const DECK_KEY = "woordkast.deck";
 const RESULTS_KEY = "woordkast.results";
 const DAILY_SET_KEY = "woordkast.dailySet";
 const RUN_KEY = "woordkast.practiceRun";
+const HABIT_KEY = "woordkast.habit";
 
 /** A freshly-added deck item: no spaced-repetition history yet, due immediately. */
 export function newDeckItem(entryId: string, now: Date): DeckItem {
@@ -118,4 +120,14 @@ export function loadRun(): PracticeRun | null {
 
 export function saveRun(run: PracticeRun | null): void {
   write(RUN_KEY, run);
+}
+
+/** The user's daily commitment and its history. Null until onboarding has
+ *  been completed (on this device, or synced from another). */
+export function loadHabit(): HabitState | null {
+  return normalizeHabit(read<unknown>(HABIT_KEY, null));
+}
+
+export function saveHabit(habit: HabitState | null): void {
+  write(HABIT_KEY, habit);
 }

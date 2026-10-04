@@ -8,6 +8,7 @@
    (deduped) is lossless. This can resurrect a word deleted on one device
    only — an accepted trade-off for a simple, data-preserving sync. */
 import { runAnswerCount, type DailySet, type PracticeRun } from "./dailySet";
+import { mergeHabit, normalizeHabit, type HabitState } from "./habit";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./types";
 import { supabase } from "./supabase";
 
@@ -22,6 +23,10 @@ export interface AppState {
   /** The current (or last) run through a set of words — what the dashboard's
    *  practice card reports. Null before the first practice. */
   run: PracticeRun | null;
+  /** The daily commitment, cue, weekly target and the days done. Null until
+   *  onboarding has been completed. Optional so snapshots saved before it
+   *  existed still read as valid. */
+  habit?: HabitState | null;
 }
 
 /** How much practice history a deck item carries — higher wins a conflict. */
@@ -65,7 +70,10 @@ function pickRun(a: PracticeRun | null, b: PracticeRun | null): PracticeRun | nu
   if (!a) return b;
   if (!b) return a;
   if (a.date !== b.date) return a.date > b.date ? a : b;
-  return runAnswerCount(b) > runAnswerCount(a) ? b : a;
+  const answered = runAnswerCount(b) - runAnswerCount(a);
+  if (answered !== 0) return answered > 0 ? b : a;
+  // Same answers given: the one where more misses have since been got right.
+  return (b.cleared?.length ?? 0) > (a.cleared?.length ?? 0) ? b : a;
 }
 
 /** Offline-first union of two snapshots. Pure; order-independent per word. */
@@ -95,6 +103,7 @@ export function mergeState(a: AppState, b: AppState): AppState {
     customWords: [...custom.values()],
     dailySet: pickDailySet(a.dailySet, b.dailySet),
     run: pickRun(a.run, b.run),
+    habit: mergeHabit(a.habit ?? null, b.habit ?? null),
   };
 }
 
@@ -106,15 +115,35 @@ export function mergeState(a: AppState, b: AppState): AppState {
  *  a real remote snapshot it never actually saw. */
 export type RemoteFetchResult = { ok: true; state: AppState | null } | { ok: false };
 
+/* The habit column arrived in a later migration than the app code that reads
+   it. Until it is applied, a select or upsert naming it fails outright —
+   which would stall hydration (retried forever) and stop all progress from
+   saving. So a missing-column error switches the column off for the rest of
+   the session and the request is retried without it: everything else keeps
+   syncing, and the habit simply stays on the device. */
+let habitColumn = true;
+
+/** Postgres "undefined column", or PostgREST's schema-cache equivalent. */
+function isMissingHabitColumn(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return (error.code === "42703" || error.code === "PGRST204") && /habit/.test(error.message ?? "");
+}
+
 /** The signed-in user's saved snapshot. Never throws. */
 export async function fetchRemoteState(userId: string): Promise<RemoteFetchResult> {
   if (!supabase) return { ok: true, state: null };
   try {
-    const { data, error } = await supabase
-      .from(TABLE)
-      .select("deck, results, custom_words, daily_set, practice_run")
-      .eq("user_id", userId)
-      .maybeSingle();
+    // Typed as plain strings: the column list is chosen at runtime, which
+    // the client's select-string parser can't type, so rows come back as
+    // records and each field is cast below as before.
+    const columns: string = "deck, results, custom_words, daily_set, practice_run";
+    const fetchRow = (cols: string) =>
+      supabase!.from(TABLE).select(cols).eq("user_id", userId).maybeSingle<Record<string, unknown>>();
+    let { data, error } = await fetchRow(habitColumn ? `${columns}, habit` : columns);
+    if (habitColumn && isMissingHabitColumn(error)) {
+      habitColumn = false;
+      ({ data, error } = await fetchRow(columns));
+    }
     if (error) return { ok: false };
     if (!data) return { ok: true, state: null };
     return {
@@ -125,6 +154,7 @@ export async function fetchRemoteState(userId: string): Promise<RemoteFetchResul
         customWords: (data.custom_words as DictionaryEntry[]) ?? [],
         dailySet: (data.daily_set as DailySet | null) ?? null,
         run: (data.practice_run as PracticeRun | null) ?? null,
+        habit: normalizeHabit(data.habit),
       },
     };
   } catch {
@@ -136,18 +166,22 @@ export async function fetchRemoteState(userId: string): Promise<RemoteFetchResul
 export async function pushState(userId: string, state: AppState): Promise<boolean> {
   if (!supabase) return false;
   try {
-    const { error } = await supabase.from(TABLE).upsert(
-      {
-        user_id: userId,
-        deck: state.deck,
-        results: state.results,
-        custom_words: state.customWords,
-        daily_set: state.dailySet,
-        practice_run: state.run,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "user_id" }
-    );
+    const row: Record<string, unknown> = {
+      user_id: userId,
+      deck: state.deck,
+      results: state.results,
+      custom_words: state.customWords,
+      daily_set: state.dailySet,
+      practice_run: state.run,
+      updated_at: new Date().toISOString(),
+    };
+    if (habitColumn) row.habit = state.habit ?? null;
+    let { error } = await supabase.from(TABLE).upsert(row, { onConflict: "user_id" });
+    if (habitColumn && isMissingHabitColumn(error)) {
+      habitColumn = false;
+      delete row.habit;
+      ({ error } = await supabase.from(TABLE).upsert(row, { onConflict: "user_id" }));
+    }
     return !error;
   } catch {
     return false;

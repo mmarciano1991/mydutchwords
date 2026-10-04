@@ -1,5 +1,5 @@
 /* Appbar — the shared screen header (Figma 250:2597): a title row with
-   optional back/close buttons, and an optional search field below it. The
+   optional back/close/edit buttons, and an optional search field below it. The
    search slot is off unless a `search` prop is passed, so screens that only
    need a title stay unchanged. `divider` draws the hairline that appears
    once there's body content beneath. */
@@ -27,12 +27,15 @@ export function Appbar({
   title,
   onBack,
   onClose,
+  onEdit,
   divider = false,
   search,
 }: {
   title: string;
   onBack?: () => void;
   onClose?: () => void;
+  /** Trailing wrench — opens wherever this screen's settings are changed. */
+  onEdit?: () => void;
   divider?: boolean;
   search?: AppbarSearch;
 }) {
@@ -43,6 +46,8 @@ export function Appbar({
         <h1 className="appbar__title title-serif">{title}</h1>
         {onClose ? (
           <IconButton action="close" onClick={onClose} aria-label="Close" />
+        ) : onEdit ? (
+          <IconButton action="edit" onClick={onEdit} aria-label="Edit" />
         ) : (
           // Keeps the title optically centred against a lone left button.
           onBack && <span className="appbar__spacer" aria-hidden="true" />

@@ -1,28 +1,43 @@
 /* SessionReport — the result screen, and the mandatory last step of every
    practice sitting (Figma node 133:245).
 
-   Every completed sitting lands here, however it went: the day's set or a
-   re-drill, a perfect run or an all-wrong one. It is the only place the
-   flow can end, and only the user leaving it returns them to the dashboard
-   — nothing navigates past it on their behalf.
+   Its job in the habit loop is to close the day: say clearly that today is
+   DONE, show what was actually gained (the new words met), and place the day
+   in the week. The primary action is to finish — "Done" — not to keep going.
+   Extra practice and re-drills are offered as quiet text links underneath,
+   and an extra round says outright that tomorrow's goal is unchanged.
 
-   It reads the same run the dashboard's practice card reads, so the two can
-   never disagree about what just happened. */
+   When the monthly reflection is due, it takes the primary slot here: right
+   after the goal is reached is when "look how far you've come" lands.
+
+   It reads the same run the dashboard does, so the two can never disagree
+   about what just happened. */
 import { isLeech } from "../lib/learningEngine";
+import type { TodayProgress, WeekProgress } from "../lib/habit";
 import type { DeckItem } from "../lib/types";
 import { resolveEntry } from "../lib/wordSources";
 import { Badge } from "../components/Badge";
 import { StatCard } from "../components/StatCard";
+import { WeekGoalStatus } from "../components/WeekGoalStatus";
 import { WordRowCompact } from "../components/WordRowCompact";
+
+export type SittingKind = "goal" | "extra" | "warmup";
 
 export function SessionReport({
   knownIds,
   learningIds,
   deck,
-  streak,
-  warmup = false,
+  kind,
+  today,
+  week,
+  newToday,
+  tomorrow,
+  reflectionReady,
+  canExtra,
   onReviewMissed,
-  onBackToDashboard,
+  onExtra,
+  onReflection,
+  onDone,
 }: {
   /** Words answered "I knew it" in the sitting that just ended. */
   knownIds: string[];
@@ -30,24 +45,42 @@ export function SessionReport({
   learningIds: string[];
   /** For the leech tag on the review list. */
   deck: DeckItem[];
-  /** Consecutive practice days including this sitting. */
-  streak: number;
-  /** Warm-up: answers were recorded but the schedule wasn't moved. */
-  warmup?: boolean;
+  /** goal = toward today's goal; extra = past it; warmup = an ungraded re-drill. */
+  kind: SittingKind;
+  today: TodayProgress;
+  week: WeekProgress;
+  /** Dutch words practised for the very first time today. */
+  newToday: string[];
+  /** "at 08:00" — completes "See you tomorrow …". */
+  tomorrow: string;
+  /** The monthly "then vs now" is due and has something to show. */
+  reflectionReady: boolean;
+  canExtra: boolean;
   onReviewMissed: () => void;
-  onBackToDashboard: () => void;
+  onExtra: () => void;
+  onReflection: () => void;
+  onDone: () => void;
 }) {
   const total = knownIds.length + learningIds.length;
   const toReview = learningIds.length;
-  const perfect = total > 0 && toReview === 0;
   const byId = new Map(deck.map((d) => [d.id, d]));
+
+  const dayJustDone = kind === "goal" && today.done;
+  const title = dayJustDone ? "Done for today!" : kind === "extra" ? "Extra ✓" : "Nice work!";
+  const sub = dayJustDone
+    ? `That’s today’s Dutch. See you tomorrow ${tomorrow}.`
+    : kind === "extra"
+      ? `A bonus — tomorrow is still just ${today.goal} words.`
+      : kind === "warmup"
+        ? "Extra practice — your schedule didn’t change."
+        : `${today.goal - today.towardGoal} to go for today.`;
 
   return (
     <div className="screen pad-top">
       <div className="screen__body gutter" style={{ paddingTop: 22, paddingBottom: 8 }}>
         <div style={{ textAlign: "center" }}>
           <Badge>
-            {total} word{total === 1 ? "" : "s"} practised
+            {dayJustDone ? "Today’s goal ✓" : `${total} word${total === 1 ? "" : "s"} practised`}
           </Badge>
           <div
             style={{
@@ -58,21 +91,35 @@ export function SessionReport({
               marginTop: 14,
             }}
           >
-            {perfect ? "Helemaal goed!" : "Goed bezig!"}
+            {title}
           </div>
           <p className="muted" style={{ fontSize: 14, margin: "7px 0 0" }}>
-            {warmup ? "Extra practice — your schedule didn’t change." : "A quick check-in — not a grade."}
+            {sub}
           </p>
-          {streak > 1 && (
-            <p style={{ fontSize: 13, fontWeight: 700, color: "var(--caution-solid)", margin: "9px 0 0" }}>
-              🔥 {streak}-day streak — five minutes a day adds up.
-            </p>
-          )}
         </div>
 
-        <div style={{ display: "flex", gap: 12, marginTop: 22 }}>
+        {/* What was gained, by name — the most meaningful thing a session
+            produces is a word the learner didn't have this morning. */}
+        {newToday.length > 0 && (
+          <div className="report-new">
+            <p className="report-new__label">
+              New today
+            </p>
+            <ul className="report-new__words">
+              {newToday.map((w) => (
+                <li key={w}>{w}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="report-week">
+          <WeekGoalStatus week={week} card />
+        </div>
+
+        <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
           <StatCard value={knownIds.length} label="Knew it" tone="success" />
-          <StatCard value={toReview} label="To review" tone="error" />
+          <StatCard value={toReview} label="Still learning" tone="error" />
         </div>
 
         {toReview > 0 && (
@@ -93,13 +140,12 @@ export function SessionReport({
                   color: "var(--text-display)",
                 }}
               >
-                Words to review
+                Still learning
               </span>
               <span className="faint" style={{ fontSize: 12.5 }}>
-                {warmup ? "Not rescheduled" : "Coming back sooner"}
+                {kind === "warmup" ? "Not rescheduled" : "Coming back sooner"}
               </span>
             </div>
-            {/* Full list — the screen body scrolls, so nothing is dead-ended. */}
             <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
               {learningIds.map((id) => {
                 const entry = resolveEntry(id);
@@ -120,26 +166,33 @@ export function SessionReport({
         )}
       </div>
 
-      {/* Leaving is always offered, and is the primary action once there is
-          nothing left to drill — this screen carries no tab bar and no
-          close, so it must never be a dead end. */}
-      <div className="gutter" style={{ padding: "12px 22px 32px", display: "flex", flexDirection: "column", gap: 9 }}>
-        {toReview > 0 && (
-          <button className="btn btn--primary" onClick={onReviewMissed}>
-            Practise {toReview === 1 ? "it" : `these ${toReview}`} again
-          </button>
-        )}
-        {toReview > 0 ? (
-          <button
-            className="link-btn"
-            style={{ margin: "5px auto 0", display: "block" }}
-            onClick={onBackToDashboard}
-          >
-            Back to dashboard
+      {/* Finishing is always the primary action. Reviewing missed words is a
+          secondary button; everything else is a quiet link, so "more" is
+          available without being asked for. This screen
+          has no tab bar and no close, so it must never be a dead end. */}
+      <div className="gutter report-actions">
+        {reflectionReady ? (
+          <button className="btn btn--primary" onClick={onReflection}>
+            See your month in Dutch
           </button>
         ) : (
-          <button className="btn btn--primary" onClick={onBackToDashboard}>
-            Back to dashboard
+          <button className="btn btn--primary" onClick={onDone}>
+            Done
+          </button>
+        )}
+        {reflectionReady && (
+          <button className="link-btn" onClick={onDone}>
+            Later
+          </button>
+        )}
+        {toReview > 0 && (
+          <button className="btn btn--secondary" onClick={onReviewMissed}>
+            Go over {toReview === 1 ? "that one" : `those ${toReview}`} again
+          </button>
+        )}
+        {!reflectionReady && today.done && canExtra && (
+          <button className="link-btn" onClick={onExtra}>
+            A few more, just for fun
           </button>
         )}
       </div>

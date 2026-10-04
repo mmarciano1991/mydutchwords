@@ -92,7 +92,7 @@ export function AddFromText({
             style={{ minHeight: 220, resize: "vertical", fontFamily: "var(--font-sans)", fontSize: 16, lineHeight: 1.5 }}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Plak of typ hier een stukje Nederlandse tekst…"
+            placeholder="Paste or type a piece of Dutch text here…"
             // The placeholder is deliberately Dutch (it's a prompt for Dutch
             // input), so it can't double as the accessible name for an
             // English-language screen reader user — this says the same
