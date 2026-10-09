@@ -10,14 +10,16 @@ import {
   type HabitState,
 } from "../lib/habit";
 import { notificationsSupported, requestReminderPermission } from "../lib/reminders";
+import { setSoundEffectsMuted, soundEffectsMuted } from "../lib/sfx";
 
-export type HabitPrefs = Pick<HabitState, "commitment" | "time" | "weeklyTarget" | "reminders">;
+export type HabitPrefs = Pick<HabitState, "commitment" | "time" | "weeklyTarget" | "reminders" | "audioExercises">;
 
 export function Settings({
   deckCount,
   configured,
   email,
   habit,
+  dutchAudio = false,
   onHabitChange,
   onSignOut,
 }: {
@@ -29,11 +31,15 @@ export function Settings({
    *  set whenever `configured` is true. */
   email: string | null;
   habit: HabitState | null;
+  /** This device can speak Dutch (see lib/audio). */
+  dutchAudio?: boolean;
   /** Changes a preference. History (done days, the week) is untouched. */
   onHabitChange: (prefs: Partial<HabitPrefs>) => void;
   onSignOut: () => void;
 }) {
   const [reminderNote, setReminderNote] = useState<string | null>(null);
+  // Per device, not part of the synced habit: sound is about where you are.
+  const [sfxOn, setSfxOn] = useState(() => !soundEffectsMuted());
 
   async function toggleReminders(on: boolean) {
     setReminderNote(null);
@@ -118,6 +124,43 @@ export function Settings({
                 {reminderNote && <p className="settings-habit__note">{reminderNote}</p>}
               </>
             )}
+
+            <div className="divider" style={{ margin: "16px 0 14px" }} />
+            <label className="toggle-row">
+              <span>
+                <span className="toggle-row__title">Audio exercises</span>
+                <span className="toggle-row__sub">
+                  {dutchAudio
+                    ? "Listening exercises play the Dutch word aloud."
+                    : "This device has no Dutch voice, so there are no listening exercises yet."}
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                className="toggle"
+                checked={habit.audioExercises}
+                onChange={(e) => onHabitChange({ audioExercises: e.target.checked })}
+              />
+            </label>
+
+            <div className="divider" style={{ margin: "16px 0 14px" }} />
+            <label className="toggle-row">
+              <span>
+                <span className="toggle-row__title">Sound effects</span>
+                <span className="toggle-row__sub">
+                  A chime for right and wrong answers. Spoken Dutch words still play.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                className="toggle"
+                checked={sfxOn}
+                onChange={(e) => {
+                  setSfxOn(e.target.checked);
+                  setSoundEffectsMuted(!e.target.checked);
+                }}
+              />
+            </label>
 
             <p className="settings-habit__foot">
               Changing these never resets your progress or your week.

@@ -3,12 +3,13 @@
    read/write helpers against the `user_state` table.
 
    Merge philosophy (no server clock, two offline-capable devices): union
-   everything by identity and, on a per-word conflict, keep the copy that
-   has practised more. Results are an append-only event log, so their union
+   everything by identity and, on a per-word conflict, keep the copy graded
+   most recently (both sides migrated to the current engine first). Results are an append-only event log, so their union
    (deduped) is lossless. This can resurrect a word deleted on one device
    only — an accepted trade-off for a simple, data-preserving sync. */
-import { runAnswerCount, type DailySet, type PracticeRun } from "./dailySet";
+import { runAnswerCount, type PracticeRun } from "./dailySet";
 import { mergeHabit, normalizeHabit, type HabitState } from "./habit";
+import { migrateDeck } from "./storage";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./types";
 import { supabase } from "./supabase";
 
@@ -18,8 +19,6 @@ export interface AppState {
   deck: DeckItem[];
   results: PracticeResult[];
   customWords: DictionaryEntry[];
-  /** The day's drawn practice set, or null before the first one. */
-  dailySet: DailySet | null;
   /** The current (or last) run through a set of words — what the dashboard's
    *  practice card reports. Null before the first practice. */
   run: PracticeRun | null;
@@ -29,9 +28,9 @@ export interface AppState {
   habit?: HabitState | null;
 }
 
-/** How much practice history a deck item carries — higher wins a conflict. */
-function progressScore(d: DeckItem): number {
-  return (d.reps ?? 0) + (d.lapses ?? 0);
+/** How much evidence a deck item carries — the tie-break after recency. */
+function evidenceScore(d: DeckItem): number {
+  return (d.successfulReviewDays ?? 0) + (d.lapses ?? 0) + (d.consecutiveFailures ?? 0);
 }
 
 /** ISO review timestamp as millis (0 when never reviewed). */
@@ -39,28 +38,17 @@ function reviewedAt(d: DeckItem): number {
   return d.lastReviewedAt ? new Date(d.lastReviewedAt).getTime() : 0;
 }
 
-/** The more-practised of two copies of the same word (ties → most recently
- *  reviewed, then most recently added, then the first argument). */
+/** Of two copies of the same word, the one graded most recently: a word's
+ *  state is the result of its answers in order, so the copy that saw the
+ *  later answer is the later state. Ties → more evidence, then most
+ *  recently added, then the first argument. */
 function pickDeckItem(a: DeckItem, b: DeckItem): DeckItem {
-  const byProgress = progressScore(b) - progressScore(a);
-  if (byProgress !== 0) return byProgress > 0 ? b : a;
   const at = reviewedAt(a);
   const bt = reviewedAt(b);
   if (at !== bt) return bt > at ? b : a;
+  const byEvidence = evidenceScore(b) - evidenceScore(a);
+  if (byEvidence !== 0) return byEvidence > 0 ? b : a;
   return b.dateAdded > a.dateAdded ? b : a;
-}
-
-/** The daily set to keep. A newer date always wins — yesterday's draw is
- *  spent. Within the same day, an empty draw carries no information: a
- *  device that had nothing to draw yet (a deck that hasn't synced) must not
- *  overwrite the real set. */
-function pickDailySet(a: DailySet | null, b: DailySet | null): DailySet | null {
-  if (!a) return b;
-  if (!b) return a;
-  if (a.date !== b.date) return a.date > b.date ? a : b;
-  if (a.wordIds.length === 0) return b;
-  if (b.wordIds.length === 0) return a;
-  return a;
 }
 
 /** The run to keep. Newer day wins; within a day, the one that got further.
@@ -72,23 +60,26 @@ function pickRun(a: PracticeRun | null, b: PracticeRun | null): PracticeRun | nu
   if (a.date !== b.date) return a.date > b.date ? a : b;
   const answered = runAnswerCount(b) - runAnswerCount(a);
   if (answered !== 0) return answered > 0 ? b : a;
-  // Same answers given: the one where more misses have since been got right.
-  return (b.cleared?.length ?? 0) > (a.cleared?.length ?? 0) ? b : a;
+  // Same answers given: the one that was finished.
+  return b.completedAt && !a.completedAt ? b : a;
 }
 
 /** Offline-first union of two snapshots. Pure; order-independent per word. */
-export function mergeState(a: AppState, b: AppState): AppState {
-  // Deck — union by id, keeping the more-practised copy on conflict.
-  const deck = new Map<string, DeckItem>();
-  for (const item of [...a.deck, ...b.deck]) {
-    const existing = deck.get(item.id);
-    deck.set(item.id, existing ? pickDeckItem(existing, item) : item);
-  }
-
+export function mergeState(a: AppState, b: AppState, now: Date = new Date()): AppState {
   // Results — union of the event log, deduped by (word, time, grade).
   const results = new Map<string, PracticeResult>();
   for (const r of [...a.results, ...b.results]) {
     results.set(`${r.entryId}|${r.timestamp}|${r.grade}`, r);
+  }
+  const allResults = [...results.values()];
+
+  // Deck — union by id, keeping the later-graded copy on conflict. Either
+  // side may come from a client older than the current engine, so both are
+  // migrated first (a no-op for words already migrated).
+  const deck = new Map<string, DeckItem>();
+  for (const item of [...migrateDeck(a.deck, allResults, now), ...migrateDeck(b.deck, allResults, now)]) {
+    const existing = deck.get(item.id);
+    deck.set(item.id, existing ? pickDeckItem(existing, item) : item);
   }
 
   // Custom words — union by id (content is identical for a given id).
@@ -99,9 +90,8 @@ export function mergeState(a: AppState, b: AppState): AppState {
 
   return {
     deck: [...deck.values()].sort((x, y) => y.dateAdded - x.dateAdded),
-    results: [...results.values()].sort((x, y) => x.timestamp - y.timestamp),
+    results: allResults.sort((x, y) => x.timestamp - y.timestamp),
     customWords: [...custom.values()],
-    dailySet: pickDailySet(a.dailySet, b.dailySet),
     run: pickRun(a.run, b.run),
     habit: mergeHabit(a.habit ?? null, b.habit ?? null),
   };
@@ -136,7 +126,7 @@ export async function fetchRemoteState(userId: string): Promise<RemoteFetchResul
     // Typed as plain strings: the column list is chosen at runtime, which
     // the client's select-string parser can't type, so rows come back as
     // records and each field is cast below as before.
-    const columns: string = "deck, results, custom_words, daily_set, practice_run";
+    const columns: string = "deck, results, custom_words, practice_run";
     const fetchRow = (cols: string) =>
       supabase!.from(TABLE).select(cols).eq("user_id", userId).maybeSingle<Record<string, unknown>>();
     let { data, error } = await fetchRow(habitColumn ? `${columns}, habit` : columns);
@@ -152,7 +142,6 @@ export async function fetchRemoteState(userId: string): Promise<RemoteFetchResul
         deck: (data.deck as DeckItem[]) ?? [],
         results: (data.results as PracticeResult[]) ?? [],
         customWords: (data.custom_words as DictionaryEntry[]) ?? [],
-        dailySet: (data.daily_set as DailySet | null) ?? null,
         run: (data.practice_run as PracticeRun | null) ?? null,
         habit: normalizeHabit(data.habit),
       },
@@ -171,7 +160,6 @@ export async function pushState(userId: string, state: AppState): Promise<boolea
       deck: state.deck,
       results: state.results,
       custom_words: state.customWords,
-      daily_set: state.dailySet,
       practice_run: state.run,
       updated_at: new Date().toISOString(),
     };

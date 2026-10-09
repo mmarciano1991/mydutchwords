@@ -56,7 +56,7 @@ export function WeeklyGoal({
             </span>
             <div className="weekgoal__text">
               <p className="weekgoal__row-title">
-                {c.name} · {c.words} words a day
+                {c.name} · {c.words} words a session
               </p>
               <p className="weekgoal__row-sub">
                 About {c.minutes} minutes, at {habit.time}

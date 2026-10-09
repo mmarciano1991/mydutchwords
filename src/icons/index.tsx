@@ -189,3 +189,23 @@ export function DinnerDining(props: IconProps) {
     </Icon>
   );
 }
+
+/* Material Symbols "volume_up" (24px, outlined) — added for the Listening
+   exercise. Not yet in the Figma icon page: re-export it from there when the
+   design system adds it. */
+export function VolumeUp(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M14 20.725V18.675Q16.25 18.025 17.625 16.175Q19 14.325 19 11.975Q19 9.625 17.625 7.775Q16.25 5.925 14 5.275V3.225Q17.1 3.925 19.05 6.362Q21 8.8 21 11.975Q21 15.15 19.05 17.587Q17.1 20.025 14 20.725ZM3 15V9H7L12 4V20L7 15ZM14 16V7.95Q15.175 8.5 15.838 9.6Q16.5 10.7 16.5 12Q16.5 13.275 15.838 14.362Q15.175 15.45 14 16Z" />
+    </Icon>
+  );
+}
+
+/* brand_awareness — Listening's "Play again" (Figma 423:2088). */
+export function BrandAwareness(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <path d="M16.113 13.212V10.788H20.763V13.212H16.113ZM17.737 20.438L14.0283 17.6425L15.4825 15.7032L19.2055 18.4848L17.737 20.438ZM15.4825 8.29675L14.0283 6.3575L17.737 3.562L19.2055 5.51525L15.4825 8.29675ZM2.237 15.4805V8.5195H6.5195L12.1977 2.8555V21.1445L6.5195 15.4805H2.237Z" />
+    </Icon>
+  );
+}

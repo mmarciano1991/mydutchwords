@@ -1,7 +1,7 @@
-/* Dashboard (Figma 300:727) — the home screen. Two blocks: the Insights
-   masthead (greeting, counters + progress) pinned to the top, and a single
-   PracticeCard below it that says exactly what today asks for. Opening the
-   app should never require a decision: the card's one button is the day.
+/* Dashboard (Figma 300:727) — the home screen. The Insights masthead
+   (greeting, counters, words per learning state) pinned to the top, a
+   single PracticeCard below it that says exactly what today asks for.
+   Opening the app should never require a decision: the card's one button is the day.
 
    Everything shown here is derived from synced state (see lib/cloudState),
    so the numbers follow the account rather than the device. */
@@ -9,10 +9,11 @@ import { TulipMedallion } from "../components/brand";
 import { Insights } from "../components/Insights";
 import { PracticeCard } from "../components/PracticeCard";
 import type { TodayProgress, WeekProgress } from "../lib/habit";
+import { Dock } from "../components/Dock";
 
 export function Dashboard({
   deckCount,
-  masteredCount,
+  counts,
   today,
   inProgress,
   week,
@@ -20,14 +21,16 @@ export function Dashboard({
   cue,
   tomorrow,
   canExtra,
+  canReplay,
   onPractice,
   onExtra,
+  onReplay,
   onAddWord,
   onOpenWeek,
 }: {
   deckCount: number;
-  /** Deck words that have reached the top of the ladder. */
-  masteredCount: number;
+  /** Deck words per visible learning state. */
+  counts: { new: number; learning: number; learned: number };
   today: TodayProgress;
   /** Part of today's goal is already done. */
   inProgress: boolean;
@@ -37,16 +40,19 @@ export function Dashboard({
   cue: string;
   tomorrow: string;
   canExtra: boolean;
-  /** Starts, or continues, today's goal. */
+  /** An ungraded "practise again" round is available. */
+  canReplay: boolean;
+  /** Starts, or continues, today's session. */
   onPractice: () => void;
   onExtra: () => void;
+  onReplay: () => void;
   /** Receives the button, so the Add-a-word screen can expand out of it. */
   onAddWord: (origin: HTMLElement) => void;
   /** The calendar counter — opens the Weekly goal screen. */
   onOpenWeek: () => void;
 }) {
-  // ── Empty deck: only reachable by removing every word (onboarding seeds a
-  //    starter deck), so it invites building one back up. ──
+  // ── Empty deck: the first run. Capture-first — nothing is asked before
+  //    the first word; this invites adding it. ──
   if (deckCount === 0) {
     return (
       <div className="screen pad-top">
@@ -56,14 +62,14 @@ export function Dashboard({
           </div>
           <div className="display--lg">Woordkast</div>
           <p className="muted" style={{ fontSize: 15.5, margin: "18px 0 0", lineHeight: 1.6, maxWidth: 286 }}>
-            Your deck is empty. Add a Dutch word you met today and it becomes tomorrow&rsquo;s practice.
+            Add a Dutch word you met today — a sign, a letter, a colleague — and practise it right away.
           </p>
         </div>
-        <div className="gutter" style={{ paddingBottom: 30 }}>
+        <Dock className="gutter" style={{ paddingBottom: 30 }}>
           <button className="btn btn--primary" onClick={(e) => onAddWord(e.currentTarget)}>
             Add a word
           </button>
-        </div>
+        </Dock>
       </div>
     );
   }
@@ -73,22 +79,24 @@ export function Dashboard({
       <div className="screen__body dashboard">
         <Insights
           deckCount={deckCount}
-          masteredCount={masteredCount}
+          counts={counts}
           weekDone={week.done}
           streak={streak}
           onOpenWeek={onOpenWeek}
         />
         <div className="dashboard__spacer">
           <PracticeCard
-            status={today.done ? "done" : inProgress ? "progress" : "ready"}
+            status={today.done ? "done" : inProgress ? "progress" : canExtra ? "ready" : "empty"}
             goal={today.goal}
             towardGoal={today.towardGoal}
             extra={today.extra}
             cue={cue}
             tomorrow={tomorrow}
             canExtra={canExtra}
+            canReplay={canReplay}
             onStart={onPractice}
             onExtra={onExtra}
+            onReplay={onReplay}
           />
         </div>
       </div>

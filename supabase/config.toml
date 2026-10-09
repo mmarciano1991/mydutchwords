@@ -19,3 +19,8 @@ additional_redirect_urls = ["http://localhost:5173"]
 enabled = true
 client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
+
+# Pronunciation (Azure neural voice). Callable without an account — the app
+# works signed out — so no JWT check; the function only speaks short words.
+[functions.tts]
+verify_jwt = false

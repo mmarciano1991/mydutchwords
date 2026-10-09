@@ -1,17 +1,20 @@
 import { describe, expect, it } from "vitest";
 import {
-  buildDailySet,
-  DAILY_SET_SIZE,
   dayKey,
+  deferWords,
+  isFullSession,
+  priorItems,
   pruneRun,
   recordAnswer,
-  recordCleared,
+  remainingSteps,
   runAnswerCount,
+  runAnswerFor,
   runProgress,
   startRun,
   type PracticeRun,
+  type RunAnswer,
 } from "./dailySet";
-import type { Grade, Word } from "./learningEngine";
+import type { PlannedStep } from "./learningEngine";
 
 /** Local noon on the given local calendar day — safely inside the day in
  *  every timezone, unlike a UTC midnight that lands on the day before or
@@ -23,31 +26,9 @@ function localNoon(year: number, month: number, day: number): Date {
 const NOW = localNoon(2024, 6, 1);
 const TODAY = dayKey(NOW);
 
-function makeWord(overrides: Partial<Word> = {}): Word {
-  return {
-    id: "w1",
-    level: 0,
-    interval: 0,
-    reps: 0,
-    dueDate: NOW.toISOString(),
-    lapses: 0,
-    state: "new",
-    lastReviewedAt: null,
-    ...overrides,
-  };
-}
-
-/** `count` brand-new words, ids w0…w{count-1}. */
-function newWords(count: number): Word[] {
-  return Array.from({ length: count }, (_, i) => makeWord({ id: `w${i}` }));
-}
-
 /** A run over `ids` with the listed answers already recorded. */
-function runWith(ids: string[], answers: Record<string, Grade> = {}): PracticeRun {
-  return Object.entries(answers).reduce(
-    (run, [id, grade]) => recordAnswer(run, id, grade),
-    startRun(ids, NOW)
-  );
+function runWith(ids: string[], answers: Record<string, RunAnswer> = {}): PracticeRun {
+  return Object.entries(answers).reduce((run, [id, a]) => recordAnswer(run, id, a, NOW), startRun(ids, NOW));
 }
 
 describe("dayKey", () => {
@@ -62,109 +43,6 @@ describe("dayKey", () => {
   });
 });
 
-describe("buildDailySet", () => {
-  it("draws sixteen words", () => {
-    const set = buildDailySet(newWords(50), NOW);
-    expect(set.wordIds).toHaveLength(DAILY_SET_SIZE);
-    expect(set.date).toBe(TODAY);
-  });
-
-  it("draws every word when the deck is smaller than a full set", () => {
-    const set = buildDailySet(newWords(5), NOW);
-    expect(set.wordIds).toEqual(["w0", "w1", "w2", "w3", "w4"]);
-  });
-
-  it("is empty only when the deck is", () => {
-    expect(buildDailySet([], NOW).wordIds).toEqual([]);
-  });
-
-  // Regression: a returning user whose reviews all fall next week was handed
-  // an empty set, so the day had no result to reach — the dashboard sat on
-  // the caught-up card and its ungraded warm-up for ever.
-  it("still draws a full set when nothing is due and nothing is new", () => {
-    const scheduled = Array.from({ length: 30 }, (_, i) =>
-      makeWord({
-        id: `s${i}`,
-        state: "learning",
-        level: 2,
-        dueDate: localNoon(2024, 6, 20 + (i % 10)).toISOString(),
-      })
-    );
-    expect(buildDailySet(scheduled, NOW).wordIds).toHaveLength(DAILY_SET_SIZE);
-  });
-
-  it("tops the set up with whatever comes back soonest", () => {
-    const soon = makeWord({
-      id: "soon",
-      state: "learning",
-      level: 2,
-      dueDate: localNoon(2024, 6, 3).toISOString(),
-    });
-    const later = makeWord({
-      id: "later",
-      state: "learning",
-      level: 2,
-      dueDate: localNoon(2024, 7, 30).toISOString(),
-    });
-    expect(buildDailySet([later, soon], NOW).wordIds).toEqual(["soon", "later"]);
-  });
-
-  it("keeps due reviews and new words ahead of the top-up", () => {
-    const due = makeWord({
-      id: "due",
-      state: "learning",
-      level: 1,
-      dueDate: localNoon(2024, 5, 30).toISOString(),
-    });
-    const ahead = makeWord({
-      id: "ahead",
-      state: "learning",
-      level: 2,
-      dueDate: localNoon(2024, 6, 5).toISOString(),
-    });
-    expect(buildDailySet([ahead, due, makeWord({ id: "fresh" })], NOW).wordIds).toEqual([
-      "due",
-      "fresh",
-      "ahead",
-    ]);
-  });
-
-  it("never repeats a word within a set", () => {
-    const set = buildDailySet(newWords(30), NOW);
-    expect(new Set(set.wordIds).size).toBe(set.wordIds.length);
-  });
-
-  it("leads with due reviews, then tops up with new words", () => {
-    const due = makeWord({
-      id: "due",
-      state: "learning",
-      level: 1,
-      dueDate: localNoon(2024, 5, 30).toISOString(),
-    });
-    const set = buildDailySet([...newWords(20), due], NOW);
-    expect(set.wordIds[0]).toBe("due");
-    expect(set.wordIds).toHaveLength(DAILY_SET_SIZE);
-  });
-
-  it("puts leeches first among the due reviews", () => {
-    const plain = makeWord({
-      id: "plain",
-      state: "learning",
-      level: 2,
-      lapses: 0,
-      dueDate: localNoon(2024, 5, 28).toISOString(),
-    });
-    const leech = makeWord({
-      id: "leech",
-      state: "learning",
-      level: 1,
-      lapses: 5,
-      dueDate: localNoon(2024, 5, 31).toISOString(),
-    });
-    expect(buildDailySet([plain, leech], NOW).wordIds).toEqual(["leech", "plain"]);
-  });
-});
-
 describe("runProgress", () => {
   it("reports nothing when no run has been started", () => {
     const p = runProgress(null, TODAY);
@@ -172,8 +50,7 @@ describe("runProgress", () => {
     expect(p.total).toBe(0);
   });
 
-  // A stale run must never be read as today's result — that is how a
-  // yesterday's score would end up on today's card.
+  // A stale run must never be read as today's result.
   it("ignores a run from an earlier day", () => {
     const yesterday: PracticeRun = { date: "2024-05-31", wordIds: ["a"], answers: { a: "know" } };
     expect(runProgress(yesterday, TODAY).status).toBe("ready");
@@ -193,47 +70,67 @@ describe("runProgress", () => {
     expect(p.remaining).toEqual(["b", "c"]);
   });
 
-  // Getting one wrong still counts as answered — a miss is a result, not a
-  // gap. Without this the run could never finish on an all-wrong sitting.
-  it("counts a wrong answer as answered, not as remaining", () => {
-    const p = runProgress(runWith(["a", "b"], { a: "dontKnow" }), TODAY);
-    expect(p.status).toBe("progress");
-    expect(p.answered).toBe(1);
-    expect(p.remaining).toEqual(["b"]);
+  // A miss is a result, not a gap. Without this a session could never
+  // finish on an all-wrong sitting.
+  it("counts a wrong answer, a skip and a flashcard fallback as answered", () => {
+    const p = runProgress(runWith(["a", "b", "c", "d"], { a: "dontKnow", b: "skipped", c: "seen" }), TODAY);
+    expect(p.answered).toBe(3);
+    expect(p.remaining).toEqual(["d"]);
   });
 
   it("is done once every word has an answer, and splits the result", () => {
-    const p = runProgress(
-      runWith(["a", "b", "c"], { a: "know", b: "dontKnow", c: "know" }),
-      TODAY
-    );
+    const p = runProgress(runWith(["a", "b", "c"], { a: "know", b: "dontKnow", c: "know" }), TODAY);
     expect(p.status).toBe("done");
-    expect(p.remaining).toEqual([]);
     expect(p.knownIds).toEqual(["a", "c"]);
     expect(p.learningIds).toEqual(["b"]);
   });
+});
 
-  it("classifies an all-wrong sitting as nothing known", () => {
-    const p = runProgress(runWith(["a", "b"], { a: "dontKnow", b: "dontKnow" }), TODAY);
-    expect(p.status).toBe("done");
-    expect(p.knownIds).toEqual([]);
-    expect(p.learningIds).toEqual(["a", "b"]);
+describe("full sessions", () => {
+  it("is full once every word is answered, right or wrong", () => {
+    let run = startRun(["a", "b"], NOW);
+    run = recordAnswer(run, "a", "dontKnow", NOW);
+    expect(isFullSession(run)).toBe(false);
+    run = recordAnswer(run, "b", "know", NOW);
+    expect(isFullSession(run)).toBe(true);
+    expect(run.completedAt).toBe(NOW.getTime());
   });
 
-  it("classifies a perfect sitting as nothing left to learn", () => {
-    const p = runProgress(runWith(["a", "b"], { a: "know", b: "know" }), TODAY);
-    expect(p.status).toBe("done");
-    expect(p.learningIds).toEqual([]);
+  it("an incomplete session is not full", () => {
+    expect(isFullSession(runWith(["a", "b"], { a: "know" }))).toBe(false);
+  });
+
+  it("a practice round never counts as a full session", () => {
+    let run = startRun(["a"], NOW, { kind: "practice" });
+    run = recordAnswer(run, "a", "know", NOW);
+    expect(isFullSession(run)).toBe(false);
+  });
+
+  it("a session crossing midnight counts for the day it was finished", () => {
+    const evening = new Date(2024, 5, 1, 23, 58);
+    const after = new Date(2024, 5, 2, 0, 3);
+    let run = startRun(["a", "b"], evening);
+    run = recordAnswer(run, "a", "know", evening);
+    run = recordAnswer(run, "b", "know", after);
+    expect(dayKey(new Date(run.completedAt!))).toBe("2024-06-02");
+    // And it still reads as today's result after midnight.
+    expect(runProgress(run, "2024-06-02").status).toBe("done");
+  });
+
+  it("keeps the first completion time when a word is answered again", () => {
+    let run = runWith(["a"], { a: "know" });
+    const done = run.completedAt;
+    run = recordAnswer(run, "a", "dontKnow", localNoon(2024, 6, 2));
+    expect(run.completedAt).toBe(done);
   });
 });
 
 describe("startRun", () => {
-  // The bug this guards: a re-drill that inherited the previous sitting's
-  // answers would report as finished before a single card was shown.
   it("starts with nothing answered, whatever came before", () => {
     const finished = runWith(["a", "b"], { a: "know", b: "know" });
     const fresh = startRun(finished.wordIds, NOW);
     expect(fresh.answers).toEqual({});
+    expect(fresh.completedAt).toBeNull();
     expect(runProgress(fresh, TODAY).status).toBe("ready");
   });
 
@@ -247,20 +144,57 @@ describe("startRun", () => {
 
 describe("recordAnswer", () => {
   it("records an answer without mutating the run", () => {
-    const before = startRun(["a"], NOW);
-    const after = recordAnswer(before, "a", "know");
+    const before = startRun(["a", "b"], NOW);
+    const after = recordAnswer(before, "a", "know", NOW);
     expect(before.answers).toEqual({});
     expect(after.answers).toEqual({ a: "know" });
   });
 
-  it("lets a later answer in the same run replace an earlier one", () => {
-    const run = runWith(["a"], { a: "know" });
-    expect(recordAnswer(run, "a", "dontKnow").answers).toEqual({ a: "dontKnow" });
-  });
-
   it("ignores a word that isn't in the run", () => {
     const run = startRun(["a"], NOW);
-    expect(recordAnswer(run, "z", "know")).toBe(run);
+    expect(recordAnswer(run, "z", "know", NOW)).toBe(run);
+  });
+
+  it("maps exercise results onto run answers", () => {
+    expect(runAnswerFor("correct")).toBe("know");
+    expect(runAnswerFor("almost")).toBe("know");
+    expect(runAnswerFor("wrong")).toBe("dontKnow");
+    expect(runAnswerFor("dont_know")).toBe("dontKnow");
+    expect(runAnswerFor("skipped")).toBe("skipped");
+    expect(runAnswerFor("exposure")).toBe("seen");
+  });
+});
+
+describe("resuming", () => {
+  const plan: PlannedStep[] = [
+    { kind: "flashcard", wordIds: ["a"], graded: false },
+    { kind: "multiple_choice", wordIds: ["a"], graded: true },
+    { kind: "active_recall", wordIds: ["b"], graded: true },
+    { kind: "matching", wordIds: ["c", "d", "e", "f"], graded: true },
+  ];
+
+  it("resumes with the steps whose words are still unanswered, in order", () => {
+    let run = startRun(["a", "b", "c", "d", "e", "f"], NOW, { plan });
+    run = recordAnswer(run, "b", "know", NOW);
+    expect(remainingSteps(run)).toEqual([plan[0], plan[1], plan[3]]);
+    run = recordAnswer(run, "a", "dontKnow", NOW);
+    expect(remainingSteps(run)).toEqual([plan[3]]);
+  });
+
+  it("resumes a half-done Matching grid with just its unmatched words", () => {
+    let run = startRun(["c", "d", "e", "f"], NOW, { plan: [plan[3]] });
+    run = recordAnswer(run, "c", "know", NOW);
+    run = recordAnswer(run, "e", "dontKnow", NOW);
+    expect(remainingSteps(run)).toEqual([{ kind: "matching", wordIds: ["d", "f"], graded: true }]);
+  });
+
+  it("drops deleted words from the plan too", () => {
+    const run = startRun(["a", "b", "c", "d", "e", "f"], NOW, { plan });
+    const pruned = pruneRun(run, (id) => id !== "a" && id !== "c");
+    expect(pruned.plan).toEqual([
+      plan[2],
+      { kind: "matching", wordIds: ["d", "e", "f"], graded: true },
+    ]);
   });
 });
 
@@ -270,8 +204,6 @@ describe("pruneRun", () => {
     expect(pruneRun(run, () => true)).toBe(run);
   });
 
-  // Otherwise a word deleted mid-sitting stays "to go" with no card behind
-  // it, and the run can never reach done.
   it("drops deleted words and their answers", () => {
     const run = runWith(["a", "b"], { a: "know", b: "dontKnow" });
     const pruned = pruneRun(run, (id) => id !== "b");
@@ -287,34 +219,43 @@ describe("runAnswerCount", () => {
   });
 });
 
-describe("cleared words — a miss is only done once it's right", () => {
-  const now = new Date(2026, 9, 4, 12);
-  const today = dayKey(now);
-
-  it("reports a missed word as outstanding until it is cleared", () => {
-    let run = startRun(["a", "b"], now);
-    run = recordAnswer(run, "a", "dontKnow");
-    run = recordAnswer(run, "b", "know");
-    run = recordCleared(run, "b");
-    expect(runProgress(run, today).outstanding).toEqual(["a"]);
-    run = recordCleared(run, "a");
-    const p = runProgress(run, today);
-    expect(p.outstanding).toEqual([]);
-    // Still reported as missed on the first try.
-    expect(p.learningIds).toEqual(["a"]);
+describe("deferred words", () => {
+  it("are recorded on the run, once each", () => {
+    const run = deferWords(startRun(["a", "b"], NOW), ["a", "a"]);
+    expect(run.deferred).toEqual(["a"]);
   });
 
-  it("tracks nothing outstanding for an untracked run (a re-drill) or an old one", () => {
-    let run = startRun(["a"], now, false);
-    run = recordAnswer(run, "a", "dontKnow");
-    expect(runProgress(run, today).outstanding).toEqual([]);
-    expect(recordCleared(run, "a")).toBe(run);
+  it("leave a run without any untouched", () => {
+    const run = startRun(["a"], NOW);
+    expect(deferWords(run, [])).toBe(run);
   });
 
-  it("ignores ids outside the run, and prunes cleared words with the deck", () => {
-    let run = startRun(["a", "b"], now);
-    expect(recordCleared(run, "z")).toBe(run);
-    run = recordCleared(run, "a");
-    expect(pruneRun(run, (id) => id !== "a").cleared).toEqual([]);
+  it("are dropped with a word that leaves the deck", () => {
+    const run = deferWords(startRun(["a", "b"], NOW), ["a", "b"]);
+    expect(pruneRun(run, (id) => id !== "a").deferred).toEqual(["b"]);
+  });
+});
+
+describe("priorItems (resuming a session)", () => {
+  const plan: PlannedStep[] = [
+    { kind: "flashcard", wordIds: ["a"], graded: false },
+    { kind: "active_recall", wordIds: ["a"], graded: true },
+    { kind: "matching", wordIds: ["b", "c", "d", "e"], graded: true },
+  ];
+
+  it("counts right answers as mastered and puts misses back in review, asked as before", () => {
+    const run = { ...runWith(["a", "b", "c", "d", "e"], { a: "dontKnow", b: "know", c: "dontKnow" }), plan };
+    expect(priorItems(run)).toEqual({
+      completed: ["b"],
+      review: [
+        { id: "a", kind: "active_recall", misses: 1 },
+        { id: "c", kind: "matching", misses: 1 },
+      ],
+    });
+  });
+
+  it("re-asks an older run's skipped Listening word without audio, and not as a mistake", () => {
+    const run = runWith(["a"], { a: "skipped" });
+    expect(priorItems(run).review).toEqual([{ id: "a", kind: "multiple_choice", misses: 0 }]);
   });
 });

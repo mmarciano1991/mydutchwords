@@ -1,7 +1,8 @@
 /* reminders — the trigger in the habit loop: at the time the user picked,
    greeting them for that part of the day ("Good morning!").
 
-   One reminder a day at most, and none once the day is done. Never a second
+   One reminder a day at most, none once the day is done, and none on a
+   day with nothing eligible to practise. Never a second
    nudge, never "you're about to lose…" — the reminder offers the small
    version of the task and nothing else.
 
@@ -26,13 +27,22 @@ export function reminderCopy(habit: HabitState): ReminderCopy {
   };
 }
 
-/** The next moment the reminder should fire: today at the habit time if that
- *  is still ahead and today isn't done, otherwise tomorrow at that time. */
-export function nextReminderAt(habit: HabitState, now: Date, todayDone: boolean): Date {
+/** The next moment the reminder should fire, or null for none.
+ *
+ *  Today at the habit time if that is still ahead and today still has
+ *  something to do — no full session yet, and something eligible to
+ *  practise. Otherwise tomorrow at that time. Never when the reminder is off
+ *  or the deck is empty: there is nothing to remind about. */
+export function nextReminderAt(
+  habit: HabitState,
+  now: Date,
+  today: { done: boolean; eligible: boolean; hasWords: boolean }
+): Date | null {
+  if (!habit.reminders || !today.hasWords) return null;
   const [h, m] = timeParts(habit.time);
   const at = new Date(now);
   at.setHours(h, m, 0, 0);
-  if (todayDone || at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
+  if (today.done || !today.eligible || at.getTime() <= now.getTime()) at.setDate(at.getDate() + 1);
   return at;
 }
 
@@ -49,14 +59,17 @@ export async function requestReminderPermission(): Promise<boolean> {
 }
 
 /** Keeps the day's reminder scheduled while the app is open. Re-schedules
- *  whenever the habit or today's done-ness changes, so finishing the day
- *  cancels a pending reminder. */
-export function useDailyReminder(habit: HabitState | null, todayDone: boolean): void {
+ *  whenever the habit or today's state changes, so completing a full
+ *  session cancels today's pending reminder. */
+export function useDailyReminder(
+  habit: HabitState | null,
+  today: { done: boolean; eligible: boolean; hasWords: boolean }
+): void {
+  const { done, eligible, hasWords } = today;
   useEffect(() => {
-    if (!habit?.reminders || !notificationsSupported()) return;
-    if (Notification.permission !== "granted") return;
-
-    const at = nextReminderAt(habit, new Date(), todayDone);
+    if (!habit || !notificationsSupported() || Notification.permission !== "granted") return;
+    const at = nextReminderAt(habit, new Date(), { done, eligible, hasWords });
+    if (!at) return;
     // setTimeout overflows past ~24.8 days; a day ahead is well within it.
     const timer = window.setTimeout(() => {
       const { title, body } = reminderCopy(habit);
@@ -68,5 +81,5 @@ export function useDailyReminder(habit: HabitState | null, todayDone: boolean): 
       }
     }, at.getTime() - Date.now());
     return () => window.clearTimeout(timer);
-  }, [habit, todayDone]);
+  }, [habit, done, eligible, hasWords]);
 }

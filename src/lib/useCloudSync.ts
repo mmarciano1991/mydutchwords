@@ -10,11 +10,12 @@
 
    Does nothing when cloud sync isn't configured or nobody is logged in. */
 import { useEffect, useRef, useState } from "react";
-import type { DailySet, PracticeRun } from "./dailySet";
+import type { PracticeRun } from "./dailySet";
 import type { HabitState } from "./habit";
 import type { DeckItem, PracticeResult } from "./types";
 import { getCustomEntries, setCustomEntries } from "./wordSources";
 import { fetchRemoteState, mergeState, pushState, type AppState } from "./cloudState";
+import { flushReviewEvents } from "./reviewEvents";
 import { supabase } from "./supabase";
 
 const PUSH_DEBOUNCE_MS = 1200;
@@ -28,7 +29,6 @@ export function useCloudSync({
   userId,
   deck,
   results,
-  dailySet,
   run,
   habit,
   applyMerged,
@@ -37,13 +37,11 @@ export function useCloudSync({
   userId: string | null;
   deck: DeckItem[];
   results: PracticeResult[];
-  /** Today's drawn practice set, or null before the first draw. */
-  dailySet: DailySet | null;
   /** The current or most recent practice run. */
   run: PracticeRun | null;
   /** The daily commitment and its history, or null before onboarding. */
   habit: HabitState | null;
-  /** Applies a merged snapshot to app state (setDeck/setResults/setDailySet
+  /** Applies a merged snapshot to app state (setDeck/setResults/setRun
    *  + custom words). */
   applyMerged: (state: AppState) => void;
 }): { hydrated: boolean } {
@@ -59,8 +57,8 @@ export function useCloudSync({
   // the network, so anything added while that request was in flight is
   // merged rather than overwritten — capturing deck/results in the effect
   // closure silently discarded those edits.
-  const localRef = useRef({ deck, results, dailySet, run, habit });
-  localRef.current = { deck, results, dailySet, run, habit };
+  const localRef = useRef({ deck, results, run, habit });
+  localRef.current = { deck, results, run, habit };
 
   // Pull + merge + push once per login. A failed pull is retried rather than
   // treated as "no remote data" — conflating the two would let a merge fall
@@ -85,6 +83,7 @@ export function useCloudSync({
       hydratedFor.current = userId;
       setHydratedUser(userId);
       await pushState(userId, merged);
+      void flushReviewEvents(userId);
     };
     void attempt();
 
@@ -110,10 +109,13 @@ export function useCloudSync({
     if (!supabase || !userId || hydratedFor.current !== userId) return;
     window.clearTimeout(pushTimer.current);
     pushTimer.current = window.setTimeout(() => {
-      void pushState(userId, { deck, results, dailySet, run, habit, customWords: getCustomEntries() });
+      void pushState(userId, { deck, results, run, habit, customWords: getCustomEntries() });
+      // Every graded answer changes the deck, so this also carries the
+      // review log up shortly after each answer.
+      void flushReviewEvents(userId);
     }, PUSH_DEBOUNCE_MS);
     return () => window.clearTimeout(pushTimer.current);
-  }, [deck, results, dailySet, run, habit, userId]);
+  }, [deck, results, run, habit, userId]);
 
   // Without sync (unconfigured build, or nobody signed in) local state is
   // all there is, so it counts as hydrated straight away.

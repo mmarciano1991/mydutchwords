@@ -1,116 +1,108 @@
-/* dailySet — the day's batch of flashcards, and the run through it.
+/* dailySet — the practice run: one session through a set of words, and
+   what the user actually did in it.
 
-   Two separate pieces of state, because they answer two different questions:
+   The run is the single source of truth behind the dashboard's practice
+   card and the session report. It is written as each answer is given, so a
+   session abandoned mid-way resumes exactly where it stopped, and it holds
+   the session's exercise plan so the resumed steps are the same ones.
 
-   - `DailySet` — *which* words today is about. Drawn on the first visit of a
-     local calendar day and then left alone, so leaving half-way and coming
-     back resumes the same words instead of re-deriving a different list from
-     a schedule the earlier answers have already moved.
+   A session grades each word once: `answers` holds the word's first answer
+   in it. A missed word is asked again in the session's review queue
+   (lib/sessionQueue) — ungraded, and not recorded here. The session is
+   FULL once every word in it has an answer — right, wrong, "almost" and
+   "I don't know" all count. A full session is what completes a day.
 
-   - `PracticeRun` — *what the user actually did*. One run through a list of
-     words: the day's set, or a re-drill of part of it. It is the single
-     source of truth behind the dashboard's practice card, and it is written
-     as each answer is given, so the card can never disagree with what was
-     answered, and a run abandoned mid-card resumes exactly where it stopped.
+   Words the review queue couldn't settle are `deferred`: the next session
+   asks them alongside its own words.
 
-   The run is deliberately NOT derived from the practice log. The log is the
-   scheduler's history — append-only, one row per graded answer, with no
-   notion of a session — so it cannot tell "started a re-drill and stopped"
-   apart from "finished the set", and it cannot be reset when a new run
-   begins. Deriving the card from it is what let a finished set keep
-   reporting an old result after a re-drill had gone badly.
+   A "practice" run is the ungraded round over just-missed words: it may
+   ask a word until it's right, changes no schedule, and never completes a
+   day.
+
+   (This file used to also draw a fixed "daily set" once per day. Sessions
+   are now selected fresh by learningEngine.selectSessionWords each time.)
 
    Pure and synchronous: no storage, no clock of its own. */
-import { buildSession, type Grade, type Word } from "./learningEngine";
+import { dayKey, type ExerciseType, type PlannedStep, type ReviewResult } from "./learningEngine";
+import { LISTENING_ALTERNATIVE, type PriorItems } from "./sessionQueue";
 
-/** Words drawn per day. */
-export const DAILY_SET_SIZE = 16;
+export { dayKey };
 
-export interface DailySet {
-  /** Local calendar day the set was drawn for, as YYYY-MM-DD. */
-  date: string;
-  /** The day's words, in the order they should be practised. */
-  wordIds: string[];
-}
+/** What a run records per word. `seen` is a flashcard shown in place of an
+ *  exercise when no exercise was eligible — answered, but not graded.
+ *  `skipped` is only found on older runs: a skipped Listening exercise now
+ *  leaves the word pending and asks it another way. */
+export type RunAnswer = "know" | "dontKnow" | "skipped" | "seen";
+
+export type RunKind = "daily" | "missed" | "practice";
 
 export interface PracticeRun {
-  /** Local calendar day the run belongs to. Runs do not outlive their day. */
+  /** Local calendar day the run was started. */
   date: string;
-  /** The words this run covers, in order. */
+  /** The words this run covers. */
   wordIds: string[];
-  /** The answer standing for each word. Re-answering a word within a run
-   *  replaces its entry, so this is always the run's latest word on it. */
-  answers: Record<string, Grade>;
-  /** Words answered correctly at some point in the run — on the first try,
-   *  or on a retry after a miss. A word is only *done* once it is here: a
-   *  miss sends it back into the sitting until it is got right.
-   *
-   *  Absent on runs that don't count toward the day (a re-drill) and on runs
-   *  saved before this existed; both read as "nothing outstanding". */
-  cleared?: string[];
+  /** The answer standing for each word. */
+  answers: Record<string, RunAnswer>;
+  /** Id shared by every review event of this session. */
+  sessionId?: string;
+  /** Absent on runs saved before sessions had kinds — read as "daily". */
+  kind?: RunKind;
+  /** The session's steps, in order. Absent on older runs. */
+  plan?: PlannedStep[];
+  /** When the last word was answered (ms). Its local day is the day the
+   *  session counts for — a session finished after midnight counts for the
+   *  day it was finished. */
+  completedAt?: number | null;
+  /** Words handed on to the next session: missed past the review retry
+   *  limit, or still waiting for review when the session was left. */
+  deferred?: string[];
 }
 
-/** Local calendar day as YYYY-MM-DD. Deliberately local, not UTC: a set
- *  drawn at 23:00 belongs to that evening, not to the next morning. Zero
- *  padded because this string is persisted and compared as a string. */
-export function dayKey(d: Date): string {
-  const month = `${d.getMonth() + 1}`.padStart(2, "0");
-  const day = `${d.getDate()}`.padStart(2, "0");
-  return `${d.getFullYear()}-${month}-${day}`;
+/** The run-level answer for an exercise result. */
+export function runAnswerFor(result: ReviewResult): RunAnswer {
+  switch (result) {
+    case "correct":
+    case "almost":
+      return "know";
+    case "wrong":
+    case "dont_know":
+      return "dontKnow";
+    case "skipped":
+      return "skipped";
+    default:
+      return "seen";
+  }
 }
 
-/** Draws the day's set. Selection only — nothing is graded.
- *
- *  Three passes, in priority order:
- *    1. due reviews, leeches leading then most overdue (the scheduler's own
- *       ordering, via `buildSession`, widened to the daily size — the set is
- *       bounded by a word count, not a time budget, so the minute budget is
- *       set out of the way rather than left to cap it);
- *    2. new words;
- *    3. whatever is closest to coming back, to fill the set out.
- *
- *  That third pass is what makes this a *daily volume* rather than a strict
- *  spaced-repetition queue: a deck whose reviews all fall next week still
- *  gets a full set to practise today, pulled forward from the front of the
- *  schedule. Without it a returning user is handed an empty set and no way
- *  to reach the day's result at all. */
-export function buildDailySet(words: Word[], now: Date, size = DAILY_SET_SIZE): DailySet {
-  const scheduled = buildSession(words, now, {
-    maxHardCap: size,
-    maxNewWordsPerSession: size,
-    maxSessionMinutes: 60,
-  });
-
-  const taken = new Set(scheduled.map((w) => w.id));
-  const topUp = words
-    .filter((w) => !taken.has(w.id))
-    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-    .slice(0, Math.max(0, size - scheduled.length));
-
-  return { date: dayKey(now), wordIds: [...scheduled, ...topUp].map((w) => w.id) };
+/** A run over `wordIds`, with nothing answered yet. */
+export function startRun(
+  wordIds: string[],
+  now: Date,
+  options: { sessionId?: string; kind?: RunKind; plan?: PlannedStep[] } = {}
+): PracticeRun {
+  return {
+    date: dayKey(now),
+    wordIds: [...wordIds],
+    answers: {},
+    sessionId: options.sessionId,
+    kind: options.kind ?? "daily",
+    plan: options.plan,
+    completedAt: null,
+  };
 }
 
-/** A run over `wordIds`, with nothing answered yet. Starting a run always
- *  goes through here, so a new run can never inherit the previous one's
- *  answers or its result. */
-export function startRun(wordIds: string[], now: Date, trackCleared = true): PracticeRun {
-  const run: PracticeRun = { date: dayKey(now), wordIds: [...wordIds], answers: {} };
-  if (trackCleared) run.cleared = [];
-  return run;
-}
-
-/** The run with one answer recorded. Pure — returns a new run.
- *  An id outside the run is ignored rather than silently widening it. */
-export function recordAnswer(run: PracticeRun, id: string, grade: Grade): PracticeRun {
+/** The run with one answer recorded. Pure. An id outside the run is
+ *  ignored. Stamps `completedAt` the moment the last word is answered. */
+export function recordAnswer(run: PracticeRun, id: string, answer: RunAnswer, now: Date): PracticeRun {
   if (!run.wordIds.includes(id)) return run;
-  return { ...run, answers: { ...run.answers, [id]: grade } };
+  const answers = { ...run.answers, [id]: answer };
+  const complete = run.wordIds.every((w) => w in answers);
+  return { ...run, answers, completedAt: run.completedAt ?? (complete ? now.getTime() : null) };
 }
 
-/** The run with `id` marked as answered correctly. Pure. A no-op for an id
- *  outside the run, one already cleared, or a run that doesn't track it. */
-export function recordCleared(run: PracticeRun, id: string): PracticeRun {
-  if (!run.cleared || !run.wordIds.includes(id) || run.cleared.includes(id)) return run;
-  return { ...run, cleared: [...run.cleared, id] };
+/** True when the run is a graded session whose every word was answered. */
+export function isFullSession(run: PracticeRun | null): boolean {
+  return Boolean(run && run.kind !== "practice" && run.completedAt);
 }
 
 /** Drops words that are no longer in the deck, so one deleted mid-run can't
@@ -118,12 +110,48 @@ export function recordCleared(run: PracticeRun, id: string): PracticeRun {
 export function pruneRun(run: PracticeRun, keep: (id: string) => boolean): PracticeRun {
   const wordIds = run.wordIds.filter(keep);
   if (wordIds.length === run.wordIds.length) return run;
-  const answers: Record<string, Grade> = {};
+  const answers: Record<string, RunAnswer> = {};
   for (const id of wordIds) {
     if (id in run.answers) answers[id] = run.answers[id];
   }
-  const cleared = run.cleared?.filter(keep);
-  return cleared ? { ...run, wordIds, answers, cleared } : { ...run, wordIds, answers };
+  const plan = run.plan
+    ?.map((s) => ({ ...s, wordIds: s.wordIds.filter(keep) }))
+    .filter((s) => s.wordIds.length > 0);
+  const deferred = run.deferred?.filter(keep);
+  return { ...run, wordIds, answers, plan, deferred };
+}
+
+/** The run with `ids` as the words it hands on to the next session. */
+export function deferWords(run: PracticeRun, ids: string[]): PracticeRun {
+  const deferred = [...new Set(ids)];
+  if (deferred.length === 0 && !run.deferred?.length) return run;
+  return { ...run, deferred };
+}
+
+/** Where a resumed sitting starts: words answered right are mastered; words
+ *  missed go back into review (their review was lost when the session was
+ *  left). Built from the run's answers, so the run stays the one record. */
+export function priorItems(run: PracticeRun): PriorItems {
+  const kindOf = (id: string): ExerciseType =>
+    [...(run.plan ?? [])].reverse().find((s) => s.wordIds.includes(id))?.kind ?? "multiple_choice";
+  const completed: string[] = [];
+  const review: NonNullable<PriorItems["review"]> = [];
+  for (const id of run.wordIds) {
+    const a = run.answers[id];
+    if (a === "know" || a === "seen") completed.push(id);
+    else if (a === "dontKnow") review.push({ id, kind: kindOf(id), misses: 1 });
+    // An older run's skip: not a mistake, but not known either.
+    else if (a === "skipped") review.push({ id, kind: LISTENING_ALTERNATIVE, misses: 0 });
+  }
+  return { completed, review };
+}
+
+/** The steps still to do, holding only words not yet answered — a Matching
+ *  grid left half-done resumes with just its unmatched words. */
+export function remainingSteps(run: PracticeRun): PlannedStep[] {
+  return (run.plan ?? [])
+    .map((s) => ({ ...s, wordIds: s.wordIds.filter((id) => !(id in run.answers)) }))
+    .filter((s) => s.wordIds.length > 0);
 }
 
 /** Where the run stands.
@@ -134,49 +162,35 @@ export type RunStatus = "ready" | "progress" | "done";
 
 export interface RunProgress {
   status: RunStatus;
-  /** Words in the run. */
   total: number;
-  /** How many have been answered. */
   answered: number;
-  /** The unanswered ones, in run order — exactly what "Continue" resumes. */
+  /** Unanswered words, in run order. */
   remaining: string[];
-  /** Answered "I knew it". */
+  /** Answered correctly (or "almost"). */
   knownIds: string[];
-  /** Answered "Still learning" — missed on the first try. */
+  /** Answered wrong or "I don't know". */
   learningIds: string[];
-  /** Missed and not yet got right: the sitting was left before the word
-   *  came back round. Not done — "Continue" leads with these. */
-  outstanding: string[];
 }
 
-const NOTHING: RunProgress = {
-  status: "ready",
-  total: 0,
-  answered: 0,
-  remaining: [],
-  knownIds: [],
-  learningIds: [],
-  outstanding: [],
-};
+const NOTHING: RunProgress = { status: "ready", total: 0, answered: 0, remaining: [], knownIds: [], learningIds: [] };
 
-/** Reads a run's state. A run from an earlier day is spent: it reports as
- *  nothing, so yesterday's result can never be shown as today's. */
+/** Reads a run's state. A run that neither started nor finished today is
+ *  spent and reports as nothing, so yesterday's result is never today's. */
 export function runProgress(run: PracticeRun | null, today: string): RunProgress {
-  if (!run || run.date !== today || run.wordIds.length === 0) return NOTHING;
+  if (!run || run.wordIds.length === 0) return NOTHING;
+  const finishedToday = run.completedAt ? dayKey(new Date(run.completedAt)) === today : false;
+  if (run.date !== today && !finishedToday) return NOTHING;
 
   const remaining: string[] = [];
   const knownIds: string[] = [];
   const learningIds: string[] = [];
   for (const id of run.wordIds) {
-    const grade = run.answers[id];
-    if (!grade) remaining.push(id);
-    else if (grade === "know") knownIds.push(id);
-    else learningIds.push(id);
+    const answer = run.answers[id];
+    if (!answer) remaining.push(id);
+    else if (answer === "know") knownIds.push(id);
+    else if (answer === "dontKnow") learningIds.push(id);
   }
-
-  const answered = knownIds.length + learningIds.length;
-  const cleared = run.cleared ? new Set(run.cleared) : null;
-  const outstanding = cleared ? learningIds.filter((id) => !cleared.has(id)) : [];
+  const answered = run.wordIds.length - remaining.length;
   return {
     status: answered === 0 ? "ready" : remaining.length === 0 ? "done" : "progress",
     total: run.wordIds.length,
@@ -184,7 +198,6 @@ export function runProgress(run: PracticeRun | null, today: string): RunProgress
     remaining,
     knownIds,
     learningIds,
-    outstanding,
   };
 }
 

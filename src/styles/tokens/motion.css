@@ -6,10 +6,16 @@
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   /* Emphasized easing for pressed/recover. */
   --ease-emphasized: cubic-bezier(0.3, 0, 0, 1);
+  /* Emphasized accelerate — for things leaving the screen (a swiped card). */
+  --ease-accelerate: cubic-bezier(0.3, 0, 0.8, 0.15);
+  /* Slight overshoot — a released card springing back into place. */
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
 
   --motion-fast: 120ms; /* taps, presses */
   --motion-base: 180ms; /* hover / colour / shadow */
   --motion-nav: 260ms; /* layout changes — the bottom nav growing past the FAB */
   --motion-expand: 340ms; /* container transform — a screen opening from a button */
   --motion-flip: 480ms; /* flashcard 3D flip */
+  --motion-swipe: 320ms; /* a swiped flashcard flying off — keep in sync with FLY_OUT_MS */
+  --motion-settle: 420ms; /* a released flashcard springing back */
 }

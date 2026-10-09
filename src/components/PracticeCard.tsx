@@ -21,7 +21,10 @@ import type { ReactNode } from "react";
 import { CardsStack } from "../icons";
 import { ProgressBar } from "./ProgressBar";
 
-export type PracticeCardStatus = "ready" | "progress" | "done";
+/** ready / progress / done as above, plus `empty`: no full session today,
+ *  but nothing is left to practise either (every word has had its graded
+ *  answer today). Said plainly — never an empty or repeat session. */
+export type PracticeCardStatus = "ready" | "progress" | "done" | "empty";
 
 /** Rough session length in whole minutes: about half a minute a card (a
  *  recall, not a read), rounded down so the promise is never overstated —
@@ -52,8 +55,10 @@ export function PracticeCard({
   cue,
   tomorrow,
   canExtra,
+  canReplay,
   onStart,
   onExtra,
+  onReplay,
 }: {
   status: PracticeCardStatus;
   /** Words that make today done. */
@@ -64,29 +69,55 @@ export function PracticeCard({
   extra: number;
   /** "☀️ Your Dutch at 08:00" */
   cue: string;
-  /** "at 08:00" — completes "See you tomorrow …". */
+  /** " at 08:00", or "" without a reminder — completes "See you tomorrow…". */
   tomorrow: string;
-  /** Whether there is anything to practise at all (a non-empty deck). */
+  /** Whether anything is still eligible to practise today. */
   canExtra: boolean;
+  /** Words can be gone over again, ungraded, once nothing is left to grade. */
+  canReplay: boolean;
   /** Starts, or continues, today's goal. */
   onStart: () => void;
   /** A few more words, past the goal. */
   onExtra: () => void;
+  /** Practise words again — ungraded, as often as the user likes. */
+  onReplay: () => void;
 }) {
+  if (status === "empty") {
+    return (
+      <Shell length={null}>
+        <div className="practice-card__content">
+          <p className="practice-card__title">All caught up</p>
+          <p className="practice-card__body">
+            You&rsquo;re done for today &mdash; new words will be ready tomorrow.
+          </p>
+        </div>
+        {canReplay && (
+          <button className="btn btn--secondary btn--inverted" onClick={onReplay}>
+            Practise again
+          </button>
+        )}
+      </Shell>
+    );
+  }
+
   if (status === "done") {
     return (
       <Shell length="✓ Done">
         <div className="practice-card__content">
-          <p className="practice-card__title">Done for today</p>
-          <p className="practice-card__body">
-            Today&rsquo;s {goal} word{goal === 1 ? "" : "s"} are done. See you tomorrow {tomorrow}.
-          </p>
+          <p className="practice-card__title">Today’s session is complete!</p>
+          <p className="practice-card__body">Your next session starts tomorrow{tomorrow}.</p>
           {extra > 0 && <p className="practice-card__extra">+{extra} extra today</p>}
         </div>
-        {canExtra && (
+        {canExtra ? (
           <button className="btn btn--secondary btn--inverted" onClick={onExtra}>
             A few more, just for fun
           </button>
+        ) : (
+          canReplay && (
+            <button className="btn btn--secondary btn--inverted" onClick={onReplay}>
+              Practise again
+            </button>
+          )
         )}
       </Shell>
     );

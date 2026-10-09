@@ -1,53 +1,70 @@
-import { useCallback, useEffect, useMemo, useState, type CSSProperties } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import { addCustomEntry, editEntry, getCustomEntries, resolveEntry, setCustomEntries } from "./lib/wordSources";
 import {
   isInDeck,
-  loadDailySet,
   loadDeck,
   loadHabit,
   loadResults,
   loadRun,
   newDeckItem,
-  saveDailySet,
   saveDeck,
   saveHabit,
   saveResults,
   saveRun,
 } from "./lib/storage";
-import { isLeech, MAX_LEVEL, type Grade, type ReviewedCard, type Word } from "./lib/learningEngine";
 import {
-  buildDailySet,
+  dueSummary,
+  gradeWord,
+  isLeech,
+  planExercises,
+  selectReplayWords,
+  selectSessionWords,
+  toGrade,
+  type ExerciseContext,
+  type ExerciseType,
+  type PlannedStep,
+  type SessionKind,
+} from "./lib/learningEngine";
+import {
   dayKey,
+  deferWords,
+  isFullSession,
+  priorItems,
   pruneRun,
   recordAnswer,
-  recordCleared,
+  remainingSteps,
+  runAnswerFor,
   runProgress,
   startRun,
-  type DailySet,
   type PracticeRun,
+  type RunKind,
 } from "./lib/dailySet";
+import type { PriorItems } from "./lib/sessionQueue";
 import {
   backfillDoneDays,
   commitmentOf,
   currentStreak,
   cueLine,
-  EXTRA_ROUND_WORDS,
   isReturning,
   newHabit,
   reflectionDue,
-  RETURN_WARMUP_WORDS,
+  sessionSizeFor,
   todayProgress,
-  todaysGoal,
+  tomorrowAt,
   weekProgress,
   wordsPractisedOn,
   type Commitment,
   type HabitTime,
   type HabitState,
 } from "./lib/habit";
+import { appendReviewEvent, flushReviewEvents, newSessionId } from "./lib/reviewEvents";
+import { completionSentence } from "./lib/sentenceTarget";
+import { dutchAudioAvailable, onVoicesChanged } from "./lib/audio";
+import { DICTIONARY, findEntry } from "./data/dictionary";
+import { MC_DICTIONARY_FILL_WORDS } from "./lib/learningConfig";
 import { buildReflection, hasSomethingToShow } from "./lib/reflection";
 import { useDailyReminder } from "./lib/reminders";
-import { STARTER_WORDS } from "./data/starterWords";
 import { loadExamples, onExamplesLoaded } from "./data/examples";
 import { expandOriginFrom, type ExpandOrigin } from "./lib/expandOrigin";
 import { useAuth } from "./lib/useAuth";
@@ -56,7 +73,7 @@ import { signOut } from "./lib/auth";
 import { pushState, type AppState } from "./lib/cloudState";
 import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
-import { Practice, type PracticeCard } from "./screens/Practice";
+import { Practice, type PracticeCard, type StepAnswer } from "./screens/Practice";
 import { SessionReport, type SittingKind } from "./screens/SessionReport";
 import { Onboarding } from "./screens/Onboarding";
 import { Reflection } from "./screens/Reflection";
@@ -81,18 +98,22 @@ const FOCUSED: Route[] = ["practice", "report", "reflection", "week", "add-choic
    the remote habit does arrive later, the merge keeps both sides' history. */
 const HYDRATION_GRACE_MS = 4000;
 
-/** Daily set size for a habit — the commitment, or the smallest one before
- *  onboarding has happened. */
-function setSizeFor(habit: HabitState | null): number {
-  return commitmentOf(habit?.commitment ?? "espresso").words;
-}
+/** Exercise types the practice screen can show. */
+const SUPPORTED_EXERCISES: ReadonlySet<ExerciseType> = new Set<ExerciseType>([
+  "flashcard",
+  "multiple_choice",
+  "matching",
+  "listening",
+  "sentence_completion",
+  "active_recall",
+]);
 
-/** Joins spaced-repetition Words back to their dictionary content for display. */
-function toPracticeCards(words: Word[]): PracticeCard[] {
+/** Joins deck words back to their dictionary content for display. */
+function toPracticeCards(words: DeckItem[]): PracticeCard[] {
   return words
     .map((word) => {
       const entry = resolveEntry(word.id);
-      return entry ? { entry, word } : null;
+      return entry ? ({ entry, word } as PracticeCard) : null;
     })
     .filter((c): c is PracticeCard => c !== null);
 }
@@ -103,20 +124,15 @@ export default function App() {
   // The daily commitment, cue, weekly target and days done. Null until the
   // user has been through onboarding (here or on another device).
   const [habit, setHabit] = useState<HabitState | null>(() => loadHabit());
-  // The day's drawn batch of words. Persisted and synced, because half a set
-  // done on the phone has to still be half a set done on the laptop.
-  // Drawn during the very first render, not in an effect: an effect would
-  // paint one frame with no set at all, which reads as the caught-up card
-  // before flipping to the real one. `deck` is already initialised above.
-  const [dailySet, setDailySet] = useState<DailySet | null>(() => {
-    const saved = loadDailySet();
-    const today = dayKey(new Date());
-    if (saved && saved.date === today && saved.wordIds.length > 0) return saved;
-    return buildDailySet(deck, new Date(), setSizeFor(habit));
-  });
+  // Grading reads the word's state at the moment of the answer, which may
+  // be newer than the last render's `deck` when answers come quickly.
+  const deckRef = useRef(deck);
+  deckRef.current = deck;
   // What the user actually did, in their current or most recent sitting.
   // The dashboard's practice card reads this and nothing else.
   const [run, setRun] = useState<PracticeRun | null>(() => loadRun());
+  const runRef = useRef(run);
+  runRef.current = run;
   const [route, setRoute] = useState<Route>("dashboard");
 
   // Access gate flow (Figma 228:1789): a signed-out visitor lands on the
@@ -130,22 +146,19 @@ export default function App() {
   // transform). Null when it was opened some other way — then it just appears.
   const [expandFrom, setExpandFrom] = useState<ExpandOrigin | null>(null);
 
-  const [queue, setQueue] = useState<PracticeCard[]>([]);
+  const [steps, setSteps] = useState<PlannedStep[]>([]);
+  const [cards, setCards] = useState<PracticeCard[]>([]);
+  // Words the run already settled before this sitting — a resumed session
+  // starts with them mastered or back in review, not from zero.
+  const [prior, setPrior] = useState<PriorItems>({});
   // Bumped per begun session so Practice remounts with fresh internal state
   // (its queue/outcomes are seeded from props on mount).
   const [sessionId, setSessionId] = useState(0);
-  // "warmup" = a re-drill, or practice ahead of schedule. The answers are
-  // still recorded into the run (the card must report what actually
-  // happened), but they are NOT graded onto the ladder: those words were
-  // already scheduled by their first answer today, and grading the same
-  // recall twice would move a word several levels in one sitting.
-  const [sessionMode, setSessionMode] = useState<"scheduled" | "warmup">("scheduled");
   // What the sitting on screen is for — the report words itself by it.
   const [sittingKind, setSittingKind] = useState<SittingKind>("goal");
 
   useEffect(() => saveDeck(deck), [deck]);
   useEffect(() => saveResults(results), [results]);
-  useEffect(() => saveDailySet(dailySet), [dailySet]);
   useEffect(() => saveRun(run), [run]);
   useEffect(() => saveHabit(habit), [habit]);
 
@@ -174,13 +187,15 @@ export default function App() {
   // unconfigured build has no accounts to gate behind, so it stays fully
   // offline as before.
   const locked = configured && !user;
+  // Stamped on every review event, so each is uploaded only for its own user.
+  const userIdRef = useRef<string | null>(null);
+  userIdRef.current = user?.id ?? null;
 
   // Applies a merged remote+local snapshot after login (custom words are set
   // by the sync hook before this runs).
   const applyMerged = useCallback((state: AppState) => {
     setDeck(state.deck);
     setResults(state.results);
-    setDailySet(state.dailySet);
     setRun(state.run);
     setHabit(state.habit ?? null);
   }, []);
@@ -189,7 +204,6 @@ export default function App() {
     userId: user?.id ?? null,
     deck,
     results,
-    dailySet,
     run,
     habit,
     applyMerged,
@@ -215,14 +229,14 @@ export default function App() {
     // progress, and it's about to be wiped from local storage below. Must
     // happen while still authenticated — RLS needs auth.uid() = user_id.
     if (user) {
-      await pushState(user.id, { deck, results, dailySet, run, habit, customWords: getCustomEntries() });
+      await pushState(user.id, { deck, results, run, habit, customWords: getCustomEntries() });
+      await flushReviewEvents(user.id);
     }
     await signOut();
     // Start the local session clean so the next account doesn't inherit this
     // deck.
     setDeck([]);
     setResults([]);
-    setDailySet(null);
     setRun(null);
     setHabit(null);
     setCustomEntries([]);
@@ -241,6 +255,10 @@ export default function App() {
   );
   const deckIds = useMemo(() => new Set(deck.map((d) => d.id)), [deck]);
 
+  // Whether this device can speak Dutch — voices often load after start-up.
+  const [dutchAudio, setDutchAudio] = useState(() => dutchAudioAvailable());
+  useEffect(() => onVoicesChanged(() => setDutchAudio(dutchAudioAvailable())), []);
+
   /** Corrects a saved translation — same override mechanism the sense picker
    *  uses, offered generally rather than only where a second sense exists. */
   function editDeckWord(id: string, edit: { english: string; example: string; exampleEn: string }) {
@@ -248,14 +266,16 @@ export default function App() {
     setCustomWordsVersion((v) => v + 1);
   }
 
-  // Ladder level per deck word, drives the mastery bars in Browse.
+  // Legacy 0–6 level per deck word (derived from the learning state), drives
+  // the mastery bars in Browse.
   const levels = useMemo(() => new Map(deck.map((d) => [d.id, d.level])), [deck]);
 
   // Leech words (4+ lapses) — tagged "Tricky" in lists, prioritized in sessions.
   const tricky = useMemo(() => new Set(deck.filter(isLeech).map((d) => d.id)), [deck]);
 
-  // Words at the top of the ladder — the dashboard's mastery bar fills to this.
-  const masteredCount = useMemo(() => deck.filter((d) => d.level >= MAX_LEVEL).length, [deck]);
+  // Words per state, for the dashboard.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const queue = useMemo(() => dueSummary(deck, new Date()), [deck, route]);
 
   const activeTab: Tab = useMemo(() => {
     if (route === "browse" || route === "settings") return route;
@@ -292,91 +312,57 @@ export default function App() {
   }
 
   // Today, recomputed on navigation so a day boundary crossed with the app
-  // left open is noticed. Both the set and the run are scoped to it.
+  // left open is noticed.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const today = useMemo(() => dayKey(new Date()), [route]);
 
-  // The day's set is sized to the commitment — 5, 10 or 20 words — not to a
-  // fixed 16. That is the whole of "how much Dutch fits your day".
-  const setTarget = setSizeFor(habit);
+  // Words per session: the commitment (10/20/30), or the warm-up on a
+  // return day.
+  const sessionSize = sessionSizeFor(habit, today);
 
-  // Distinct words graded today. Re-drills are ungraded, so they don't count;
-  // a word answered twice counts once.
+  // Distinct words graded today (a word answered twice counts once).
   const practisedToday = useMemo(() => wordsPractisedOn(results, today), [results, today]);
-  const practisedSet = useMemo(() => new Set(practisedToday), [practisedToday]);
 
-  // ── The day's set ──
-  // Drawn once per local calendar day and then left alone, so a half-finished
-  // set resumes on the same words rather than being re-derived from a
-  // schedule those very answers have already moved.
-  //
-  // Three things trigger a draw: the date rolling over; a day that was drawn
-  // while the deck had nothing to offer (the first word of the day added
-  // afterwards should not have to wait until tomorrow); and the commitment
-  // changing before anything was practised today, so switching Espresso to
-  // Diner in Settings takes effect at once. Keyed on `route` as well so a day
-  // boundary crossed with the app left open is picked up when the user
-  // navigates back.
+  // A word removed from the deck must not leave the run stuck one word
+  // short of finishing.
   useEffect(() => {
-    const isToday = dailySet?.date === today;
-    const wanted = Math.min(setTarget, deck.length);
-
-    if (isToday && dailySet.wordIds.length > 0) {
-      // A word deleted from the deck part-way through the day would otherwise
-      // leave the set impossible to finish: it keeps counting as "to go"
-      // while there is no card left to answer it with.
-      const inDeck = new Set(deck.map((d) => d.id));
-      const kept = dailySet.wordIds.filter((id) => inDeck.has(id));
-      if (kept.length !== dailySet.wordIds.length) {
-        setDailySet({ date: today, wordIds: kept });
-        return;
-      }
-      if (kept.length === wanted || practisedToday.length > 0) return;
-    }
-
-    const drawn = buildDailySet(deck, new Date(), setTarget);
-    // Still nothing to draw: leave today's empty set alone rather than
-    // replacing it with an identical one every render.
-    if (isToday && drawn.wordIds.length === 0) return;
-    setDailySet(drawn);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [deck, dailySet, today, setTarget]);
-
-  // Same treatment for the run: a word removed from the deck must not leave
-  // the sitting stuck one card short of finishing.
-  useEffect(() => {
-    if (!run || run.date !== today) return;
+    if (!run) return;
     const inDeck = new Set(deck.map((d) => d.id));
     const pruned = pruneRun(run, (id) => inDeck.has(id));
     if (pruned !== run) setRun(pruned);
-  }, [deck, run, today]);
+  }, [deck, run]);
 
-  // What the user actually did in the sitting on screen (or the last one) —
-  // the report reads this.
+  // What the user actually did in the session on screen (or the last one).
   const progress = useMemo(() => runProgress(run, today), [run, today]);
+  // A graded session started today and not finished — "Continue" resumes it.
+  const resumable =
+    run !== null && run.kind !== "practice" && run.date === today && progress.status === "progress" && Boolean(run.plan);
 
-  // Words graded today but not yet got right: missed, and the sitting was
-  // left before they came back round. A word only counts once it's right.
-  const outstanding = useMemo(
-    () => progress.outstanding.filter((id) => practisedSet.has(id)),
-    [progress.outstanding, practisedSet]
+  // The words the next session would ask, by the engine's priorities —
+  // empty once every word has had its graded answer today.
+  const nextSessionWords = useMemo(
+    () => selectSessionWords(deck, new Date(), { size: sessionSize }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [deck, sessionSize, today]
   );
 
-  // ── Today's goal ──
-  const goal = habit ? todaysGoal(habit, deck.length, today) : Math.max(1, Math.min(setTarget, deck.length));
-  const alreadyDone = habit?.doneDays.includes(today) ?? false;
-  const completedToday = practisedToday.length - outstanding.length;
-  const todayProg = useMemo(
-    () => todayProgress(goal, completedToday, alreadyDone),
-    [goal, completedToday, alreadyDone]
-  );
+  // ── Today ──
+  // A day is done once one full session has been completed — recorded on
+  // the local day the session was finished.
+  const doneToday = habit?.doneDays.includes(today) ?? false;
+  const goal = resumable ? progress.total : Math.max(1, nextSessionWords.length || sessionSize);
+  const todayProg = useMemo(() => {
+    const p = todayProgress(goal, resumable ? progress.answered : 0, doneToday);
+    // Practised today past the first full session — shown as "+N extra".
+    return { ...p, extra: doneToday ? Math.max(0, practisedToday.length - sessionSize) : 0 };
+  }, [goal, resumable, progress.answered, doneToday, practisedToday.length, sessionSize]);
 
-  // Record the day the moment its goal is reached. Recorded, not re-derived
-  // later, so a change of commitment can never un-complete a past day.
   useEffect(() => {
-    if (!habit || !todayProg.done || alreadyDone || deck.length === 0) return;
-    setHabit({ ...habit, doneDays: [...habit.doneDays, today] });
-  }, [habit, todayProg.done, alreadyDone, today, deck.length]);
+    if (!habit || !run || !isFullSession(run)) return;
+    const day = dayKey(new Date(run.completedAt!));
+    if (habit.doneDays.includes(day)) return;
+    setHabit({ ...habit, doneDays: [...habit.doneDays, day].sort() });
+  }, [habit, run]);
 
   const week = useMemo(
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -390,11 +376,13 @@ export default function App() {
     [habit?.doneDays, today]
   );
 
-  useDailyReminder(habit, todayProg.done);
+  useDailyReminder(habit, { done: todayProg.done, eligible: nextSessionWords.length > 0, hasWords: deck.length > 0 });
 
-  // Extra practice is always on offer once there's a deck: new words while
-  // any are left, then an ungraded review of today's (see startExtra).
-  const canExtra = deck.length > 0;
+  // More practice is on offer while any word is still eligible today.
+  const canExtra = nextSessionWords.length > 0;
+  // Past that, the user can always go over words again — as often as they
+  // like — in an ungraded round that leaves the schedule alone.
+  const canReplay = deck.length > 0;
 
   // Words met for the very first time today, by name — what the report
   // shows as today's gain.
@@ -421,85 +409,105 @@ export default function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [habit?.lastReflection, habit?.startedAt, results, today]);
 
-  /** Deck items for the given ids, in the order given (missing ids dropped). */
-  const wordsFor = useCallback(
-    (ids: string[]): Word[] => {
-      const byId = new Map(deck.map((d) => [d.id, d]));
-      return ids.map((id) => byId.get(id)).filter((w): w is DeckItem => Boolean(w));
-    },
-    [deck]
+  /** What the engine needs to know to pick exercises. */
+  function exerciseContext(deckSize: number): ExerciseContext {
+    return {
+      deckSize,
+      supported: SUPPORTED_EXERCISES,
+      audioEnabled: habit?.audioExercises ?? true,
+      // One device-wide Dutch voice speaks every word.
+      hasAudio: () => dutchAudio,
+      hasSentence: (id) => {
+        const entry = resolveEntry(id);
+        return entry ? completionSentence(entry) !== null : false;
+      },
+      fillChoices: choiceFiller.length > 0,
+    };
+  }
+
+  // Tops up Multiple Choice distractors while the deck is too small to
+  // supply them, so a learner's first words can be recognised from day one.
+  const choiceFiller = useMemo(() => DICTIONARY.slice(0, MC_DICTIONARY_FILL_WORDS), []);
+
+  // A typed answer that is itself another real Dutch word is never accepted
+  // as a typo of the right one.
+  const deckDutch = useMemo(() => new Set(deckEntries.map((e) => e.dutch.toLowerCase())), [deckEntries]);
+  const isKnownWord = useCallback(
+    (word: string) => deckDutch.has(word.toLowerCase()) || Boolean(findEntry(word.toLowerCase())),
+    [deckDutch]
   );
 
-  /** Puts a list of words on screen as a practice queue. Every sitting is a
-   *  fresh run, so its report shows what just happened and nothing older. */
-  function beginSession(words: Word[], kind: SittingKind) {
-    if (words.length === 0) return;
-    const ids = words.map((w) => w.id);
-    // A re-drill doesn't count toward the day, so it tracks nothing as
-    // outstanding: leaving one part-way can't take the day backwards.
-    setRun(startRun(ids, new Date(), kind !== "warmup"));
-    setQueue(toPracticeCards(words));
+  /** Puts a session on screen. Every session is a fresh run, so its report
+   *  shows what just happened and nothing older. */
+  function showSession(words: DeckItem[], plan: PlannedStep[], run: PracticeRun, sitting: SittingKind) {
+    setRun(run);
+    setCards(toPracticeCards(words));
+    setSteps(plan);
+    setPrior(priorItems(run));
     setSessionId((s) => s + 1);
-    setSessionMode(kind === "warmup" ? "warmup" : "scheduled");
-    setSittingKind(kind);
+    setSittingKind(sitting);
     setRoute("practice");
   }
 
-  /** The next `count` words toward today: words missed and not yet got right
-   *  first, then today's set (skipping what's already been practised),
-   *  topped up from the deck if the set runs out. */
-  function nextWords(count: number, from: DeckItem[] = deck, set: string[] | null = null): Word[] {
-    if (count <= 0) return [];
-    const setIds = set ?? (dailySet?.date === today ? dailySet.wordIds : []);
-    const ids = [...outstanding, ...setIds.filter((id) => !practisedSet.has(id))].slice(0, count);
-    if (ids.length < count) {
-      const taken = new Set([...ids, ...practisedSet]);
-      const rest = from.filter((d) => !taken.has(d.id));
-      ids.push(...buildDailySet(rest, new Date(), count - ids.length).wordIds);
-    }
-    const byId = new Map(from.map((d) => [d.id, d]));
-    return ids.map((id) => byId.get(id)).filter((w): w is DeckItem => Boolean(w));
+  /** Starts a session of `words`, planned by the engine — together with any
+   *  words the last session handed on. */
+  function beginSession(selected: DeckItem[], kind: RunKind, sitting: SittingKind, from: DeckItem[] = deck) {
+    const chosen = new Set(selected.map((w) => w.id));
+    const carried = (run?.deferred ?? [])
+      .filter((id) => !chosen.has(id))
+      .map((id) => from.find((d) => d.id === id))
+      .filter((w): w is DeckItem => Boolean(w));
+    const words = [...selected, ...carried];
+    if (words.length === 0) return;
+    const plan = planExercises(words, exerciseContext(from.length), Math.random);
+    const fresh = startRun(
+      words.map((w) => w.id),
+      new Date(),
+      { sessionId: newSessionId(), kind, plan }
+    );
+    showSession(words, plan, fresh, sitting);
   }
 
-  /** Starts today's goal — or continues it. "Continue" is simply the words
-   *  still needed: answers already given today are kept, whichever sitting
-   *  they came from. */
+  /** A new graded session, selected by the engine. */
+  function beginSelected(kind: SessionKind, sitting: SittingKind, size = sessionSize, from: DeckItem[] = deck) {
+    beginSession(selectSessionWords(from, new Date(), { size, kind }), kind, sitting, from);
+  }
+
+  /** Starts today's session — or resumes the one left part-way. */
   function startPractice() {
-    beginSession(nextWords(goal - todayProg.towardGoal), "goal");
-  }
-
-  /** A few more, past the goal. Graded like any other answer — it's real
-   *  learning — but the goal itself never moves because of it. */
-  function startExtra() {
-    const rest = deck.filter((d) => !practisedSet.has(d.id));
-    if (rest.length > 0) {
-      const ids = buildDailySet(rest, new Date(), EXTRA_ROUND_WORDS).wordIds;
-      beginSession(wordsFor(ids), "extra");
+    if (resumable && run) {
+      const byId = new Map(deck.map((d) => [d.id, d]));
+      const words = run.wordIds.map((id) => byId.get(id)).filter((w): w is DeckItem => Boolean(w));
+      showSession(words, remainingSteps(run), run, "goal");
       return;
     }
-    // Every word has had its graded answer today, so more practice is a
-    // review: ungraded, drawn from the words due back soonest (the weakest),
-    // shuffled so pressing again doesn't repeat the same round.
-    const weakest = [...deck]
-      .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime())
-      .slice(0, EXTRA_ROUND_WORDS * 3);
-    for (let i = weakest.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [weakest[i], weakest[j]] = [weakest[j], weakest[i]];
-    }
-    beginSession(weakest.slice(0, EXTRA_ROUND_WORDS), "warmup");
+    beginSelected("daily", doneToday ? "extra" : "goal");
   }
 
-  /** Re-drills the words just missed. Ungraded: they were scheduled by their
-   *  first answer today, and grading the same recall twice would let one
-   *  sitting move a word several levels. */
+  /** Another session, past the day's first. It never repeats a word graded
+   *  today, so it only exists while something is still eligible. */
+  function startExtra() {
+    beginSelected("daily", "extra");
+  }
+
+  /** Free practice once nothing is left to grade today: repeats today's
+   *  words (missed first), then others. Ungraded, so it can be done again
+   *  and again without touching the schedule or the day's goal. */
+  function startReplay() {
+    beginSession(selectReplayWords(deck, new Date(), sessionSize), "practice", "warmup");
+  }
+
+  /** Goes over the words just missed — an ungraded practice round: misses
+   *  come back for review, and nothing is rescheduled. */
   function practiseLearningAgain() {
-    beginSession(wordsFor(progress.learningIds), "warmup");
+    const byId = new Map(deck.map((d) => [d.id, d]));
+    const words = progress.learningIds.map((id) => byId.get(id)).filter((w): w is DeckItem => Boolean(w));
+    beginSession(words, "practice", "warmup");
   }
 
   // ── Coming back ──
   // One warm popup after time away. Opening it (either button) makes today
-  // a return day, whose goal is the 5-word warm-up — so coming back is
+  // a return day, whose session is the 5-word warm-up — so coming back is
   // finished in one small step.
   const showWelcomeBack =
     route === "dashboard" &&
@@ -510,8 +518,9 @@ export default function App() {
 
   function welcomeBack(start: boolean) {
     if (!habit) return;
-    setHabit({ ...habit, welcomedOn: today });
-    if (start) beginSession(nextWords(Math.min(RETURN_WARMUP_WORDS, goal)), "goal");
+    const next = { ...habit, welcomedOn: today };
+    setHabit(next);
+    if (start) beginSelected("daily", "goal", sessionSizeFor(next, today));
   }
 
   // ── Onboarding ──
@@ -519,26 +528,19 @@ export default function App() {
     const now = new Date();
     const words = commitmentOf(choice.commitment).words;
 
-    // A new learner gets a starter deck, so the first session can start now
-    // rather than after adding words by hand. Newest-first, in list order,
-    // so the first words of the list are the first ones practised.
-    let nextDeck = deck;
-    if (deck.length === 0) {
-      nextDeck = STARTER_WORDS.filter((id) => resolveEntry(id)).map((id, i) => ({
-        ...newDeckItem(id, now),
-        dateAdded: now.getTime() - i,
-      }));
-      setDeck(nextDeck);
-    }
-
     // An existing learner's recent practice shows on their first week.
     const next = newHabit(choice, now);
     next.doneDays = backfillDoneDays(results, words);
     setHabit(next);
 
-    const set = buildDailySet(nextDeck, now, words);
-    setDailySet(set);
-    beginSession(nextWords(words, nextDeck, set.wordIds), "goal");
+    // Words come only from what the learner meets — there is no starter
+    // deck. With words already saved, the first session starts now; without,
+    // onboarding ends on adding the first one.
+    if (deck.length > 0) beginSelected("daily", "goal", words);
+    else {
+      setExpandFrom(null);
+      setRoute("add-choice");
+    }
   }
 
   function changeHabit(prefs: Partial<HabitPrefs>) {
@@ -550,32 +552,59 @@ export default function App() {
     setRoute("dashboard");
   }
 
-  /** Records an answer into the run — every answer, warm-up included. The
-   *  report reads the run, so it has to see the sitting the user is actually
-   *  doing, not just the graded ones. */
-  const recordRunAnswer = useCallback((wordId: string, grade: Grade) => {
-    setRun((prev) => (prev ? recordAnswer(prev, wordId, grade) : prev));
-  }, []);
+  /** One answer, the moment it's given: the engine decides what it does to
+   *  the word, and the result is persisted — the word's state, the compact
+   *  log (graded answers only), the review event, and the run. A session
+   *  abandoned half-way keeps everything answered up to that point. */
+  const handleAnswer = useCallback(
+    (answer: StepAnswer) => {
+      const current = deckRef.current.find((d) => d.id === answer.wordId);
+      if (!current) return;
+      const now = new Date();
+      const session = runRef.current;
+      const { word, event, graded } = gradeWord(
+        current,
+        {
+          exerciseType: answer.exerciseType,
+          result: answer.result,
+          responseTimeMs: answer.responseTimeMs,
+          sessionId: session?.sessionId ?? null,
+          // A review re-ask is never evidence (one graded answer per session).
+          practice: session?.kind === "practice" || answer.review,
+        },
+        now
+      );
+      if (word !== current) {
+        const updated: DeckItem = { ...word, dateAdded: current.dateAdded };
+        deckRef.current = deckRef.current.map((d) => (d.id === updated.id ? updated : d));
+        setDeck(deckRef.current);
+      }
+      appendReviewEvent(event, userIdRef.current);
+      const grade = graded ? toGrade(answer.result) : null;
+      if (grade) setResults((prev) => [...prev, { entryId: answer.wordId, grade, timestamp: now.getTime() }]);
+      // The word's own first answer is its answer in the run. A skip leaves
+      // it pending: it's asked another way next.
+      if (answer.final && !answer.review && answer.result !== "skipped") {
+        setRun((prev) => (prev ? recordAnswer(prev, answer.wordId, runAnswerFor(answer.result), now) : prev));
+      }
+    },
+    []
+  );
 
-  /** Marks a word as got right in the run — what makes it count as done. */
-  const recordRunCleared = useCallback((wordId: string) => {
-    setRun((prev) => (prev ? recordCleared(prev, wordId) : prev));
-  }, []);
-
-  /** Writes one graded answer the moment it's given: the word's new ladder
-   *  state, and a row in the practice log. Both persist on change, so a
-   *  session abandoned half-way keeps everything answered up to that point. */
-  const persistGrade = useCallback(({ word, grade }: ReviewedCard) => {
-    setDeck((prev) =>
-      prev.map((d) => (d.id === word.id ? { ...word, dateAdded: d.dateAdded } : d))
-    );
-    setResults((prev) => [...prev, { entryId: word.id, grade, timestamp: Date.now() }]);
-  }, []);
-
-  /** Finishing a sitting ALWAYS lands on the result screen — it is the last
+  /** Finishing a session ALWAYS lands on the result screen — it is the last
    *  step of the flow, and only the user leaving it returns them home. */
-  function finishPractice() {
+  function finishPractice(deferred: string[]) {
+    setRun((prev) => (prev ? deferWords(prev, deferred) : prev));
     setRoute("report");
+  }
+
+  /** Leaving part-way is not finishing: every answer given so far is
+   *  already logged, so the card reports the goal as part-done and
+   *  "Continue" picks up the words still needed. Words still waiting for
+   *  review are handed on, in case the session isn't resumed. */
+  function closePractice(carryOver: string[]) {
+    setRun((prev) => (prev ? deferWords(prev, carryOver) : prev));
+    setRoute("dashboard");
   }
 
   // Recovery renders in place of the app, so it gets no navigation either —
@@ -624,16 +653,18 @@ export default function App() {
               {route === "dashboard" && (
                 <Dashboard
                   deckCount={deckEntries.length}
-                  masteredCount={masteredCount}
+                  counts={queue.counts}
                   today={todayProg}
-                  inProgress={todayProg.towardGoal > 0}
+                  inProgress={resumable}
                   week={week}
                   streak={streak}
                   cue={habit ? cueLine(habit) : ""}
-                  tomorrow={habit ? `at ${habit.time}` : ""}
+                  tomorrow={tomorrowAt(habit)}
                   canExtra={canExtra}
+                  canReplay={canReplay}
                   onPractice={startPractice}
                   onExtra={startExtra}
+                  onReplay={startReplay}
                   onAddWord={openAdd}
                   onOpenWeek={() => setRoute("week")}
                 />
@@ -666,6 +697,7 @@ export default function App() {
                   configured={configured}
                   email={user?.email ?? null}
                   habit={habit}
+                  dutchAudio={dutchAudio}
                   onHabitChange={changeHabit}
                   onSignOut={handleSignOut}
                 />
@@ -674,18 +706,15 @@ export default function App() {
               {route === "practice" && (
                 <Practice
                   key={sessionId}
-                  queue={queue}
+                  steps={steps}
+                  cards={cards}
+                  prior={prior}
                   pool={deckEntries}
-                  scheduling={sessionMode === "scheduled"}
-                  alreadyGraded={practisedSet}
-                  onAnswer={recordRunAnswer}
-                  onCleared={recordRunCleared}
-                  onGrade={persistGrade}
+                  choiceFiller={choiceFiller}
+                  isKnownWord={isKnownWord}
+                  onAnswer={handleAnswer}
                   onFinish={finishPractice}
-                  // Leaving part-way is not finishing: every answer given so
-                  // far is already logged, so the card reports the goal as
-                  // part-done and "Continue" picks up the words still needed.
-                  onClose={() => setRoute("dashboard")}
+                  onClose={closePractice}
                 />
               )}
 
@@ -698,11 +727,13 @@ export default function App() {
                   today={todayProg}
                   week={week}
                   newToday={sittingKind === "warmup" ? [] : newToday}
-                  tomorrow={habit ? `at ${habit.time}` : ""}
+                  tomorrow={tomorrowAt(habit)}
                   reflectionReady={reflection !== null && todayProg.done && sittingKind === "goal"}
                   canExtra={canExtra}
+                  canReplay={canReplay}
                   onReviewMissed={practiseLearningAgain}
                   onExtra={startExtra}
+                  onReplay={startReplay}
                   onReflection={() => setRoute("reflection")}
                   onDone={() => setRoute("dashboard")}
                 />
@@ -766,7 +797,7 @@ export default function App() {
 
         {showTabs && showWelcomeBack && (
           <WelcomeBack
-            words={Math.min(RETURN_WARMUP_WORDS, goal)}
+            words={sessionSizeFor({ ...habit!, welcomedOn: today }, today)}
             onStart={() => welcomeBack(true)}
             onDismiss={() => welcomeBack(false)}
           />

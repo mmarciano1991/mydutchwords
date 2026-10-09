@@ -1,27 +1,20 @@
-import type { DailySet, PracticeRun } from "./dailySet";
+import type { PracticeRun } from "./dailySet";
 import { normalizeHabit, type HabitState } from "./habit";
-import { intervalForLevel, LADDER, MAX_LEVEL } from "./learningEngine";
+import { ENGINE_VERSION, LADDER, levelFromInterval, MAX_LEVEL, migrateWords, newWord, type StoredWord } from "./learningEngine";
 import type { DeckItem, PracticeResult } from "./types";
 
 const DECK_KEY = "woordkast.deck";
 const RESULTS_KEY = "woordkast.results";
-const DAILY_SET_KEY = "woordkast.dailySet";
 const RUN_KEY = "woordkast.practiceRun";
 const HABIT_KEY = "woordkast.habit";
+/** The deck exactly as it was before the learning-engine v2 migration,
+ *  written once, never overwritten. The local half of the rollback (see
+ *  LEARNING_ENGINE_PLAN.md, "Rollback"). */
+const DECK_BACKUP_KEY = "woordkast.deck.v1-backup";
 
-/** A freshly-added deck item: no spaced-repetition history yet, due immediately. */
+/** A freshly-added deck item: New, never graded, due immediately. */
 export function newDeckItem(entryId: string, now: Date): DeckItem {
-  return {
-    id: entryId,
-    dateAdded: now.getTime(),
-    level: 0,
-    interval: 0,
-    reps: 0,
-    dueDate: now.toISOString(),
-    lapses: 0,
-    state: "new",
-    lastReviewedAt: null,
-  };
+  return { ...newWord(entryId, now), dateAdded: now.getTime() };
 }
 
 /** Falls back on unreadable or corrupt data — a bad entry shouldn't stop the
@@ -48,32 +41,35 @@ function write(key: string, value: unknown): void {
   }
 }
 
-/** Nearest ladder level at or below a stored interval (for migrating decks
- *  saved by the previous ease-based scheduler, which had no level field). */
-function levelFromInterval(interval: number): number {
-  for (let i = LADDER.length - 1; i >= 0; i--) {
-    if (interval >= LADDER[i]) return i + 1;
-  }
-  return 0;
-}
+type StoredDeckItem = StoredWord & { dateAdded: number };
 
-/** Backfills deck items from older storage shapes:
+/** Backfills deck items from shapes older than the ladder:
  *  - plain {id, dateAdded} (pre spaced-repetition) → fresh new card
- *  - ease-based SM-2 items (no level) → level derived from their interval */
-function migrateDeckItem(raw: DeckItem): DeckItem {
+ *  - ease-based SM-2 items (no level) → level derived from their interval
+ *  The result is then migrated to the current engine (migrateWords). */
+function migratePreLadder(raw: StoredDeckItem): StoredDeckItem {
+  if (raw.engineVersion === ENGINE_VERSION) return raw;
   if (!raw.state || !raw.dueDate) {
     return { ...newDeckItem(raw.id, new Date(raw.dateAdded)), dateAdded: raw.dateAdded };
   }
   if (typeof raw.level === "number") return raw;
-  const level = raw.state === "new" ? 0 : Math.min(MAX_LEVEL, levelFromInterval(raw.interval));
-  return { ...raw, level, interval: raw.state === "new" ? 0 : intervalForLevel(level) };
+  const level = raw.state === "new" ? 0 : Math.min(MAX_LEVEL, levelFromInterval(raw.interval ?? 0));
+  return { ...raw, level, interval: raw.state === "new" ? 0 : level > 0 ? LADDER[level - 1] : 1 };
 }
 
-/** The user's flashcard deck, newest first. */
+/** Any stored deck, brought up to the current engine. Idempotent. */
+export function migrateDeck(items: StoredDeckItem[], results: PracticeResult[], now: Date): DeckItem[] {
+  return migrateWords(items.map(migratePreLadder), results, now);
+}
+
+/** The user's flashcard deck, newest first, migrated to the current engine.
+ *  The first time a pre-v2 deck is loaded, it is backed up untouched. */
 export function loadDeck(): DeckItem[] {
-  return read<DeckItem[]>(DECK_KEY, [])
-    .map(migrateDeckItem)
-    .sort((a, b) => b.dateAdded - a.dateAdded);
+  const raw = read<StoredDeckItem[]>(DECK_KEY, []);
+  if (raw.some((d) => d.engineVersion !== ENGINE_VERSION) && read<unknown>(DECK_BACKUP_KEY, null) === null) {
+    write(DECK_BACKUP_KEY, raw);
+  }
+  return migrateDeck(raw, loadResults(), new Date()).sort((a, b) => b.dateAdded - a.dateAdded);
 }
 
 export function saveDeck(deck: DeckItem[]): void {
@@ -93,18 +89,6 @@ export function loadResults(): PracticeResult[] {
 
 export function saveResults(results: PracticeResult[]): void {
   write(RESULTS_KEY, results);
-}
-
-/** Today's draw, if one has been made and saved. Null before the first
- *  practice day, or when the saved value is from an older schema. */
-export function loadDailySet(): DailySet | null {
-  const raw = read<DailySet | null>(DAILY_SET_KEY, null);
-  if (!raw || typeof raw.date !== "string" || !Array.isArray(raw.wordIds)) return null;
-  return raw;
-}
-
-export function saveDailySet(set: DailySet | null): void {
-  write(DAILY_SET_KEY, set);
 }
 
 /** The current (or last) run through a set of words. Null before the first

@@ -1,6 +1,7 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 import type { AppState } from "./cloudState";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./types";
+import { newWord } from "./learningEngine";
 
 const maybeSingleMock = vi.fn();
 const upsertMock = vi.fn();
@@ -18,18 +19,7 @@ vi.mock("./supabase", () => ({
 const { mergeState, fetchRemoteState, pushState } = await import("./cloudState");
 
 function deckItem(id: string, over: Partial<DeckItem> = {}): DeckItem {
-  return {
-    id,
-    dateAdded: 1000,
-    level: 0,
-    interval: 0,
-    reps: 0,
-    dueDate: new Date(0).toISOString(),
-    lapses: 0,
-    state: "new",
-    lastReviewedAt: null,
-    ...over,
-  };
+  return { ...newWord(id, new Date(0)), dateAdded: 1000, ...over };
 }
 const result = (entryId: string, timestamp: number, grade: PracticeResult["grade"] = "know"): PracticeResult => ({
   entryId,
@@ -49,7 +39,6 @@ const state = (over: Partial<AppState> = {}): AppState => ({
   deck: [],
   results: [],
   customWords: [],
-  dailySet: null,
   run: null,
   ...over,
 });
@@ -60,29 +49,44 @@ describe("mergeState", () => {
     expect(merged.deck.map((d) => d.id).sort()).toEqual(["boek", "huis"]);
   });
 
-  it("keeps the more-practised copy of a conflicting word", () => {
-    const local = deckItem("huis", { reps: 1, level: 1 });
-    const remote = deckItem("huis", { reps: 5, level: 4, lapses: 1 });
-    const merged = mergeState(state({ deck: [local] }), state({ deck: [remote] }));
-    expect(merged.deck).toHaveLength(1);
-    expect(merged.deck[0].reps).toBe(5);
-    expect(merged.deck[0].level).toBe(4);
-  });
-
-  it("breaks progress ties by most recent review", () => {
-    const older = deckItem("huis", { reps: 2, lastReviewedAt: new Date(100_000).toISOString() });
-    const newer = deckItem("huis", { reps: 2, lastReviewedAt: new Date(500_000).toISOString() });
+  it("keeps the copy graded most recently — its state is the later one", () => {
+    const older = deckItem("huis", { reps: 5, successfulReviewDays: 5, lastReviewedAt: new Date(100_000).toISOString() });
+    const newer = deckItem("huis", { reps: 0, lapses: 1, lastReviewedAt: new Date(500_000).toISOString() });
     const merged = mergeState(state({ deck: [older] }), state({ deck: [newer] }));
+    expect(merged.deck).toHaveLength(1);
     expect(merged.deck[0].lastReviewedAt).toBe(new Date(500_000).toISOString());
   });
 
+  it("breaks recency ties by the copy with more evidence", () => {
+    const at = new Date(100_000).toISOString();
+    const thin = deckItem("huis", { successfulReviewDays: 1, lastReviewedAt: at });
+    const rich = deckItem("huis", { successfulReviewDays: 4, lastReviewedAt: at });
+    expect(mergeState(state({ deck: [thin] }), state({ deck: [rich] })).deck[0].successfulReviewDays).toBe(4);
+  });
+
   it("is order-independent for deck conflicts", () => {
-    const a = deckItem("huis", { reps: 1 });
-    const b = deckItem("huis", { reps: 9 });
+    const a = deckItem("huis", { reps: 1, lastReviewedAt: new Date(100_000).toISOString() });
+    const b = deckItem("huis", { reps: 9, lastReviewedAt: new Date(900_000).toISOString() });
     const ab = mergeState(state({ deck: [a] }), state({ deck: [b] }));
     const ba = mergeState(state({ deck: [b] }), state({ deck: [a] }));
     expect(ab.deck[0].reps).toBe(9);
     expect(ba.deck[0].reps).toBe(9);
+  });
+
+  it("migrates a copy from an older client before merging it", () => {
+    const legacy = {
+      id: "huis",
+      dateAdded: 1000,
+      level: 2,
+      interval: 3,
+      reps: 2,
+      dueDate: new Date(0).toISOString(),
+      lapses: 0,
+      state: "learning",
+      lastReviewedAt: new Date(50_000).toISOString(),
+    } as unknown as DeckItem;
+    const merged = mergeState(state({ deck: [legacy] }), state({ results: [result("huis", 50_000)] }));
+    expect(merged.deck[0]).toMatchObject({ engineVersion: 2, state: "learning", interval: 3 });
   });
 
   it("unions results and dedupes identical events", () => {
@@ -110,38 +114,6 @@ describe("mergeState", () => {
       state({ customWords: [entry("fiets"), entry("tram")] })
     );
     expect(merged.customWords.map((e) => e.id).sort()).toEqual(["fiets", "tram"]);
-  });
-
-  // ── The day's set. Only one can survive a merge (it is a single draw, not
-  //    a collection), so the rules have to protect answers already given. ──
-  it("keeps the newer day's set — yesterday's draw is spent", () => {
-    const yesterday = { date: "2024-05-31", wordIds: ["a", "b"] };
-    const today = { date: "2024-06-01", wordIds: ["c", "d"] };
-    expect(mergeState(state({ dailySet: yesterday }), state({ dailySet: today })).dailySet)
-      .toEqual(today);
-    expect(mergeState(state({ dailySet: today }), state({ dailySet: yesterday })).dailySet)
-      .toEqual(today);
-  });
-
-  it("takes whichever set exists when only one device has drawn", () => {
-    const set = { date: "2024-06-01", wordIds: ["a"] };
-    expect(mergeState(state(), state({ dailySet: set })).dailySet).toEqual(set);
-    expect(mergeState(state({ dailySet: set }), state()).dailySet).toEqual(set);
-  });
-
-  it("is null when neither device has drawn", () => {
-    expect(mergeState(state(), state()).dailySet).toBeNull();
-  });
-
-  it("never lets a device that drew nothing overwrite the real set", () => {
-    // A fresh login draws an empty set locally (the deck hasn't arrived yet)
-    // before the pull lands. That must not clobber the day already in flight.
-    const real = { date: "2024-06-01", wordIds: ["a", "b"] };
-    const empty = { date: "2024-06-01", wordIds: [] };
-    expect(mergeState(state({ dailySet: empty }), state({ dailySet: real })).dailySet)
-      .toEqual(real);
-    expect(mergeState(state({ dailySet: real }), state({ dailySet: empty })).dailySet)
-      .toEqual(real);
   });
 
   // ── The run: one sitting's record. Not unioned — blending two devices'

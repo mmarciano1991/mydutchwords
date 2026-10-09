@@ -8,6 +8,7 @@
 
    It is a pause, not a gate — one button back to the day. */
 import type { Reflection as ReflectionData } from "../lib/reflection";
+import { Dock } from "../components/Dock";
 
 const SHOWN_WORDS = 10;
 
@@ -68,11 +69,11 @@ export function Reflection({
         <p className="reflect__close">That&rsquo;s what a few minutes a day does.</p>
       </div>
 
-      <div className="gutter" style={{ padding: "12px 22px 32px" }}>
+      <Dock className="gutter" style={{ padding: "12px 22px 32px" }}>
         <button className="btn btn--primary" onClick={onDone}>
           See you tomorrow
         </button>
-      </div>
+      </Dock>
     </div>
   );
 }

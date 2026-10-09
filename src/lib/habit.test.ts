@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   backfillDoneDays,
+  cueLine,
   currentStreak,
   daysBetween,
   isReturning,
@@ -8,8 +9,9 @@ import {
   newHabit,
   normalizeHabit,
   reflectionDue,
+  sessionSizeFor,
   todayProgress,
-  todaysGoal,
+  tomorrowAt,
   weekProgress,
   wordsPractisedOn,
   type HabitState,
@@ -23,22 +25,22 @@ function habit(over: Partial<HabitState> = {}): HabitState {
   return { ...newHabit({ commitment: "espresso", time: "08:00" }, at(1)), ...over };
 }
 
-describe("daily goal", () => {
+describe("session size", () => {
   it("is the commitment's word count", () => {
-    expect(todaysGoal(habit(), 100, "2026-10-05")).toBe(10);
-    expect(todaysGoal(habit({ commitment: "ontbijt" }), 100, "2026-10-05")).toBe(20);
-    expect(todaysGoal(habit({ commitment: "diner" }), 100, "2026-10-05")).toBe(30);
+    expect(sessionSizeFor(habit(), "2026-10-05")).toBe(10);
+    expect(sessionSizeFor(habit({ commitment: "ontbijt" }), "2026-10-05")).toBe(20);
+    expect(sessionSizeFor(habit({ commitment: "diner" }), "2026-10-05")).toBe(30);
   });
 
-  it("never exceeds the deck, so a small deck can still finish its day", () => {
-    expect(todaysGoal(habit({ commitment: "diner" }), 7, "2026-10-05")).toBe(7);
+  it("defaults to the smallest before onboarding", () => {
+    expect(sessionSizeFor(null, "2026-10-05")).toBe(10);
   });
 
   it("shrinks to the warm-up on a return day", () => {
     const h = habit({ commitment: "diner", welcomedOn: "2026-10-05" });
-    expect(todaysGoal(h, 100, "2026-10-05")).toBe(5);
+    expect(sessionSizeFor(h, "2026-10-05")).toBe(5);
     // …and only on that day.
-    expect(todaysGoal(h, 100, "2026-10-06")).toBe(30);
+    expect(sessionSizeFor(h, "2026-10-06")).toBe(30);
   });
 
   it("splits practice into goal and extra, and extra never changes the goal", () => {
@@ -185,4 +187,12 @@ it("daysBetween counts calendar days across DST", () => {
   // Europe/Amsterdam leaves DST on 25 Oct 2026.
   expect(daysBetween("2026-10-24", "2026-10-26")).toBe(2);
   expect(daysBetween(dayKey(at(5)), dayKey(at(11)))).toBe(6);
+});
+
+describe("cue copy", () => {
+  it("names the time chosen in onboarding", () => {
+    expect(cueLine(habit({ time: "21:30" }))).toBe("🌙 Your Dutch at 21:30");
+    expect(tomorrowAt(habit({ time: "08:00" }))).toBe(" at 08:00");
+    expect(tomorrowAt(null)).toBe("");
+  });
 });

@@ -7,6 +7,7 @@
    back chevron returns here. No guest/"try without an account" option —
    the app still requires a signed-in session (see App.tsx). */
 import { TulipMedallion } from "../components/brand";
+import { Dock } from "../components/Dock";
 
 export function Welcome({
   onCreateAccount,
@@ -31,14 +32,14 @@ export function Welcome({
           Capture the Dutch words you meet, then practise them as flashcards.
         </p>
       </div>
-      <div className="gutter" style={{ paddingBottom: 30, display: "flex", flexDirection: "column", gap: 22 }}>
+      <Dock className="gutter" style={{ paddingBottom: 30, display: "flex", flexDirection: "column", gap: 22 }}>
         <button className="btn btn--primary" onClick={onCreateAccount}>
           Create an account
         </button>
         <button className="btn btn--secondary" onClick={onLogIn}>
           Log in
         </button>
-      </div>
+      </Dock>
     </div>
   );
 }

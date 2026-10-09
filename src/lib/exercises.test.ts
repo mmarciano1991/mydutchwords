@@ -1,23 +1,10 @@
 import { describe, expect, it } from "vitest";
-import {
-  advanceQueue,
-  buildChoices,
-  checkTyped,
-  initialQueue,
-  pickExercise,
-  synonymsOf,
-  type QueueItem,
-} from "./exercises";
+import { buildEnglishChoices, buildListeningChoices, matchingLabels, posHint, synonymsOf } from "./exercises";
 import type { DictionaryEntry, Gender } from "./types";
-import type { Word } from "./learningEngine";
 
 function entry(dutch: string, english: string, gender: Gender = "none"): DictionaryEntry {
   const sense = { english, example: "", exampleEn: "", gender };
   return { id: dutch, dutch, english, gender, example: "", exampleEn: "", senses: [sense] };
-}
-
-function word(level: number, state: Word["state"] = level === 0 ? "new" : "learning"): Word {
-  return { id: "x", level, interval: 1, reps: 0, dueDate: "", lapses: 0, state, lastReviewedAt: null };
 }
 
 /** Deterministic stand-in for Math.random. */
@@ -28,126 +15,135 @@ function seeded(seed = 1): () => number {
   };
 }
 
-describe("advanceQueue", () => {
-  const ids = (q: QueueItem[]) => q.map((i) => i.id);
-
-  it("drops a word answered correctly", () => {
-    expect(ids(advanceQueue(initialQueue(["a", "b", "c"]), true, "choice"))).toEqual(["b", "c"]);
-  });
-
-  it("puts a miss back after other words, not straight away", () => {
-    const q = advanceQueue(initialQueue(["a", "b", "c", "d", "e"]), false, "choice");
-    expect(ids(q)).toEqual(["b", "c", "d", "a", "e"]);
-    expect(q[3]).toEqual({ id: "a", attempts: 1, lastKind: "choice" });
-  });
-
-  it("puts a miss last when fewer words are left than the gap", () => {
-    expect(ids(advanceQueue(initialQueue(["a", "b"]), false, "typing"))).toEqual(["b", "a"]);
-  });
-
-  it("keeps asking the last word until it's right", () => {
-    const q = advanceQueue(initialQueue(["a"]), false, "typing");
-    expect(ids(q)).toEqual(["a"]);
-    expect(advanceQueue(q, true, "choice")).toEqual([]);
-  });
-
-  it("plays out the spec's example: A wrong, B, C right, D wrong, A again", () => {
-    let q = initialQueue(["A", "B", "C", "D", "E"]);
-    const asked: string[] = [];
-    const wrong = new Set(["A", "D"]);
-    while (q.length > 0) {
-      const head = q[0];
-      asked.push(head.id);
-      q = advanceQueue(q, head.attempts > 0 || !wrong.has(head.id), "choice");
-    }
-    expect(asked).toEqual(["A", "B", "C", "D", "A", "E", "D"]);
-  });
-});
-
-describe("pickExercise", () => {
-  const first = { id: "x", attempts: 0 };
-
-  it("asks a new word as a choice", () => {
-    expect(pickExercise(word(0), first, true)).toBe("choice");
-  });
-
-  it("types a word on its way up, and flashcards a well-known one", () => {
-    expect(pickExercise(word(1), first, true)).toBe("typing");
-    expect(pickExercise(word(2), first, true)).toBe("typing");
-    expect(pickExercise(word(4), first, true)).toBe("flashcard");
-  });
-
-  it("steps sideways on a retry", () => {
-    expect(pickExercise(word(0), { id: "x", attempts: 1, lastKind: "choice" }, true)).toBe("typing");
-    expect(pickExercise(word(2), { id: "x", attempts: 1, lastKind: "typing" }, true)).toBe("choice");
-    expect(pickExercise(word(5), { id: "x", attempts: 1, lastKind: "flashcard" }, true)).toBe("choice");
-  });
-
-  it("falls back when no options can be built", () => {
-    expect(pickExercise(word(0), first, false)).toBe("flashcard");
-    expect(pickExercise(word(2), { id: "x", attempts: 1, lastKind: "typing" }, false)).toBe("typing");
-  });
-});
-
-describe("buildChoices", () => {
+describe("buildEnglishChoices (Multiple Choice)", () => {
   const meet = entry("ontmoeten", "to meet");
   const pool = [
     meet,
     entry("volgen", "to follow"),
     entry("vertrekken", "to leave"),
     entry("corrigeren", "to correct"),
+    entry("betalen", "to pay"),
     entry("tegenwoordig", "nowadays"),
     entry("huis", "house", "het"),
   ];
 
-  it("offers the answer and three distractors, once each", () => {
-    const options = buildChoices(meet, pool, seeded())!;
+  it("offers the English answer and three distractors, once each", () => {
+    const options = buildEnglishChoices(meet, pool, seeded())!;
     expect(options).toHaveLength(4);
-    expect(options).toContain("ontmoeten");
+    expect(options).toContain("to meet");
     expect(new Set(options).size).toBe(4);
   });
 
-  it("prefers distractors of the same kind of word", () => {
-    const options = buildChoices(meet, pool, seeded())!;
-    expect(options.sort()).toEqual(["corrigeren", "ontmoeten", "vertrekken", "volgen"]);
-  });
-
-  it("never offers a second word with the same meaning", () => {
-    const withSynonym = [...pool, entry("treffen", "to meet")];
+  it("prefers distractors of the same part of speech", () => {
     for (let s = 1; s < 20; s++) {
-      expect(buildChoices(meet, withSynonym, seeded(s))).not.toContain("treffen");
+      const options = buildEnglishChoices(meet, pool, seeded(s))!;
+      expect(options.every((o) => o.startsWith("to "))).toBe(true);
     }
   });
 
-  it("returns null when the pool is too small", () => {
-    expect(buildChoices(meet, pool.slice(0, 3))).toBeNull();
+  it("never offers a synonym of the answer", () => {
+    const withSynonym = [...pool, entry("treffen", "to meet")];
+    for (let s = 1; s < 20; s++) {
+      expect(buildEnglishChoices(meet, withSynonym, seeded(s))!.filter((o) => o === "to meet")).toHaveLength(1);
+    }
+  });
+
+  it("never offers a word sharing any meaning with the answer", () => {
+    const park: DictionaryEntry = {
+      ...entry("parkeren", "to park"),
+      senses: [
+        { english: "to park", example: "", exampleEn: "", gender: "none" },
+        { english: "to put away", example: "", exampleEn: "", gender: "none" },
+      ],
+    };
+    const options = buildEnglishChoices(park, [...pool, entry("opbergen", "to put away")], seeded())!;
+    expect(options).not.toContain("to put away");
+  });
+
+  it("returns null with fewer than three other words", () => {
+    expect(buildEnglishChoices(meet, pool.slice(0, 3))).toBeNull();
+  });
+
+  it("tops a small deck up from the dictionary — the deck's own words first", () => {
+    const deck = [meet, entry("volgen", "to follow")];
+    const dictionary = [
+      entry("lopen", "to walk"),
+      entry("treffen", "to meet"), // a synonym: never offered
+      entry("volgen", "to follow"), // already in the deck
+      entry("zitten", "to sit"),
+      entry("eten", "to eat"),
+      entry("tafel", "table", "de"),
+    ];
+    for (let s = 1; s < 10; s++) {
+      const options = buildEnglishChoices(meet, deck, seeded(s), dictionary)!;
+      expect(options).toHaveLength(4);
+      expect(options).toContain("to meet");
+      expect(options).toContain("to follow");
+      expect(options.filter((o) => o === "to meet")).toHaveLength(1);
+      expect(new Set(options).size).toBe(4);
+      // Same part of speech first: the noun is only a last resort.
+      expect(options).not.toContain("table");
+    }
+  });
+
+  it("doesn't touch the dictionary when the deck is big enough", () => {
+    const options = buildEnglishChoices(meet, pool, seeded(), [entry("lopen", "to walk")])!;
+    expect(options).not.toContain("to walk");
   });
 });
 
-describe("checkTyped", () => {
-  it("accepts the word regardless of case, spacing, accents and article", () => {
-    expect(checkTyped("  Ontmoeten ", "ontmoeten")).toBe("correct");
-    expect(checkTyped("cafe", "café")).toBe("correct");
-    expect(checkTyped("het huis", "huis")).toBe("correct");
-    expect(checkTyped("de huis", "huis")).toBe("correct");
-    expect(checkTyped("in loondienst", "in loondienst")).toBe("correct");
+describe("matchingLabels (Matching)", () => {
+  it("shows one gloss per word", () => {
+    expect(matchingLabels([entry("optie", "option / choice"), entry("zwaar", "heavy")])).toEqual(["option", "heavy"]);
   });
 
-  it("forgives one slip in a longer word, and calls it a typo", () => {
-    expect(checkTyped("ontmoten", "ontmoeten")).toBe("typo");
-    expect(checkTyped("ontmeoten", "ontmoeten")).toBe("typo");
-    expect(checkTyped("ontmoetenn", "ontmoeten")).toBe("typo");
+  it("skips a gloss another word on the grid also has", () => {
+    const grid = [entry("ander", "other / another / different"), entry("verschillend", "different / various / diverse")];
+    expect(matchingLabels(grid)).toEqual(["other", "various"]);
   });
 
-  it("is strict on short words and on real mistakes", () => {
-    expect(checkTyped("hues", "huis")).toBe("wrong");
-    expect(checkTyped("volgen", "ontmoeten")).toBe("wrong");
-    expect(checkTyped("   ", "ontmoeten")).toBe("wrong");
+  it("falls back to the first gloss when every one is shared", () => {
+    expect(matchingLabels([entry("ziek", "sick / ill"), entry("misselijk", "ill / sick")])).toEqual(["sick", "ill"]);
+  });
+});
+
+describe("buildListeningChoices", () => {
+  const huis = entry("huis", "house", "het");
+  const pool = [huis, entry("huid", "skin"), entry("thuis", "home"), entry("muis", "mouse"), entry("tegenwoordig", "nowadays"), entry("vertrekken", "to leave")];
+
+  it("offers the word and the three most similar-looking deck words", () => {
+    const options = buildListeningChoices(huis, pool, seeded())!;
+    expect(options.sort()).toEqual(["huid", "huis", "muis", "thuis"]);
   });
 
-  it("accepts a synonym from the deck", () => {
+  it("returns null when the deck can't supply three others", () => {
+    expect(buildListeningChoices(huis, pool.slice(0, 3))).toBeNull();
+  });
+
+  it("tops up look-alikes from the dictionary when the deck is small", () => {
+    const fiets = entry("fiets", "bicycle", "de");
+    const filler = [entry("vies", "dirty"), entry("vis", "fish", "de"), entry("feest", "party", "het"), entry("tegenwoordig", "nowadays")];
+    const options = buildListeningChoices(fiets, [fiets], seeded(), filler)!;
+    expect(options.sort()).toEqual(["feest", "fiets", "vies", "vis"]);
+  });
+});
+
+describe("posHint (Active Recall)", () => {
+  it("names a noun with its article, and a verb", () => {
+    expect(posHint(entry("huis", "house", "het"))).toBe("noun · het");
+    expect(posHint(entry("ontmoeten", "to meet"))).toBe("verb");
+  });
+
+  it("uses a known part of speech from the dictionary label, and nothing otherwise", () => {
+    const snel = { ...entry("snel", "fast"), senses: [{ english: "fast", example: "", exampleEn: "", gender: "none" as const, label: "Adjective" }] };
+    expect(posHint(snel)).toBe("adjective");
+    expect(posHint(entry("tegenwoordig", "nowadays"))).toBeNull();
+  });
+});
+
+describe("synonymsOf", () => {
+  it("finds deck words with the same meaning", () => {
     const meet = entry("ontmoeten", "to meet");
-    const pool = [meet, entry("treffen", "to meet"), entry("volgen", "to follow")];
-    expect(checkTyped("treffen", "ontmoeten", synonymsOf(meet, pool))).toBe("correct");
+    expect(synonymsOf(meet, [meet, entry("treffen", "to meet"), entry("volgen", "to follow")])).toEqual(["treffen"]);
   });
 });

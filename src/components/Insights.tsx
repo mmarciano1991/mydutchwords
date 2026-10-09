@@ -1,6 +1,7 @@
 /* Insights — the dashboard's header block (Figma 317:1416): a topbar with a
    greeting and two counters (days done this week, current streak), and
-   beneath it the deck total split into Learning and Mastered.
+   beneath it the deck total split by learning state: New, Learning,
+   Learned — each count always carries its text label, never colour alone.
 
    Everything shown is derived from synced state, so it needs no state of
    its own. */
@@ -16,15 +17,15 @@ function greeting(now: Date): string {
 
 export function Insights({
   deckCount,
-  masteredCount,
+  counts,
   weekDone,
   streak,
   onOpenWeek,
 }: {
   /** Words saved in the deck. */
   deckCount: number;
-  /** Of those, how many have reached the top of the ladder. */
-  masteredCount: number;
+  /** Words per visible learning state. */
+  counts: { new: number; learning: number; learned: number };
   /** Days done this week. */
   weekDone: number;
   /** Consecutive done days. */
@@ -32,8 +33,6 @@ export function Insights({
   /** The calendar counter opens the Weekly goal screen. */
   onOpenWeek: () => void;
 }) {
-  const learningCount = deckCount - masteredCount;
-
   return (
     <section className="insights">
       <div className="insights__topbar">
@@ -63,13 +62,17 @@ export function Insights({
         <div className="insights__progress">
           <p className="insights__eyebrow">Your progress</p>
           <div className="insights__pills">
+            <div className="insights__pill insights__pill--new">
+              <span className="insights__pill-count">{counts.new}</span>
+              <span className="insights__pill-label">New</span>
+            </div>
             <div className="insights__pill insights__pill--learning">
-              <span className="insights__pill-count">{learningCount}</span>
+              <span className="insights__pill-count">{counts.learning}</span>
               <span className="insights__pill-label">Learning</span>
             </div>
             <div className="insights__pill insights__pill--mastered">
-              <span className="insights__pill-count">{masteredCount}</span>
-              <span className="insights__pill-label">Mastered</span>
+              <span className="insights__pill-count">{counts.learned}</span>
+              <span className="insights__pill-label">Learned</span>
             </div>
           </div>
         </div>

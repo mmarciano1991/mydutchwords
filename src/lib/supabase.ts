@@ -14,6 +14,17 @@ const publicKey = (
 
 export const isSupabaseConfigured = Boolean(url && publicKey);
 
+/** An Edge Function's URL and the headers to call it with, or null when no
+ *  project is configured. For functions that answer with something other
+ *  than JSON (audio), which `functions.invoke` would read as text. */
+export function edgeFunction(name: string): { url: string; headers: Record<string, string> } | null {
+  if (!isSupabaseConfigured) return null;
+  return {
+    url: `${url!.replace(/\/$/, "")}/functions/v1/${name}`,
+    headers: { apikey: publicKey!, Authorization: `Bearer ${publicKey}`, "Content-Type": "application/json" },
+  };
+}
+
 /** The shared client, or null when no project is configured. */
 export const supabase: SupabaseClient | null = isSupabaseConfigured
   ? createClient(url!, publicKey!, {

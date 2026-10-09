@@ -19,3 +19,6 @@ woordkast-design/
 # Editor / OS
 .DS_Store
 .vscode/
+
+# Supabase CLI local state
+supabase/.temp/

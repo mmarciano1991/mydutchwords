@@ -20,6 +20,7 @@ import { Badge } from "../components/Badge";
 import { StatCard } from "../components/StatCard";
 import { WeekGoalStatus } from "../components/WeekGoalStatus";
 import { WordRowCompact } from "../components/WordRowCompact";
+import { Dock } from "../components/Dock";
 
 export type SittingKind = "goal" | "extra" | "warmup";
 
@@ -34,8 +35,10 @@ export function SessionReport({
   tomorrow,
   reflectionReady,
   canExtra,
+  canReplay,
   onReviewMissed,
   onExtra,
+  onReplay,
   onReflection,
   onDone,
 }: {
@@ -51,13 +54,16 @@ export function SessionReport({
   week: WeekProgress;
   /** Dutch words practised for the very first time today. */
   newToday: string[];
-  /** "at 08:00" — completes "See you tomorrow …". */
+  /** " at 08:00", or "" without a reminder — completes "See you tomorrow…". */
   tomorrow: string;
   /** The monthly "then vs now" is due and has something to show. */
   reflectionReady: boolean;
   canExtra: boolean;
+  /** An ungraded "practise again" round is available. */
+  canReplay: boolean;
   onReviewMissed: () => void;
   onExtra: () => void;
+  onReplay: () => void;
   onReflection: () => void;
   onDone: () => void;
 }) {
@@ -68,7 +74,7 @@ export function SessionReport({
   const dayJustDone = kind === "goal" && today.done;
   const title = dayJustDone ? "Done for today!" : kind === "extra" ? "Extra ✓" : "Nice work!";
   const sub = dayJustDone
-    ? `That’s today’s Dutch. See you tomorrow ${tomorrow}.`
+    ? `That’s today’s Dutch. See you tomorrow${tomorrow}.`
     : kind === "extra"
       ? `A bonus — tomorrow is still just ${today.goal} words.`
       : kind === "warmup"
@@ -170,7 +176,7 @@ export function SessionReport({
           secondary button; everything else is a quiet link, so "more" is
           available without being asked for. This screen
           has no tab bar and no close, so it must never be a dead end. */}
-      <div className="gutter report-actions">
+      <Dock className="gutter report-actions">
         {reflectionReady ? (
           <button className="btn btn--primary" onClick={onReflection}>
             See your month in Dutch
@@ -195,7 +201,14 @@ export function SessionReport({
             A few more, just for fun
           </button>
         )}
-      </div>
+        {/* Nothing left to grade today: words can still be gone over again,
+            as many times as the user wants — ungraded, schedule untouched. */}
+        {!reflectionReady && !canExtra && canReplay && (
+          <button className="link-btn" onClick={onReplay}>
+            Practise again
+          </button>
+        )}
+      </Dock>
     </div>
   );
 }

@@ -150,6 +150,8 @@ tab. Vite is configured with `base: "./"` so it works from that subfolder.
 
 - [`docs/auth-setup.md`](docs/auth-setup.md) — optional accounts and cloud
   sync via Supabase.
+- [`docs/tts-setup.md`](docs/tts-setup.md) — the natural (Azure neural) voice
+  for Listening, via a Supabase Edge Function.
 - [`docs/pilot-survey.md`](docs/pilot-survey.md) — running a timed user test:
   querying which words each tester is learning, and building a survey from the
   ones the app calls mastered.
@@ -163,5 +165,5 @@ tab. Vite is configured with `base: "./"` so it works from that subfolder.
 
 ## Out of scope
 
-Spaced-repetition scheduling, audio pronunciation, photo/OCR capture, tags, and
+Spaced-repetition scheduling, photo/OCR capture, tags, and
 sharing are deliberately deferred.

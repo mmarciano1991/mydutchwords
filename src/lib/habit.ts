@@ -4,9 +4,10 @@
    The principle every rule here serves: make the day small and predictable
    enough that doing it is easier than skipping it.
 
-   - A day is DONE once the chosen number of words has been practised.
-     Anything past that is EXTRA, and extra never raises tomorrow's goal —
-     the goal is a setting, not a function of what the user did yesterday.
+   - A day is DONE once one full session has been completed (every word in
+     it answered), counted on the local day the session was finished. More
+     sessions that day add nothing to the streak or the week, and never
+     raise tomorrow's size — that is a setting.
    - Consistency is read primarily per WEEK (N of a target number of days).
      A missed day is simply an empty dot. The dashboard also shows a run of
      consecutive done days (currentStreak), which is kept alive through
@@ -105,9 +106,6 @@ export const RETURN_GAP_DAYS = 3;
 /** Days between "then vs now" reflections. */
 export const REFLECTION_INTERVAL_DAYS = 30;
 
-/** Size of one "a few more" extra round. */
-export const EXTRA_ROUND_WORDS = 5;
-
 export interface HabitState {
   commitment: Commitment;
   /** When the user means to do their Dutch — the cue, and the reminder time. */
@@ -115,6 +113,9 @@ export interface HabitState {
   weeklyTarget: number;
   /** Opt-in: the user turned on the reminder at their habit time. */
   reminders: boolean;
+  /** "Audio exercises": when off, Listening is never selected. On by
+   *  default; habits saved before it existed read as on. */
+  audioExercises: boolean;
   /** Day the habit was set up (YYYY-MM-DD). Reflection timing counts from here. */
   startedAt: string;
   /** Every day the goal was reached. Append-only; unioned across devices. */
@@ -124,7 +125,7 @@ export interface HabitState {
   /** Day the welcome-back popup was last shown — also what makes that day a
    *  return day with the smaller goal. */
   welcomedOn: string | null;
-  /** When the preferences (commitment/time/target/reminders) last changed.
+  /** When the preferences (commitment/time/target/reminders/audio) last changed.
    *  The tie-break for merging two devices' preferences. */
   updatedAt: number;
 }
@@ -150,6 +151,7 @@ export function normalizeHabit(raw: unknown): HabitState | null {
     lastReflection: h.lastReflection ?? null,
     welcomedOn: h.welcomedOn ?? null,
     reminders: Boolean(h.reminders),
+    audioExercises: h.audioExercises !== false,
   };
 }
 
@@ -162,6 +164,7 @@ export function newHabit(
     time: choice.time,
     weeklyTarget: DEFAULT_WEEKLY_TARGET,
     reminders: false,
+    audioExercises: true,
     startedAt: dayKey(now),
     doneDays: [],
     lastReflection: null,
@@ -208,13 +211,12 @@ export interface TodayProgress {
   done: boolean;
 }
 
-/** Today's goal. The commitment, except:
- *  - on a return day it is the warm-up, so coming back is one small step;
- *  - it never exceeds the deck, so a tiny deck can still finish its day. */
-export function todaysGoal(habit: HabitState, deckSize: number, today: string): number {
-  let goal = commitmentOf(habit.commitment).words;
-  if (habit.welcomedOn === today) goal = Math.min(goal, RETURN_WARMUP_WORDS);
-  return Math.max(1, Math.min(goal, deckSize));
+/** Words per session: the commitment's size (10/20/30), except on a return
+ *  day, when it is the warm-up, so coming back is one small step. Sessions
+ *  hold fewer when fewer words are eligible (see selectSessionWords). */
+export function sessionSizeFor(habit: HabitState | null, today: string): number {
+  const size = commitmentOf(habit?.commitment ?? "espresso").words;
+  return habit?.welcomedOn === today ? Math.min(size, RETURN_WARMUP_WORDS) : size;
 }
 
 export function todayProgress(goal: number, practised: number, alreadyDone: boolean): TodayProgress {
@@ -340,8 +342,15 @@ export function reflectionDue(habit: HabitState, now: Date): boolean {
 }
 
 /** Copy for the home screen's practice card: "🌙 Your Dutch at 21:30". */
+/** Copy for the home screen's practice card: "🌙 Your Dutch at 21:30". */
 export function cueLine(habit: HabitState): string {
   return `${timeEmoji(habit.time)} Your Dutch at ${habit.time}`;
+}
+
+/** Completes "See you tomorrow…": " at 08:00" — the time chosen in
+ *  onboarding, the cue the habit hangs off. "" before onboarding. */
+export function tomorrowAt(habit: HabitState | null): string {
+  return habit ? ` at ${habit.time}` : "";
 }
 
 /** The commitment as one sentence: "Every day at 08:00, I learn 5 Dutch words." */

@@ -370,36 +370,52 @@ input {
    trim their side padding: at 46px there is no room for a label to wrap. */
 .btn--success,
 .btn--difficult {
+  flex: 1;
+  min-height: 48px;
+  max-height: 48px;
   gap: var(--space-2);
   padding-inline: var(--space-2);
+  overflow: hidden;
 }
 .btn--success {
-  flex: 1;
-  background: var(--semantic-success-success-default);
-  color: var(--semantic-success-onsuccess-default);
-  box-shadow: var(--shadow-success);
+  background: var(--success-bg);
+  border-color: var(--success-solid);
+  color: var(--success-fg);
 }
 .btn--success:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 .btn--success:active:not(:disabled) {
   transform: translateY(1px);
-  box-shadow: var(--shadow-pressed);
+}
+
+/* A swiped flashcard past its commit point lifts the button it will press,
+   which fills to its solid colour. */
+.btn--success.is-armed,
+.btn--difficult.is-armed {
+  transform: scale(1.04);
+  color: var(--on-primary);
+}
+.btn--success.is-armed {
+  background: var(--success-solid);
+  box-shadow: var(--shadow-success);
+}
+.btn--difficult.is-armed {
+  background: var(--error-fg);
+  border-color: var(--error-fg);
 }
 
 /* difficult — outlined error (Practice "Still learning"; Figma type=difficult) */
 .btn--difficult {
-  flex: 1;
-  border-color: var(--semantic-error-outline-default);
-  background: var(--semantic-surface-subdle);
-  color: var(--semantic-error-onerror-default);
+  border-color: var(--error-border);
+  background: var(--error-bg);
+  color: var(--error-fg);
   box-shadow: none;
 }
 .btn--difficult:hover:not(:disabled) {
-  background: var(--semantic-error-error-default);
+  transform: translateY(-1px);
 }
 .btn--difficult:active:not(:disabled) {
-  background: var(--semantic-error-error-default);
   transform: translateY(1px);
 }
 
@@ -907,6 +923,16 @@ textarea.text-input {
   font-size: var(--size-hero-stat);
   line-height: 1.1;
 }
+/* Type=Progress (Figma 375:1929): close + progress bar on the row, and the
+   title on its own line beneath, in primary — a 44px slot that grows when a
+   long title wraps. */
+.appbar--progress .appbar__title {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary);
+}
 /* Balances a lone back button so the title stays optically centred. */
 .appbar__spacer {
   width: 38px;
@@ -1079,7 +1105,9 @@ textarea.text-input {
    same ramp, which separates the nav from busy content without reading as a
    bar. Both bleed 24px above the band so the ramp has room to start. */
 .bottomnav::before,
-.bottomnav::after {
+.bottomnav::after,
+.dock::before,
+.dock::after {
   content: "";
   position: absolute;
   left: 0;
@@ -1089,7 +1117,8 @@ textarea.text-input {
   z-index: -1;
   pointer-events: none;
 }
-.bottomnav::before {
+.bottomnav::before,
+.dock::before {
   background: linear-gradient(
     to bottom,
     transparent,
@@ -1100,7 +1129,8 @@ textarea.text-input {
   -webkit-mask-image: linear-gradient(to bottom, transparent, #000 55%);
   mask-image: linear-gradient(to bottom, transparent, #000 55%);
 }
-.bottomnav::after {
+.bottomnav::after,
+.dock::after {
   background: linear-gradient(
     to bottom,
     transparent,
@@ -1114,13 +1144,68 @@ textarea.text-input {
 /* No backdrop blur available: fall back to the tint alone, a little stronger,
    so the nav still lifts off the content. */
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .bottomnav::after {
+  .bottomnav::after,
+  .dock::after {
     background: linear-gradient(
       to bottom,
       transparent,
       color-mix(in srgb, var(--bg-canvas) 80%, transparent)
     );
   }
+}
+/* A screen's bottom actions (Dock.tsx), floating over the body on the same
+   blur as the nav rather than on a band of solid canvas. The body keeps a
+   spacer the dock's measured height, so its last row can scroll clear. */
+.screen:has(> .dock) {
+  position: relative;
+}
+.dock {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+}
+.screen:has(> .dock) > .screen__body::after {
+  content: "";
+  display: block;
+  flex-shrink: 0;
+  height: var(--dock-h, 0px);
+}
+/* edge="top": a header the body scrolls up under. Same two blur layers,
+   mirrored — opaque at the top edge, clearing as they reach the content,
+   bleeding 24px below the band so the ramp has room. The body's first block
+   starts the header's measured height down, so nothing begins hidden. */
+.dock--top {
+  top: 0;
+  bottom: auto;
+  background: transparent;
+}
+.dock--top::before,
+.dock--top::after {
+  top: 0;
+  bottom: -24px;
+}
+.dock--top::before {
+  background: linear-gradient(
+    to top,
+    transparent,
+    color-mix(in srgb, var(--bg-canvas) 35%, transparent)
+  );
+  -webkit-mask-image: linear-gradient(to top, transparent, #000 55%);
+  mask-image: linear-gradient(to top, transparent, #000 55%);
+}
+.dock--top::after {
+  background: linear-gradient(
+    to top,
+    transparent,
+    color-mix(in srgb, var(--bg-canvas) 97%, transparent) 40%
+  );
+  -webkit-mask-image: linear-gradient(to top, transparent, #000 40%);
+  mask-image: linear-gradient(to top, transparent, #000 40%);
+}
+.screen:has(> .dock--top) > .screen__body > :first-child {
+  margin-top: var(--dock-top-h, 0px);
 }
 /* Room for the floating nav, so the last row of a screen can scroll clear of
    it: the 62px pill plus the nav's padding above and below. */
@@ -1677,18 +1762,56 @@ textarea.text-input {
   width: 100%;
   border: none;
   background: transparent;
-  padding: 10px 0 6px;
+  padding: 0;
   display: flex;
-  align-items: center;
+  /* The card stretches to the height it's given (never under 360px). */
+  align-items: stretch;
   justify-content: center;
   perspective: 1400px; /* depth for the 3D flip */
+  /* Horizontal drags are the card's; vertical ones still scroll the page. */
+  touch-action: pan-y;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  /* Each new card is dealt in: it rises from just behind where the last one
+     was. `backwards`, not `both`, so it never pins the transform once done. */
+  animation: flashcard-deal var(--motion-settle) var(--ease-standard) backwards;
+}
+@keyframes flashcard-deal {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+/* The swipe layer (Figma 413:2373): follows the finger, leans with it, and
+   on release either springs back (--ease-spring) or flies off the side it was
+   thrown to (--ease-accelerate). The flip lives one layer in, so the two
+   motions never fight over one transform. */
+.flashcard__swipe {
+  display: flex;
+  width: 100%;
+  max-width: 300px;
+  will-change: transform;
+  transition: transform var(--motion-settle) var(--ease-spring);
+}
+.flashcard__swipe.is-dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+.flashcard__swipe.is-leaving {
+  opacity: 0;
+  transition:
+    transform var(--motion-swipe) var(--ease-accelerate),
+    opacity var(--motion-swipe) var(--ease-accelerate);
+  pointer-events: none;
 }
 /* Rotating container: both faces are stacked (grid) and share the cell, so the
    card sizes to the taller face and the two faces flip together. */
 .flashcard__inner {
   display: grid;
+  flex: 1;
   width: 100%;
-  max-width: 300px;
   transform-style: preserve-3d;
   transition: transform var(--motion-flip) var(--ease-emphasized);
 }
@@ -1713,11 +1836,45 @@ textarea.text-input {
   text-align: center;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
+  --face-bg: var(--surface-card);
+  --face-edge: var(--border-cool);
+  transition:
+    background var(--motion-base) var(--ease-standard),
+    border-color var(--motion-base) var(--ease-standard),
+    box-shadow var(--motion-base) var(--ease-standard);
 }
 .flashcard__face--back {
   background: var(--surface-tint);
   border-color: var(--primary-border);
+  --face-bg: var(--surface-tint);
+  --face-edge: var(--primary-border);
   transform: rotateY(180deg); /* pre-rotated so it reads correctly when flipped */
+}
+/* Leaning toward an answer: the face blends into that answer's colours as
+   the card travels (--swipe, 0→1 at the commit distance), its 1px edge
+   thickening to the design's 2px through an inset ring so nothing reflows. */
+.flashcard--knew {
+  --tint: var(--success-bg);
+  --edge: var(--success-solid);
+  --verdict: var(--success-solid);
+}
+.flashcard--learning {
+  --tint: var(--error-bg);
+  --edge: var(--error-fg);
+  --verdict: var(--error-fg);
+  /* Still learning keeps the 1px edge (Figma Flashcard error). */
+  --ring: 0px;
+}
+.flashcard--knew .flashcard__face,
+.flashcard--learning .flashcard__face {
+  background: color-mix(in srgb, var(--tint) calc(var(--swipe) * 100%), var(--face-bg));
+  border-color: color-mix(in srgb, var(--edge) calc(var(--swipe) * 100%), var(--face-edge));
+  box-shadow:
+    var(--shadow-float),
+    inset 0 0 0 var(--ring, 1px) color-mix(in srgb, var(--edge) calc(var(--swipe) * 100%), transparent);
+}
+.flashcard__swipe.is-dragging .flashcard__face {
+  transition: none;
 }
 .flashcard__word {
   font-family: var(--font-serif);
@@ -1738,6 +1895,19 @@ textarea.text-input {
   font-size: var(--size-label);
   font-weight: 600;
   letter-spacing: 0.04em;
+}
+/* "Tap to flip" gives way to the answer the card is heading for (Word/Row). */
+.flashcard__hint--verdict {
+  font: var(--type-word-row);
+  letter-spacing: 0;
+  color: var(--verdict);
+  animation: flashcard-verdict-in var(--motion-base) var(--ease-emphasized) both;
+}
+@keyframes flashcard-verdict-in {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
 }
 /* ── Exercises — multiple choice and typed translation (Practice) ──
    The same vocabulary as the flashcard: an English prompt on a porcelain
@@ -1761,15 +1931,48 @@ textarea.text-input {
     transform: none;
   }
 }
-.exercise__note {
-  margin: var(--space-2) 0 0;
-  text-align: center;
-  font: var(--type-caption);
-  color: var(--text-faint);
+/* Per-exercise layouts (Figma "Practice session" board). The screen title
+   now lives in the Appbar, so each body opens straight onto its content. */
+/* The card fills the space between header and buttons (Figma: 100px air
+   above and below at 844px tall; less on a shorter screen). */
+.exercise--flashcard {
+  padding: clamp(var(--space-5), 100dvh - 744px, 100px) var(--space-5);
+  /* The card flies off the side; the phone frame clips it, not a scrollbar. */
+  overflow-x: hidden;
 }
-.exercise__eyebrow {
-  margin: 0 0 var(--space-3);
-  text-align: center;
+.exercise--choice {
+  padding-top: 0;
+  gap: var(--space-7);
+}
+.exercise--listening {
+  gap: var(--space-6);
+}
+.exercise--typed {
+  padding-top: 0;
+}
+/* Matching has no prompt card: the grid sits in the middle of the screen. */
+.exercise--matching {
+  justify-content: safe center;
+}
+/* The instruction line and the options it introduces. */
+.exercise__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.exercise--listening .exercise__group {
+  gap: var(--space-4);
+}
+/* The answer field under the prompt (TypedExercise); Check is in the panel. */
+.exercise__form {
+  padding-top: var(--space-5);
+}
+/* Flashcard rating buttons, side by side in the dock. */
+.exercise__rate {
+  display: flex;
+  gap: var(--space-4);
+  padding-top: var(--space-5);
+  padding-bottom: max(var(--space-5), env(safe-area-inset-bottom));
 }
 .exercise__prompt {
   min-height: 150px;
@@ -1780,9 +1983,13 @@ textarea.text-input {
   gap: var(--space-3);
   padding: 28px var(--space-5);
   text-align: center;
-  background: var(--surface-card);
-  border: 1px solid var(--border-cool);
+  /* An outline on the canvas, not a raised card (Figma Practice session). */
+  background: none;
+  border: 1px solid var(--bg-canvas-deep);
   border-radius: var(--radius-card-lg);
+}
+/* The sentence card keeps a soft lift. */
+.exercise--typed .exercise__prompt:has(.exercise__sentence) {
   box-shadow: var(--shadow-card);
 }
 .exercise__word {
@@ -1799,7 +2006,7 @@ textarea.text-input {
 
 /* The line above the options: the instruction, then the verdict in its place. */
 .exercise__verdict {
-  margin: var(--space-5) var(--space-1) var(--space-3);
+  margin: 0;
   font-family: var(--font-sans);
   font-size: var(--size-body);
   font-weight: 700;
@@ -1840,7 +2047,7 @@ textarea.text-input {
     opacity var(--motion-base) var(--ease-standard),
     transform var(--motion-fast) var(--ease-emphasized);
 }
-.answer-option:hover:not([aria-disabled="true"]) {
+.answer-option:hover:not([aria-disabled="true"]):not(:disabled):not(.is-selected) {
   border-color: var(--line-cool-strong);
 }
 .answer-option:active:not([aria-disabled="true"]) {
@@ -1854,34 +2061,64 @@ textarea.text-input {
 .answer-option[aria-disabled="true"] {
   cursor: default;
 }
+.answer-option__label {
+  flex: 1;
+  min-width: 0;
+}
 .answer-option__icon {
   display: flex;
   flex-shrink: 0;
 }
-/* Picked, and right. */
+/* Answered states — the select component (Figma 408:2183). Each draws a 2px
+   edge; the padding gives back the extra half-pixel so nothing shifts. */
+.answer-option.is-right,
+.answer-option.is-wrong,
+.answer-option.is-answer {
+  border-width: 2px;
+}
+.answer-option.is-right,
+.answer-option.is-wrong,
+.answer-option.is-answer {
+  padding: calc(var(--space-3) - 0.5px) calc(18px - 0.5px);
+}
+/* status=Selected — picked, not yet checked. */
+.answer-option.is-selected {
+  border-width: 2px;
+  padding: calc(var(--space-3) - 0.5px) calc(18px - 0.5px);
+  border-color: var(--primary);
+  background: var(--surface-tint);
+}
+/* status=Inactive — a finished pair, once its green has played: muted and
+   out of play (Figma Matching-Success 424:2162). */
+.answer-option.is-matched {
+  color: var(--ink-300);
+}
 .answer-option.is-right {
   background: var(--semantic-success-success-subdle);
   border-color: var(--semantic-success-success-default);
   color: var(--semantic-success-onsuccess-strong);
   animation: choice-pop var(--motion-nav) var(--ease-emphasized);
 }
-/* Picked, and wrong. */
+/* status=Error — picked, and wrong. */
 .answer-option.is-wrong {
   background: var(--semantic-error-error-default);
-  border-color: var(--semantic-error-outline-default);
+  border-color: var(--semantic-error-onerror-default);
   color: var(--semantic-error-onerror-default);
   animation: choice-shake var(--motion-nav) var(--ease-standard);
 }
-/* Not picked, but the right one: pointed out quietly, not celebrated. */
+/* status=right — not picked, but the right one: pointed out with a dashed
+   edge, not celebrated. */
 .answer-option.is-answer {
+  background: var(--semantic-success-success-subdle);
   border-style: dashed;
   border-color: var(--semantic-success-success-default);
   color: var(--semantic-success-onsuccess-strong);
-  box-shadow: none;
 }
-.answer-option.is-dim {
-  opacity: 0.5;
-  box-shadow: none;
+.answer-option__icon svg,
+.match-option.is-right > svg,
+.match-option.is-wrong > svg {
+  flex-shrink: 0;
+  animation: icon-btn-check-pop var(--motion-base) var(--ease-emphasized);
 }
 @keyframes choice-pop {
   50% {
@@ -1897,31 +2134,248 @@ textarea.text-input {
   }
 }
 
-.exercise__feedback {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  margin-top: var(--space-5);
-  animation: exercise-in var(--motion-base) var(--ease-standard) both;
+/* ── Phase 2 exercises: context sentence, sentence completion, listening,
+   matching. Same tokens as the choice options above; state is never shown
+   by colour alone (icons, weight and underline carry it too). ── */
+.context-sentence {
+  padding: var(--space-3) var(--space-4);
+  background: var(--surface-card);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-input);
 }
-.exercise__yours {
-  margin: 0 var(--space-1);
-  font: var(--type-body-sm);
-  color: var(--text-muted);
-}
-.exercise__yours span {
-  font-weight: 700;
-  text-decoration: line-through;
+.context-sentence__nl {
+  margin: 0;
+  font: var(--type-quote);
   color: var(--text-body);
 }
-
-.exercise__actions {
-  padding-top: var(--space-3);
-  padding-bottom: max(32px, env(safe-area-inset-bottom));
+.context-sentence__en {
+  margin: var(--space-1) 0 0;
+  font: var(--type-body-sm);
+  font-style: italic;
+  color: var(--text-muted);
+}
+.context-sentence__target {
+  background: none;
+  color: var(--text-display);
+  font-weight: 700;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+.exercise__hint {
+  margin: 0;
+  font: var(--type-caption);
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+/* Title/Serif, with the gap as a dashed slot in the line. */
+.exercise__sentence {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: var(--size-title-serif);
+  line-height: 1.5;
+  color: var(--text-display);
+}
+.exercise--typed .exercise__example {
+  font-family: var(--font-serif);
+  font-weight: 500;
+  font-style: italic;
+  font-size: var(--size-body);
+  line-height: 1.5;
+  color: var(--text-faint);
+}
+/* The gap mirrors the answer field below, in the sentence's own type. */
+.exercise__gap {
+  display: inline-block;
+  max-width: 100%;
+  min-width: 65px;
+  height: 28px;
+  margin: 0 var(--space-2);
+  padding: 0 var(--space-2);
+  border: 2px dashed var(--primary-border);
+  border-radius: var(--radius-chip);
+  color: var(--primary);
+  line-height: 24px;
+  text-align: center;
+  vertical-align: middle;
+  transition:
+    border-color var(--motion-base) var(--ease-standard),
+    background var(--motion-base) var(--ease-standard);
+}
+.exercise__gap-line {
+  white-space: nowrap;
+}
+.exercise__gap.is-filled {
+  border-style: solid;
+  border-color: var(--primary);
+}
+.exercise__gap.is-right {
+  color: var(--semantic-success-onsuccess-strong);
+  border-color: var(--semantic-success-success-default);
+  background: var(--semantic-success-success-subdle);
+}
+.exercise__gap.is-wrong {
+  color: var(--semantic-error-onerror-default);
+  border-color: var(--semantic-error-onerror-default);
+  background: var(--semantic-error-error-default);
+  text-decoration: line-through;
+}
+.listen-button {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-4) var(--space-5);
+  border: 1.5px solid var(--border-cool);
+  border-radius: var(--radius-card-lg);
+  background: var(--surface-tint);
+  color: var(--text-display);
+  font-weight: 700;
+}
+.listen-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
+}
+.matching {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.matching__col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-width: 0;
+}
+/* Matching tiles are answer options (the select component) at half width. */
+.match-option {
+  overflow-wrap: anywhere;
+}
+.match-option > svg {
+  flex-shrink: 0;
+}
+.match-option:disabled {
+  cursor: default;
 }
 
-/* The answer field: the InputField pill, with the skip link and a round
-   submit inside it — one row, so the keyboard covers nothing that matters. */
+/* ── Answer panel (Figma "Answer") — the foot of every graded exercise:
+   Check + "I do not know" while answering, then the verdict on a tinted
+   band — green with Continue, or red with Got it — over the word in its
+   sentence. ── */
+.answer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  padding-bottom: max(var(--space-5), env(safe-area-inset-bottom));
+}
+/* A verdict band is solid, so the dock's fade-and-blur steps aside. */
+.answer-panel--correct::before,
+.answer-panel--correct::after,
+.answer-panel--wrong::before,
+.answer-panel--wrong::after {
+  content: none;
+}
+/* Check is disabled until there is something to check (Figma: inactive). */
+.answer-panel .btn--primary:disabled {
+  background: var(--ink-300);
+  color: var(--on-primary);
+}
+.answer-panel__link {
+  width: 100%;
+  padding: var(--space-2);
+  border: none;
+  border-radius: var(--radius-input);
+  background: none;
+  font: var(--type-button);
+  color: var(--primary);
+}
+.answer-panel__link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--blue-100);
+}
+.answer-panel--correct {
+  --panel-ink: var(--success-solid);
+  background: var(--success-bg);
+  animation: answer-panel-in var(--motion-nav) var(--ease-standard);
+}
+.answer-panel--wrong {
+  --panel-ink: var(--error-fg);
+  background: var(--error-bg);
+  animation: answer-panel-in var(--motion-nav) var(--ease-standard);
+}
+/* The band's colour floods up from the canvas; its content rises in. */
+@keyframes answer-panel-in {
+  from {
+    background: transparent;
+  }
+}
+.answer-panel__feedback,
+.answer-panel__continue {
+  animation: exercise-in var(--motion-nav) var(--ease-standard) both;
+}
+.answer-panel__feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  color: var(--panel-ink);
+}
+.answer-panel__title {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-sans);
+  font-size: var(--size-body);
+  font-weight: 700;
+  line-height: 1.55;
+}
+.answer-panel__title svg {
+  flex-shrink: 0;
+}
+.answer-panel__soft {
+  font-weight: 400;
+}
+/* The context sentence, set as plain UI/Body Small on the band. */
+.answer-panel .context-sentence {
+  padding: 0;
+  background: none;
+  border: none;
+}
+.answer-panel .context-sentence__nl,
+.answer-panel .context-sentence__en {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: inherit;
+}
+.answer-panel .context-sentence__en {
+  font-style: italic;
+}
+.answer-panel__note {
+  margin: var(--space-1) 0 0;
+  font: var(--type-body-sm);
+  font-weight: 700;
+}
+.answer-panel .context-sentence__target {
+  color: inherit;
+  text-decoration-thickness: 1px;
+}
+.answer-panel__continue {
+  background: var(--panel-ink);
+  color: var(--on-primary);
+}
+.answer-panel__continue:hover {
+  transform: translateY(-1px);
+}
+.answer-panel__continue:active {
+  transform: translateY(1px);
+}
+.answer-panel__continue:focus-visible {
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--panel-ink) 30%, transparent);
+}
+
+/* The answer field — the InputField pill (Figma 225:1314). */
 .answer-bar {
   display: flex;
   align-items: center;
@@ -1950,51 +2404,6 @@ textarea.text-input {
 }
 .answer-bar__input::placeholder {
   color: var(--text-faint);
-}
-.answer-bar__skip {
-  flex-shrink: 0;
-  background: none;
-  border: none;
-  padding: var(--space-2);
-  font: var(--type-button);
-  font-size: var(--size-body-sm);
-  color: var(--primary);
-}
-.answer-bar__skip:disabled {
-  color: var(--text-faint);
-  cursor: default;
-}
-.answer-bar__submit {
-  flex-shrink: 0;
-  width: 42px;
-  height: 42px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: none;
-  border-radius: 50%;
-  background: var(--semantic-button-default);
-  color: var(--semantic-button-onbutton-default);
-  box-shadow: var(--shadow-pressed);
-  transition:
-    background var(--motion-base) var(--ease-standard),
-    transform var(--motion-fast) var(--ease-emphasized);
-}
-.answer-bar__submit:active:not(:disabled) {
-  transform: translateY(1px);
-  background: var(--semantic-button-pressed-strong);
-}
-.answer-bar__submit:disabled {
-  background: var(--line-cool-strong);
-  color: var(--surface-card);
-  box-shadow: none;
-  cursor: default;
-}
-.answer-bar__skip:focus-visible,
-.answer-bar__submit:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 3px var(--blue-100);
-  border-radius: var(--radius-pill);
 }
 
 /* Read by screen readers, invisible on screen. */
@@ -2042,7 +2451,6 @@ textarea.text-input {
   font-size: 13px;
   padding: 0;
 }
-
 /* ── Motion & micro-interactions ──
    Subtle, fast, Material-inspired. Lives close to the interactive elements so
    intent is obvious. All of it is disabled under prefers-reduced-motion below. */
@@ -2330,6 +2738,20 @@ textarea.text-input {
   font-weight: 700;
   font-size: var(--size-body-sm);
   line-height: 1.45;
+}
+
+/* Third state pill — New. Neutral: the label carries the meaning. */
+.insights__pill--new {
+  border-color: var(--border-cool);
+  color: var(--text-body);
+}
+
+/* Mastery bar: a word not practised yet. */
+.mastery--new {
+  background: var(--border-cool);
+}
+.mastery--new .mastery__fill {
+  background: var(--text-faint);
 }
 
 /* ── PracticeCard — the flashcard session entry point (Figma 304:1067) ── */

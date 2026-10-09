@@ -1,6 +1,7 @@
 /* Onboarding — the 2-minute promise.
 
-   Four short screens, then straight into the first words:
+   Four short screens, then straight into the first words — or, for a new
+   user with no words yet, straight to adding the first one:
 
      1. Welcome      — the promise: small, daily, enough
      2. Commitment   — "How much Dutch fits your day?"
@@ -8,8 +9,9 @@
      4. Plan         — the choice read back as one sentence: "Every day at
                        08:00, I learn 5 Dutch words."
 
-   Nothing else is asked. The last button starts the first session directly;
-   the dashboard is seen for the first time after the first win, not before.
+   Nothing else is asked. For someone who already has words, the last button
+   starts the first session directly; for a new user it opens "Add a word"
+   (there is no starter deck — words come only from what the user meets).
 
    Every choice is editable later in Settings, and the screens say so —
    picking the small option should never feel like locking oneself in. */
@@ -27,6 +29,7 @@ import {
   type Commitment,
   type HabitTime,
 } from "../lib/habit";
+import { Dock } from "../components/Dock";
 
 type Step = "welcome" | "commitment" | "time" | "plan";
 const STEPS: Step[] = ["welcome", "commitment", "time", "plan"];
@@ -74,11 +77,11 @@ export function Onboarding({
                 : "Five minutes is enough. We’ll keep it small enough to fit into even your busiest day — that’s how it becomes a habit."}
             </p>
           </div>
-          <div className="gutter onb__foot">
+          <Dock className="gutter onb__foot">
             <button className="btn btn--primary" onClick={() => setStep("commitment")}>
               {existingUser ? "Set my rhythm" : "Let’s start"}
             </button>
-          </div>
+          </Dock>
         </>
       )}
 
@@ -108,11 +111,11 @@ export function Onboarding({
             </div>
             <p className="onb__note">Consistency matters more than size. You can change this anytime.</p>
           </div>
-          <div className="gutter onb__foot">
+          <Dock className="gutter onb__foot">
             <button className="btn btn--primary" disabled={!commitment} onClick={() => setStep("time")}>
               Continue
             </button>
-          </div>
+          </Dock>
         </>
       )}
 
@@ -134,11 +137,11 @@ export function Onboarding({
               }}
             />
           </div>
-          <div className="gutter onb__foot">
+          <Dock className="gutter onb__foot">
             <button className="btn btn--primary" disabled={!isHabitTime(timeInput)} onClick={() => setStep("plan")}>
               Continue
             </button>
-          </div>
+          </Dock>
         </>
       )}
 
@@ -150,14 +153,14 @@ export function Onboarding({
             <ul className="onb__facts">
               <li>Done means done — anything more is a bonus, never tomorrow&rsquo;s homework.</li>
               <li>Aim for {DEFAULT_WEEKLY_TARGET} days a week. Missing a day is normal.</li>
-              {!existingUser && <li>We&rsquo;ve picked 30 everyday words to start. Add your own anytime.</li>}
+              {!existingUser && <li>Start with a Dutch word you met today — a sign, a letter, a colleague.</li>}
             </ul>
           </div>
-          <div className="gutter onb__foot">
+          <Dock className="gutter onb__foot">
             <button className="btn btn--primary" onClick={() => onComplete({ commitment, time })}>
-              Start my first {commitmentOf(commitment).words} words
+              {existingUser ? `Start my first ${commitmentOf(commitment).words} words` : "Add my first word"}
             </button>
-          </div>
+          </Dock>
         </>
       )}
     </div>

@@ -86,6 +86,7 @@ export function Browse({
     <div className="screen">
       <Appbar
         title="Your deck"
+        floating
         search={
           entries.length > 0
             ? {

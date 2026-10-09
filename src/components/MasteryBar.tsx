@@ -1,26 +1,30 @@
 /* MasteryBar — word progress indicator (Figma node 114:202).
-   Shows the word's position on the spaced-repetition ladder (level 0–6,
-   see lib/learningEngine): the fill width is level / MAX_LEVEL and the
-   colour tier is gold while learning and green once mastered. With `withLabel`, the tier name is shown beneath the bar
-   (as in the WordRow, Figma 104:161). */
+   Shows the word's learning state — New, Learning, Learned — via its
+   derived 0–6 level (lib/learningEngine.legacyLevel: 0 is New, 6 is
+   Learned, 1–5 is Learning by interval). The fill width is level / MAX_LEVEL.
+   Colour is never the only signal: with `withLabel` the state's name is
+   shown beneath the bar (as in the WordRow, Figma 104:161), and the
+   accessible name always carries it. */
 import { MAX_LEVEL } from "../lib/learningEngine";
 
-type Tier = "learning" | "mastered";
+type Tier = "new" | "learning" | "mastered";
 
 function tierFor(level: number): Tier {
+  if (level <= 0) return "new";
   return level >= MAX_LEVEL ? "mastered" : "learning";
 }
 
 const LABEL: Record<Tier, string> = {
+  new: "New",
   learning: "Learning",
-  mastered: "Mastered",
+  mastered: "Learned",
 };
 
 export function MasteryBar({
   level,
   withLabel = false,
 }: {
-  /** Ladder level 0–MAX_LEVEL from the word's spaced-repetition state. */
+  /** The word's derived level 0–MAX_LEVEL (see lib/learningEngine). */
   level: number;
   withLabel?: boolean;
 }) {
@@ -30,7 +34,7 @@ export function MasteryBar({
     <span
       className={`mastery mastery--${tier}`}
       role="img"
-      aria-label={`Progress: ${LABEL[tier]} (level ${level} of ${MAX_LEVEL})`}
+      aria-label={`Progress: ${LABEL[tier]}`}
     >
       <span className="mastery__fill" style={{ width: `${pct}%` }} />
     </span>
