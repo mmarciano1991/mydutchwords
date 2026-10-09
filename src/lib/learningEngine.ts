@@ -325,17 +325,24 @@ function nextInterval(word: Word, kind: EvidenceKind, now: Date): number {
  * Only the first graded answer of a local day changes anything. Flashcards,
  * skips, practice rounds and repeat answers on the same day come back with
  * the word unchanged (a skip only marks Listening as off-limits next time).
+ *
+ * Nor does a right answer on a word that isn't due yet: a session tops up
+ * with words pulled forward, and promoting those walked a small deck
+ * practised daily to Learned in a week. An early miss is real evidence and
+ * counts.
  */
 export function gradeWord(word: Word, input: AnswerInput, now: Date): GradeOutcome {
   const { exerciseType, result } = input;
   const today = dayKey(now);
   const before = word;
 
+  const earlyRecall = (result === "correct" || result === "almost") && word.state !== "new" && !isDue(word, now);
   const graded =
     !input.practice &&
     exerciseType !== "flashcard" &&
     isGradedResult(result) &&
-    word.lastGradedDay !== today;
+    word.lastGradedDay !== today &&
+    !earlyRecall;
 
   let next: Word = word;
 

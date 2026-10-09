@@ -1,10 +1,19 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
-import { addCustomEntry, editEntry, getCustomEntries, resolveEntry, setCustomEntries } from "./lib/wordSources";
+import {
+  addCustomEntry,
+  editEntry,
+  pinSenseEntries,
+  resolveEntry,
+  setCustomEntries,
+  useCustomEntriesVersion,
+} from "./lib/wordSources";
+import { useToday } from "./lib/useToday";
 import {
   isInDeck,
   loadDeck,
   loadHabit,
+  loadOwner,
   loadResults,
   loadRun,
   newDeckItem,
@@ -70,7 +79,7 @@ import { expandOriginFrom, type ExpandOrigin } from "./lib/expandOrigin";
 import { useAuth } from "./lib/useAuth";
 import { useCloudSync } from "./lib/useCloudSync";
 import { signOut } from "./lib/auth";
-import { pushState, type AppState } from "./lib/cloudState";
+import type { AppState } from "./lib/cloudState";
 import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
 import { Practice, type PracticeCard, type StepAnswer } from "./screens/Practice";
@@ -93,10 +102,11 @@ type Route = Tab | "practice" | "report" | "reflection" | "week" | "add-choice" 
 const FOCUSED: Route[] = ["practice", "report", "reflection", "week", "add-choice", "capture", "add-from-text"];
 
 /* How long to wait for a signed-in user's remote habit before showing
-   onboarding anyway. Normally hydration lands well inside this; the grace
-   only matters offline, where waiting forever would be a blank screen. If
-   the remote habit does arrive later, the merge keeps both sides' history. */
-const HYDRATION_GRACE_MS = 4000;
+   onboarding anyway. A failed pull stops the wait at once (offline); this
+   only bounds a request that neither lands nor fails. Kept generous:
+   showing onboarding to a returning user on a slow connection would have
+   them set up a habit they already have. */
+const HYDRATION_GRACE_MS = 15_000;
 
 /** Exercise types the practice screen can show. */
 const SUPPORTED_EXERCISES: ReadonlySet<ExerciseType> = new Set<ExerciseType>([
@@ -193,6 +203,8 @@ export default function App() {
 
   // Applies a merged remote+local snapshot after login (custom words are set
   // by the sync hook before this runs).
+  const { today } = useToday();
+
   const applyMerged = useCallback((state: AppState) => {
     setDeck(state.deck);
     setResults(state.results);
@@ -200,7 +212,7 @@ export default function App() {
     setHabit(state.habit ?? null);
   }, []);
 
-  const { hydrated } = useCloudSync({
+  const { hydrated, hydrationFailed, flush } = useCloudSync({
     userId: user?.id ?? null,
     deck,
     results,
@@ -223,15 +235,14 @@ export default function App() {
     if (locked) setRoute("dashboard");
   }, [locked]);
 
-  async function handleSignOut() {
-    // Flush the latest state before signing out: the debounced push (see
-    // useCloudSync) may not have fired yet for the last few seconds of
-    // progress, and it's about to be wiped from local storage below. Must
-    // happen while still authenticated — RLS needs auth.uid() = user_id.
-    if (user) {
-      await pushState(user.id, { deck, results, run, habit, customWords: getCustomEntries() });
-      await flushReviewEvents(user.id);
-    }
+  /** Signs out, wiping this device's copy. Resolves false — and does nothing
+   *  — when the latest progress couldn't be saved first, unless `force`d:
+   *  the wipe would otherwise destroy the only copy of it. */
+  async function handleSignOut({ force = false } = {}): Promise<boolean> {
+    // Must happen while still authenticated — RLS needs auth.uid() = user_id.
+    const saved = await flush();
+    if (!saved && !force) return false;
+    if (user) await flushReviewEvents(user.id);
     await signOut();
     // Start the local session clean so the next account doesn't inherit this
     // deck.
@@ -244,6 +255,7 @@ export default function App() {
     // the app, and has an account by definition.
     setAuthMode("signin");
     setAuthStep("auth");
+    return true;
   }
 
   // Resolve the deck (newest first) into full dictionary entries. Recomputed
@@ -251,9 +263,27 @@ export default function App() {
   // content is edited in place (customWordsVersion).
   const deckEntries = useMemo(
     () => deck.map((d) => resolveEntry(d.id)).filter((e): e is DictionaryEntry => Boolean(e)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [deck, examplesVersion, customWordsVersion]
   );
   const deckIds = useMemo(() => new Set(deck.map((d) => d.id)), [deck]);
+
+  // The deck words that can actually be shown — what every count and draw
+  // works from. A word whose entry no longer resolves (a headword since
+  // dropped from the dictionary) keeps its place in the deck, in case it
+  // comes back, but can't be asked: counting it would leave the day's goal
+  // forever one word out of reach.
+  const customEntriesVersion = useCustomEntriesVersion();
+  const activeDeck = useMemo(
+    () => deck.filter((d) => resolveEntry(d.id) !== undefined),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [deck, customWordsVersion, customEntriesVersion]
+  );
+
+  // Secondary meanings are keyed by their position in a word's sense list,
+  // which a dictionary update can shift — so each one in the deck keeps its
+  // own copy of the meaning that was saved.
+  useEffect(() => pinSenseEntries(deck.map((d) => d.id)), [deck]);
 
   // Whether this device can speak Dutch — voices often load after start-up.
   const [dutchAudio, setDutchAudio] = useState(() => dutchAudioAvailable());
@@ -275,7 +305,7 @@ export default function App() {
 
   // Words per state, for the dashboard.
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const queue = useMemo(() => dueSummary(deck, new Date()), [deck, route]);
+  const queue = useMemo(() => dueSummary(activeDeck, new Date()), [activeDeck, route]);
 
   const activeTab: Tab = useMemo(() => {
     if (route === "browse" || route === "settings") return route;
@@ -290,11 +320,19 @@ export default function App() {
     setRoute("add-choice");
   }
 
-  function toggleWord(entryId: string) {
+  /** Takes a word out of the deck, handing back what was removed — its
+   *  progress included — so the deck screen can offer an undo. */
+  function removeWord(entryId: string): DeckItem | undefined {
+    const removed = deck.find((d) => d.id === entryId);
+    setDeck((prev) => prev.filter((d) => d.id !== entryId));
+    return removed;
+  }
+
+  /** Puts a removed word back exactly as it was — never over a copy that
+   *  was added again in the meantime. */
+  function restoreWord(item: DeckItem) {
     setDeck((prev) =>
-      isInDeck(prev, entryId)
-        ? prev.filter((d) => d.id !== entryId)
-        : [newDeckItem(entryId, new Date()), ...prev]
+      isInDeck(prev, item.id) ? prev : [...prev, item].sort((a, b) => b.dateAdded - a.dateAdded)
     );
   }
 
@@ -311,10 +349,8 @@ export default function App() {
     );
   }
 
-  // Today, recomputed on navigation so a day boundary crossed with the app
-  // left open is noticed.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const today = useMemo(() => dayKey(new Date()), [route]);
+  // Today — kept current while the app stays open (a timer past midnight,
+  // and a re-check when the tab comes back).
 
   // Words per session: the commitment (10/20/30), or the warm-up on a
   // return day.
@@ -327,10 +363,10 @@ export default function App() {
   // short of finishing.
   useEffect(() => {
     if (!run) return;
-    const inDeck = new Set(deck.map((d) => d.id));
+    const inDeck = new Set(activeDeck.map((d) => d.id));
     const pruned = pruneRun(run, (id) => inDeck.has(id));
     if (pruned !== run) setRun(pruned);
-  }, [deck, run]);
+  }, [activeDeck, run]);
 
   // What the user actually did in the session on screen (or the last one).
   const progress = useMemo(() => runProgress(run, today), [run, today]);
@@ -341,9 +377,9 @@ export default function App() {
   // The words the next session would ask, by the engine's priorities —
   // empty once every word has had its graded answer today.
   const nextSessionWords = useMemo(
-    () => selectSessionWords(deck, new Date(), { size: sessionSize }),
+    () => selectSessionWords(activeDeck, new Date(), { size: sessionSize }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [deck, sessionSize, today]
+    [activeDeck, sessionSize, today]
   );
 
   // ── Today ──
@@ -365,24 +401,24 @@ export default function App() {
   }, [habit, run]);
 
   const week = useMemo(
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     () => weekProgress(habit?.doneDays ?? [], habit?.weeklyTarget ?? 4, new Date()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [habit?.doneDays, habit?.weeklyTarget, today]
   );
 
   const streak = useMemo(
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     () => currentStreak(habit?.doneDays ?? [], new Date()),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [habit?.doneDays, today]
   );
 
-  useDailyReminder(habit, { done: todayProg.done, eligible: nextSessionWords.length > 0, hasWords: deck.length > 0 });
+  useDailyReminder(habit, { done: todayProg.done, eligible: nextSessionWords.length > 0, hasWords: activeDeck.length > 0 });
 
   // More practice is on offer while any word is still eligible today.
   const canExtra = nextSessionWords.length > 0;
   // Past that, the user can always go over words again — as often as they
   // like — in an ungraded round that leaves the schedule alone.
-  const canReplay = deck.length > 0;
+  const canReplay = activeDeck.length > 0;
 
   // Words met for the very first time today, by name — what the report
   // shows as today's gain.
@@ -451,7 +487,7 @@ export default function App() {
 
   /** Starts a session of `words`, planned by the engine — together with any
    *  words the last session handed on. */
-  function beginSession(selected: DeckItem[], kind: RunKind, sitting: SittingKind, from: DeckItem[] = deck) {
+  function beginSession(selected: DeckItem[], kind: RunKind, sitting: SittingKind, from: DeckItem[] = activeDeck) {
     const chosen = new Set(selected.map((w) => w.id));
     const carried = (run?.deferred ?? [])
       .filter((id) => !chosen.has(id))
@@ -469,14 +505,14 @@ export default function App() {
   }
 
   /** A new graded session, selected by the engine. */
-  function beginSelected(kind: SessionKind, sitting: SittingKind, size = sessionSize, from: DeckItem[] = deck) {
+  function beginSelected(kind: SessionKind, sitting: SittingKind, size = sessionSize, from: DeckItem[] = activeDeck) {
     beginSession(selectSessionWords(from, new Date(), { size, kind }), kind, sitting, from);
   }
 
   /** Starts today's session — or resumes the one left part-way. */
   function startPractice() {
     if (resumable && run) {
-      const byId = new Map(deck.map((d) => [d.id, d]));
+      const byId = new Map(activeDeck.map((d) => [d.id, d]));
       const words = run.wordIds.map((id) => byId.get(id)).filter((w): w is DeckItem => Boolean(w));
       showSession(words, remainingSteps(run), run, "goal");
       return;
@@ -500,7 +536,7 @@ export default function App() {
   /** Goes over the words just missed — an ungraded practice round: misses
    *  come back for review, and nothing is rescheduled. */
   function practiseLearningAgain() {
-    const byId = new Map(deck.map((d) => [d.id, d]));
+    const byId = new Map(activeDeck.map((d) => [d.id, d]));
     const words = progress.learningIds.map((id) => byId.get(id)).filter((w): w is DeckItem => Boolean(w));
     beginSession(words, "practice", "warmup");
   }
@@ -512,7 +548,7 @@ export default function App() {
   const showWelcomeBack =
     route === "dashboard" &&
     habit !== null &&
-    deck.length > 0 &&
+    activeDeck.length > 0 &&
     practisedToday.length === 0 &&
     isReturning(habit, results, new Date());
 
@@ -536,7 +572,7 @@ export default function App() {
     // Words come only from what the learner meets — there is no starter
     // deck. With words already saved, the first session starts now; without,
     // onboarding ends on adding the first one.
-    if (deck.length > 0) beginSelected("daily", "goal", words);
+    if (activeDeck.length > 0) beginSelected("daily", "goal", words);
     else {
       setExpandFrom(null);
       setRoute("add-choice");
@@ -613,7 +649,12 @@ export default function App() {
   // Onboarding has to wait for a signed-in user's remote habit (they may
   // have set it up on another device) — up to the grace period.
   const needsOnboarding = !locked && !recovering && habit === null;
-  const waitingForHabit = needsOnboarding && !hydrated && !graceOver;
+  const waitingForHabit = needsOnboarding && !hydrated && !hydrationFailed && !graceOver;
+
+  // Local data last synced with a different account is about to be replaced
+  // by this one's (see useCloudSync) — not to be shown to them meanwhile.
+  const owner = loadOwner();
+  const foreignLocal = user !== null && !hydrated && owner !== null && owner !== user.id;
 
   const showTabs = !locked && !recovering && !needsOnboarding && !FOCUSED.includes(route);
 
@@ -643,7 +684,11 @@ export default function App() {
             ) : (
               <Auth initialMode={authMode} onBack={() => setAuthStep("welcome")} />
             )
-          ) : waitingForHabit ? null : needsOnboarding ? (
+          ) : waitingForHabit || foreignLocal ? (
+            <div className="screen center-col gutter" role="status">
+              <p className="muted">Loading your words…</p>
+            </div>
+          ) : needsOnboarding ? (
             <Onboarding
               existingUser={deck.length > 0 || results.length > 0}
               onComplete={completeOnboarding}
@@ -685,7 +730,8 @@ export default function App() {
                   levels={levels}
                   tricky={tricky}
                   deckIds={deckIds}
-                  onRemove={toggleWord}
+                  onRemove={removeWord}
+                  onRestore={restoreWord}
                   onEdit={editDeckWord}
                   onSave={saveCapturedWord}
                 />

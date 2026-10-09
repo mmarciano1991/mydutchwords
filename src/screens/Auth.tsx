@@ -132,7 +132,7 @@ export function Auth({
     return (
       <div className="screen">
         <Appbar title="Check your email" onBack={backToLogin} />
-        <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
+        <div className="screen__body gutter auth-body">
           <Notice type="success">
             {sent === "confirm"
               ? `We've sent a code to ${email || "your inbox"}. Enter it below to finish creating your account.`
@@ -140,14 +140,14 @@ export function Auth({
           </Notice>
 
           {error && (
-            <div style={{ marginTop: 14 }}>
+            <div className="auth-error auth-error--after">
               <Notice type="error">{error}</Notice>
             </div>
           )}
 
           {sent === "confirm" && (
             <>
-              <form onSubmit={verifyCode} style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+              <form className="auth-form auth-form--after" onSubmit={verifyCode}>
                 <label className="auth-field">
                   <span className="auth-field__label">Confirmation code</span>
                   <input
@@ -165,7 +165,7 @@ export function Auth({
                 </button>
               </form>
 
-              <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "18px 2px" }}>
+              <p className="muted auth-intro auth-intro--after">
                 Got a link instead of a code? Opening it confirms your account the same way — come back
                 here and log in afterward. Nothing after a minute or two? Check your spam folder, or send
                 it again.
@@ -177,8 +177,7 @@ export function Auth({
           )}
 
           <button
-            className="link-btn"
-            style={{ margin: "22px auto 0", display: "block" }}
+            className="link-btn link-btn--center"
             onClick={backToLogin}
           >
             Back to log in
@@ -194,19 +193,19 @@ export function Auth({
     return (
       <div className="screen">
         <Appbar title="Reset your password" onBack={backToLogin} />
-        <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
-          <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "0 2px 18px" }}>
+        <div className="screen__body gutter auth-body">
+          <p className="muted auth-intro">
             Enter the email you signed up with and we&rsquo;ll send you a link to set a new
             password.
           </p>
 
           {error && (
-            <div style={{ marginBottom: 14 }}>
+            <div className="auth-error">
               <Notice type="error">{error}</Notice>
             </div>
           )}
 
-          <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <form className="auth-form" onSubmit={submit}>
             <label className="auth-field">
               <span className="auth-field__label">Email</span>
               <input
@@ -221,14 +220,13 @@ export function Auth({
                 required
               />
             </label>
-            <button className="btn btn--primary" type="submit" disabled={busy} style={{ marginTop: 4 }}>
+            <button className="btn btn--primary auth-submit" type="submit" disabled={busy}>
               {busy ? "One moment…" : "Send reset link"}
             </button>
           </form>
 
           <button
-            className="link-btn"
-            style={{ margin: "22px auto 0", display: "block" }}
+            className="link-btn link-btn--center"
             onClick={backToLogin}
           >
             Back to log in
@@ -242,20 +240,20 @@ export function Auth({
     <div className="screen">
       <Appbar title={isSignup ? "Create an account" : "Log in"} onBack={onBack} />
 
-      <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
-        <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "0 2px 18px" }}>
+      <div className="screen__body gutter auth-body">
+        <p className="muted auth-intro">
           {isSignup
             ? "Create an account to save your deck and progress across devices."
             : "Log in to sync your deck and progress across devices."}
         </p>
 
         {error && (
-          <div style={{ marginBottom: 14 }}>
+          <div className="auth-error">
             <Notice type="error">{error}</Notice>
           </div>
         )}
 
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form className="auth-form" onSubmit={submit}>
           <label className="auth-field">
             <span className="auth-field__label">Email</span>
             <input
@@ -283,15 +281,14 @@ export function Auth({
               required
             />
           </label>
-          <button className="btn btn--primary" type="submit" disabled={busy} style={{ marginTop: 4 }}>
+          <button className="btn btn--primary auth-submit" type="submit" disabled={busy}>
             {busy ? "One moment…" : isSignup ? "Create account" : "Log in"}
           </button>
         </form>
 
         {!isSignup && (
           <button
-            className="link-btn"
-            style={{ margin: "14px auto 0", display: "block" }}
+            className="link-btn link-btn--center auth-forgot"
             onClick={() => {
               setMode("reset");
               setError(null);
@@ -311,8 +308,7 @@ export function Auth({
         </button>
 
         <button
-          className="link-btn"
-          style={{ margin: "20px auto 0", display: "block" }}
+          className="link-btn link-btn--center auth-switch"
           onClick={() => {
             setMode(isSignup ? "signin" : "signup");
             setError(null);

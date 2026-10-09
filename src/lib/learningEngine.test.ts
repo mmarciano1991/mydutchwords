@@ -261,12 +261,12 @@ describe("core rules", () => {
     expect(out.event.result).toBe("wrong");
   });
 
-  it("an early review earns a smaller interval than an on-time one", () => {
+  it("an early review earns nothing; an on-time one grows the interval", () => {
     const w = learningWord("a", 0, 6);
     const early = answer(w, "active_recall", "correct", day(2));
     const onTime = answer(w, "active_recall", "correct", day(6));
-    expect(early.interval).toBeLessThan(onTime.interval);
-    expect(early.interval).toBeGreaterThan(w.interval);
+    expect(early.interval).toBe(w.interval);
+    expect(onTime.interval).toBeGreaterThan(w.interval);
   });
 
   it("logs the state and interval on either side of a graded answer", () => {
@@ -509,5 +509,33 @@ describe("migration", () => {
     const old = v1("a", { level: 3, interval: 7, reps: 3, state: "learning", dueDate: midnight(12) });
     const [w] = migrateWords([old], [know("a", 1)], day(10));
     expect(restoreLegacy(w)).toMatchObject({ level: 3, interval: 7, reps: 3, state: "learning", dueDate: midnight(12) });
+  });
+});
+
+describe("early recall (a word pulled forward before it is due)", () => {
+  const grade = (w: Word, result: ReviewResult, at: Date) =>
+    gradeWord(w, { exerciseType: "active_recall", result, responseTimeMs: 3000, sessionId: null, practice: false }, at);
+
+  it("doesn't promote a word recalled before it is due", () => {
+    const ahead = learningWord("early", -1, 3); // reviewed yesterday, due in 2 days
+    const out = grade(ahead, "correct", day(0));
+    expect(out.graded).toBe(false);
+    expect(out.word).toEqual(ahead);
+  });
+
+  it("still counts a miss on a word that isn't due yet", () => {
+    const ahead = learningWord("early", -1, 3);
+    const out = grade(ahead, "wrong", day(0));
+    expect(out.graded).toBe(true);
+    expect(out.word.interval).toBeLessThan(ahead.interval + 1);
+  });
+
+  // Daily practice of a deck no bigger than the day's goal tops the session
+  // up with words that aren't due; grading those walked every word to
+  // Learned in six days.
+  it("doesn't let a small deck practised daily reach Learned in a week", () => {
+    let w = newWord("w", day(0));
+    for (let d = 0; d < 7; d++) w = grade(w, "correct", day(d)).word;
+    expect(w.state).not.toBe("learned");
   });
 });

@@ -20,5 +20,9 @@ woordkast-design/
 .DS_Store
 .vscode/
 
+# Local tooling state
+.claude/worktrees/
+.claude/settings.local.json
+
 # Supabase CLI local state
 supabase/.temp/

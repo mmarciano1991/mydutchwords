@@ -115,3 +115,18 @@ export function loadHabit(): HabitState | null {
 export function saveHabit(habit: HabitState | null): void {
   write(HABIT_KEY, habit);
 }
+
+const OWNER_KEY = "woordkast.owner";
+
+/** The account the local data was last synced with, or null for data that
+ *  has never been synced (an older build, or an unconfigured one). A session
+ *  that expires leaves the data on the device — this is how the next login
+ *  tells whether it is the same person's. */
+export function loadOwner(): string | null {
+  const owner = read<unknown>(OWNER_KEY, null);
+  return typeof owner === "string" ? owner : null;
+}
+
+export function saveOwner(userId: string): void {
+  write(OWNER_KEY, userId);
+}

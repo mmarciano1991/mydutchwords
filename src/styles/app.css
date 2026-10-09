@@ -59,6 +59,13 @@ input {
   flex-direction: column;
 }
 
+.phone__content {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 @media (min-width: 480px) {
   .app-shell {
     padding: 28px;
@@ -131,6 +138,25 @@ input {
   min-height: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+}
+
+/* ── Error screen (components/ErrorBoundary) ── */
+.error-screen {
+  justify-content: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.error-screen__title {
+  font-family: var(--font-serif);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-display);
+}
+
+.error-screen__body {
+  color: var(--text-muted);
+  margin-bottom: 12px;
 }
 
 /* ── Container transform (Material) — the button's container grows into the
@@ -1311,7 +1337,7 @@ textarea.text-input {
   border-radius: var(--radius-button);
   color: inherit;
 }
-/* The icon well no longer carries the active fill — the travelling glass
+/* The icon well carries no active fill of its own — the travelling glass
    pill does, wrapping icon and label together as designed. */
 
 /* ── Floating add button ──
@@ -1753,8 +1779,6 @@ textarea.text-input {
 .suggestion-chip:active {
   background: var(--surface-tint);
 }
-
-/* (Add / remove buttons are now the unified .icon-btn component above.) */
 
 /* ── Flashcard ── */
 .flashcard {
@@ -3198,6 +3222,16 @@ textarea.text-input {
   line-height: 1.5;
   color: var(--text-faint);
 }
+/* Log out, and the choice offered when the last progress didn't save. */
+.settings-signout__btn {
+  margin-top: 16px;
+}
+.settings-signout {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+}
 .seg {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -3505,3 +3539,121 @@ textarea.text-input {
   height: 1px;
   background: var(--line-cool-strong);
 }
+
+/* ── Screen layout ──
+   Per-screen spacing and type. Kept last in the file so these win over the
+   base component rules they refine. Exception, on purpose: `.phone--tabs .screen__body`
+   still sets a tab screen's bottom padding, so its last row clears the
+   floating nav. */
+
+/* Sign in, create account, new password */
+.auth-body { padding-top: 8px; padding-bottom: 24px; }
+.auth-intro { font-size: 14px; line-height: 1.55; margin: 0 2px 18px; }
+.auth-intro--after { margin: 18px 2px; }
+.auth-error { margin-bottom: 14px; }
+.auth-error--after { margin-bottom: 0; margin-top: 14px; }
+.auth-form { display: flex; flex-direction: column; gap: 12px; }
+.auth-form--after { margin-top: 18px; }
+.auth-submit { margin-top: 4px; }
+.link-btn--center { display: block; margin: 22px auto 0; }
+.auth-forgot { margin-top: 14px; }
+.auth-switch { margin-top: 20px; }
+
+/* Welcome, and the empty dashboard */
+.intro-body { justify-content: center; flex: 1; padding-bottom: 24px; }
+.intro-mark { margin-bottom: 26px; }
+.intro-text { font-size: 15.5px; margin: 18px 0 0; line-height: 1.6; max-width: 286px; }
+.intro-actions { padding-bottom: 30px; }
+.intro-actions--stack { display: flex; flex-direction: column; gap: 22px; }
+.welcome-tagline {
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 22px;
+  max-width: 286px;
+  line-height: 1.3;
+}
+
+/* Adding words */
+.add-body { padding-top: 16px; padding-bottom: 24px; }
+.add-body--compose { padding-bottom: 20px; display: flex; flex-direction: column; gap: 14px; }
+.add-intro { font-size: 15px; line-height: 1.55; margin: 0 0 18px; }
+.add-lede { font-size: 15px; line-height: 1.55; margin: 0; }
+.text-input--area {
+  min-height: 220px;
+  resize: vertical;
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+}
+.notice + .readtext { margin-top: 14px; }
+.readtext__edit { margin-top: 16px; }
+.readtext__lookup { margin-top: 20px; }
+.capture-body { padding-top: 16px; padding-bottom: 16px; }
+.capture-empty { padding: 24px 6px; text-align: center; }
+.capture-empty__actions { display: flex; gap: 18px; justify-content: center; margin-top: 2px; }
+.lookup-note { font-size: 14px; margin: -4px 2px 0; text-align: center; }
+
+/* Practice */
+.practice-count { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+.exercise--flashcard { padding: 14px 22px 4px; display: flex; flex-direction: column; }
+.eyebrow--center { text-align: center; }
+.exercise__grades { padding: 12px 22px 32px; display: flex; gap: 12px; }
+
+/* Session report, reflection */
+.report-body { padding-top: 22px; padding-bottom: 8px; }
+.report-head { text-align: center; }
+.report-title {
+  font-family: var(--font-serif);
+  font-size: 30px;
+  font-weight: 600;
+  color: var(--text-display);
+  margin-top: 14px;
+}
+.report-sub { font-size: 14px; margin: 7px 0 0; }
+.report-stats { display: flex; gap: 12px; margin-top: 18px; }
+.report-learning__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 18px 2px 11px;
+}
+.report-learning__title {
+  font-family: var(--font-serif);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-display);
+}
+.report-learning__note { font-size: 12.5px; }
+.report-learning__list { display: flex; flex-direction: column; gap: 9px; }
+.reflection-actions { padding: 12px 22px 32px; }
+
+/* Deck */
+.browse-body { padding-top: 14px; padding-bottom: 20px; }
+.browse-removed { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 14px; }
+.browse-removed .notice { align-self: stretch; }
+.browse-empty { font-size: 15px; padding: 30px 4px; text-align: center; }
+.browse-count { font-size: 14px; padding: 0 4px 14px; }
+.wordrow__edit { display: flex; flex-direction: column; gap: 10px; }
+.wordrow__edit-actions { display: flex; gap: 10px; margin-top: 2px; }
+.wordrow__edit-btn { flex: 1; }
+.wordrow__no-example { font-size: 13px; }
+.wordrow__edit-link { margin-top: 10px; align-self: flex-start; }
+
+/* Settings */
+.settings-body { padding-bottom: 26px; }
+.settings-habit__divider { margin: 16px 0 14px; }
+.settings-card { padding: 20px; }
+.settings-card--account { margin-bottom: 14px; }
+.account-row__text { min-width: 0; }
+.account-row__email {
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--text-body);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.account-row__sub { font-size: 12.5px; }
+.settings-stat__label { font-size: 14px; }
+.settings-stat__value { font-family: var(--font-serif); font-weight: 600; color: var(--text-display); }
+.settings-stat__divider { margin: 12px 0; }
+.settings-foot { font-size: 12px; line-height: 1.5; margin-top: 18px; text-align: center; }

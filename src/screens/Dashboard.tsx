@@ -56,12 +56,12 @@ export function Dashboard({
   if (deckCount === 0) {
     return (
       <div className="screen pad-top">
-        <div className="screen__body center-col gutter" style={{ justifyContent: "center", flex: 1, paddingBottom: 24 }}>
-          <div style={{ marginBottom: 26 }}>
+        <div className="screen__body center-col gutter intro-body">
+          <div className="intro-mark">
             <TulipMedallion />
           </div>
           <div className="display--lg">Woordkast</div>
-          <p className="muted" style={{ fontSize: 15.5, margin: "18px 0 0", lineHeight: 1.6, maxWidth: 286 }}>
+          <p className="muted intro-text">
             Add a Dutch word you met today — a sign, a letter, a colleague — and practise it right away.
           </p>
         </div>

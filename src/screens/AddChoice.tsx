@@ -29,8 +29,8 @@ export function AddChoice({
     <div className="screen">
       <Appbar title="Add a word" onBack={onBack} />
 
-      <div className="screen__body gutter" style={{ paddingTop: 16, paddingBottom: 24 }}>
-        <p className="muted" style={{ fontSize: 15, lineHeight: 1.55, margin: "0 0 18px" }}>
+      <div className="screen__body gutter add-body">
+        <p className="muted add-intro">
           Two ways in, depending on where you met the word.
         </p>
 

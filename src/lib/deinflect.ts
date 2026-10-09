@@ -14,11 +14,10 @@
    is what makes it safe to be generous with rules: the dictionary is the
    only thing that can turn a candidate into an answer.
 
-   It does NOT stop at the first real hit, though — that used to be the
-   contract, and a real article broke it: "sloten" (ditches) and "slot"
-   (lock) pluralise identically, and the bundled dictionary has both
-   singulars, so returning on the first match silently asserted "slot" was
-   right and never tried "sloot" at all. Every real candidate is returned;
+   It does NOT stop at the first real hit: "sloten" is the plural of both
+   "slot" (lock) and "sloot" (ditch), and the bundled dictionary has both
+   singulars, so returning on the first match would silently assert one of
+   them and never offer the other. Every real candidate is returned;
    the caller decides what to do with more than one (see Capture.tsx, which
    offers them as a choice — the same shape as picking a word sense).
 

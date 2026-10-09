@@ -69,7 +69,7 @@ export function mergeState(a: AppState, b: AppState, now: Date = new Date()): Ap
   // Results — union of the event log, deduped by (word, time, grade).
   const results = new Map<string, PracticeResult>();
   for (const r of [...a.results, ...b.results]) {
-    results.set(`${r.entryId}|${r.timestamp}|${r.grade}`, r);
+    results.set(resultKey(r), r);
   }
   const allResults = [...results.values()];
 
@@ -97,21 +97,88 @@ export function mergeState(a: AppState, b: AppState, now: Date = new Date()): Ap
   };
 }
 
+/** Identity of a practice result — the key the merge (and the server-side
+ *  append) dedupes on. */
+export function resultKey(r: PracticeResult): string {
+  return `${r.entryId}|${r.timestamp}|${r.grade}`;
+}
+
+/** Where this device's copy stands relative to the server.
+ *
+ *  `version` is the row version the device last saw (0 = no row yet), or null
+ *  when the server predates versioning — then writes fall back to a plain
+ *  upsert. `serverResults` holds the keys of the results known to be stored
+ *  already, so a push only sends the ones that aren't. */
+export interface SyncBase {
+  version: number | null;
+  serverResults: Set<string>;
+}
+
 /** Result of a remote-state fetch. `ok: false` means the fetch itself failed
  *  (network/RLS/timeout) — distinct from `ok: true, state: null`, which means
  *  the request succeeded and the user genuinely has no saved snapshot yet.
  *  Callers must not treat a failed fetch the same as "no data": doing so
  *  would let a merge fall back to local-only state and then push that over
  *  a real remote snapshot it never actually saw. */
-export type RemoteFetchResult = { ok: true; state: AppState | null } | { ok: false };
+export type RemoteFetchResult = { ok: true; state: AppState | null; version: number | null } | { ok: false };
 
-/* The habit column arrived in a later migration than the app code that reads
-   it. Until it is applied, a select or upsert naming it fails outright —
-   which would stall hydration (retried forever) and stop all progress from
-   saving. So a missing-column error switches the column off for the rest of
-   the session and the request is retried without it: everything else keeps
-   syncing, and the habit simply stays on the device. */
+/** A stored row as app state, and its version (null on a pre-versioning
+ *  schema). */
+function fromRow(row: Record<string, unknown>): { state: AppState; version: number | null } {
+  return {
+    state: {
+      deck: (row.deck as DeckItem[]) ?? [],
+      results: (row.results as PracticeResult[]) ?? [],
+      customWords: (row.custom_words as DictionaryEntry[]) ?? [],
+      run: (row.practice_run as PracticeRun | null) ?? null,
+      habit: normalizeHabit(row.habit),
+    },
+    version: typeof row.version === "number" ? row.version : null,
+  };
+}
+
+/** The signed-in user's saved snapshot. Never throws.
+ *
+ *  Selects `*` rather than naming columns, so a column added by a migration
+ *  that hasn't been applied yet (habit, version) reads as absent instead of
+ *  failing the whole request. */
+export async function fetchRemoteState(userId: string): Promise<RemoteFetchResult> {
+  if (!supabase) return { ok: true, state: null, version: 0 };
+  try {
+    const { data, error } = await supabase
+      .from(TABLE)
+      .select("*")
+      .eq("user_id", userId)
+      .maybeSingle<Record<string, unknown>>();
+    if (error) return { ok: false };
+    // No row: version 0, which is what the sync function expects for a first
+    // write. (On a pre-versioning schema the function is missing and the
+    // push falls back to an upsert anyway.)
+    if (!data) return { ok: true, state: null, version: 0 };
+    return { ok: true, ...fromRow(data) };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export type PushResult =
+  /** Written. `version` is the row's new version (null on the upsert path). */
+  | { status: "ok"; version: number | null }
+  /** Not written: the server has moved on since `base.version`. `remote` is
+   *  the current snapshot to merge before retrying. */
+  | { status: "conflict"; remote: AppState | null; version: number }
+  | { status: "error" };
+
+/* Each fallback below covers a migration that may not be applied yet. They
+   switch off for the rest of the session on the first miss, so the app keeps
+   syncing — with fewer guarantees — instead of failing every write. */
+let syncFunction = true;
 let habitColumn = true;
+
+/** PostgREST "function not found", or Postgres "undefined function". */
+function isMissingFunction(error: { code?: string } | null): boolean {
+  return error?.code === "PGRST202" || error?.code === "42883";
+}
 
 /** Postgres "undefined column", or PostgREST's schema-cache equivalent. */
 function isMissingHabitColumn(error: { code?: string; message?: string } | null): boolean {
@@ -119,59 +186,60 @@ function isMissingHabitColumn(error: { code?: string; message?: string } | null)
   return (error.code === "42703" || error.code === "PGRST204") && /habit/.test(error.message ?? "");
 }
 
-/** The signed-in user's saved snapshot. Never throws. */
-export async function fetchRemoteState(userId: string): Promise<RemoteFetchResult> {
-  if (!supabase) return { ok: true, state: null };
-  try {
-    // Typed as plain strings: the column list is chosen at runtime, which
-    // the client's select-string parser can't type, so rows come back as
-    // records and each field is cast below as before.
-    const columns: string = "deck, results, custom_words, practice_run";
-    const fetchRow = (cols: string) =>
-      supabase!.from(TABLE).select(cols).eq("user_id", userId).maybeSingle<Record<string, unknown>>();
-    let { data, error } = await fetchRow(habitColumn ? `${columns}, habit` : columns);
-    if (habitColumn && isMissingHabitColumn(error)) {
-      habitColumn = false;
-      ({ data, error } = await fetchRow(columns));
-    }
-    if (error) return { ok: false };
-    if (!data) return { ok: true, state: null };
-    return {
-      ok: true,
-      state: {
-        deck: (data.deck as DeckItem[]) ?? [],
-        results: (data.results as PracticeResult[]) ?? [],
-        customWords: (data.custom_words as DictionaryEntry[]) ?? [],
-        run: (data.practice_run as PracticeRun | null) ?? null,
-        habit: normalizeHabit(data.habit),
-      },
-    };
-  } catch {
-    return { ok: false };
+/** Whole-snapshot upsert, for a server without the sync function.
+ *  Last-write-wins: only safe-ish because hydration merged first. */
+async function upsertState(userId: string, state: AppState): Promise<PushResult> {
+  const row: Record<string, unknown> = {
+    user_id: userId,
+    deck: state.deck,
+    results: state.results,
+    custom_words: state.customWords,
+    practice_run: state.run,
+    updated_at: new Date().toISOString(),
+  };
+  if (habitColumn) row.habit = state.habit ?? null;
+  let { error } = await supabase!.from(TABLE).upsert(row, { onConflict: "user_id" });
+  if (habitColumn && isMissingHabitColumn(error)) {
+    habitColumn = false;
+    delete row.habit;
+    ({ error } = await supabase!.from(TABLE).upsert(row, { onConflict: "user_id" }));
   }
+  return error ? { status: "error" } : { status: "ok", version: null };
 }
 
-/** Upserts the snapshot for a user. Resolves false on failure (never throws). */
-export async function pushState(userId: string, state: AppState): Promise<boolean> {
-  if (!supabase) return false;
+/** Writes the snapshot, provided the server is still at `base.version`.
+ *  Never throws. */
+export async function pushState(userId: string, state: AppState, base: SyncBase): Promise<PushResult> {
+  if (!supabase) return { status: "error" };
   try {
-    const row: Record<string, unknown> = {
-      user_id: userId,
-      deck: state.deck,
-      results: state.results,
-      custom_words: state.customWords,
-      practice_run: state.run,
-      updated_at: new Date().toISOString(),
-    };
-    if (habitColumn) row.habit = state.habit ?? null;
-    let { error } = await supabase.from(TABLE).upsert(row, { onConflict: "user_id" });
-    if (habitColumn && isMissingHabitColumn(error)) {
-      habitColumn = false;
-      delete row.habit;
-      ({ error } = await supabase.from(TABLE).upsert(row, { onConflict: "user_id" }));
+    if (base.version === null || !syncFunction) return await upsertState(userId, state);
+
+    const { data, error } = await supabase.rpc("sync_user_state", {
+      p_expected_version: base.version,
+      p_deck: state.deck,
+      p_new_results: state.results.filter((r) => !base.serverResults.has(resultKey(r))),
+      p_custom_words: state.customWords,
+      // The daily set was replaced by practice runs (engine v2); the column
+      // stays for old clients, cleared on this client's writes.
+      p_daily_set: null,
+      p_practice_run: state.run,
+      p_habit: state.habit ?? null,
+    });
+    if (isMissingFunction(error)) {
+      syncFunction = false;
+      return await upsertState(userId, state);
     }
-    return !error;
+    if (error || !data) return { status: "error" };
+
+    const reply = data as { status: string; version?: number; row?: Record<string, unknown> | null };
+    if (reply.status === "ok") return { status: "ok", version: reply.version ?? null };
+    if (reply.status === "conflict") {
+      if (!reply.row) return { status: "conflict", remote: null, version: 0 };
+      const { state: remote, version } = fromRow(reply.row);
+      return { status: "conflict", remote, version: version ?? 0 };
+    }
+    return { status: "error" };
   } catch {
-    return false;
+    return { status: "error" };
   }
 }

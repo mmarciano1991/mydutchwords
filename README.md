@@ -5,18 +5,24 @@ built-in Dutch→English dictionary — each word has its English meaning, `de/h
 gender, and a natural example sentence — and you build a personal deck by
 picking the words you want to learn.
 
-**Fully offline.** Built with **React + TypeScript + Vite**, state in
-`localStorage`. No backend, no account, no API, nothing to pay for.
+Built with **React + TypeScript + Vite**. Progress lives in `localStorage`
+and, when a Supabase project is configured, syncs to the learner's account —
+the app then requires signing in. Without one it runs fully offline, with no
+account (see [`docs/auth-setup.md`](docs/auth-setup.md)).
 
 ## The loop
 
-1. **Dictionary** — browse/search the ~160-word built-in dictionary; tap **+**
-   to add a word to your deck.
-2. **Your words** — the deck you've built; tap a word for its example, or remove it.
-3. **Practice** — flashcards: see the Dutch word, tap to flip for the
-   translation + gender + example, then rate yourself "Still learning" or
-   "I knew it".
-4. **Practice Summary** — how many you knew, then back to the dashboard.
+1. **A daily habit** — onboarding asks how much fits the day (Espresso 10,
+   Ontbijt 20 or Diner 30 words) and when; a starter deck of 30 everyday
+   words means the first session starts straight away.
+2. **Add words** — look one up in the 14k-word dictionary, or paste a text
+   and tap the words you don't know.
+3. **Practice** — multiple choice, typing or a flashcard, depending on how
+   well a word is known; a missed word comes back later in the sitting. Words
+   move up a level ladder (1 → 3 → 7 → 14 → 30 → 90 days) as they're
+   recalled on schedule.
+4. **The day, then the week** — the goal is done once the day's words are,
+   and the week is read as days done against a weekly target.
 
 ## The dictionary
 
@@ -148,10 +154,10 @@ tab. Vite is configured with `base: "./"` so it works from that subfolder.
 
 ## Docs
 
-- [`docs/auth-setup.md`](docs/auth-setup.md) — optional accounts and cloud
-  sync via Supabase.
+- [`docs/auth-setup.md`](docs/auth-setup.md) — accounts and cloud sync via
+  Supabase.
 - [`docs/tts-setup.md`](docs/tts-setup.md) — the natural (Azure neural) voice
-  for Listening, via a Supabase Edge Function.
+  for exercises, via a Supabase Edge Function.
 - [`docs/pilot-survey.md`](docs/pilot-survey.md) — running a timed user test:
   querying which words each tester is learning, and building a survey from the
   ones the app calls mastered.
@@ -165,5 +171,4 @@ tab. Vite is configured with `base: "./"` so it works from that subfolder.
 
 ## Out of scope
 
-Spaced-repetition scheduling, photo/OCR capture, tags, and
-sharing are deliberately deferred.
+Photo/OCR capture, tags, and sharing are deliberately deferred.

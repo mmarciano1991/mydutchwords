@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
-import type { DictionaryEntry } from "../lib/types";
+import type { DeckItem, DictionaryEntry } from "../lib/types";
 import { useWordLookup } from "../lib/useWordLookup";
 import { parseSenseKey } from "../lib/wordSources";
 import { Appbar } from "../components/Appbar";
 import { GenderChip } from "../components/GenderChip";
 import { IconButton } from "../components/IconButton";
 import { MasteryBar } from "../components/MasteryBar";
+import { Notice } from "../components/Notice";
 import { WordLookupResult } from "../components/WordLookupResult";
 
 /** Just the fields a user can correct — gender and the id stay as they are. */
@@ -24,6 +25,7 @@ export function Browse({
   tricky,
   deckIds,
   onRemove,
+  onRestore,
   onEdit,
   onSave,
 }: {
@@ -35,7 +37,11 @@ export function Browse({
   tricky: Set<string>;
   /** All deck word ids — passed straight through to the shared lookup result. */
   deckIds: Set<string>;
-  onRemove: (entryId: string) => void;
+  /** Takes the word out of the deck; returns what was removed (progress
+   *  included) so it can be put back. */
+  onRemove: (entryId: string) => DeckItem | undefined;
+  /** Puts a removed word back, progress and all. */
+  onRestore: (item: DeckItem) => void;
   /** Corrects a saved word's translation and example — the general form of
    *  the sense picker's override, for the words that never had a picker. */
   onEdit: (entryId: string, edit: Edit) => void;
@@ -48,6 +54,22 @@ export function Browse({
   // doesn't touch anything until Save. Only one row can be mid-edit at once.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Edit>({ english: "", example: "", exampleEn: "" });
+  // The last word removed, kept until the next removal so one tap — easy to
+  // make by accident next to the expand button — can't cost a word's
+  // whole history.
+  const [removed, setRemoved] = useState<{ item: DeckItem; dutch: string } | null>(null);
+
+  function remove(e: DictionaryEntry) {
+    const item = onRemove(e.id);
+    if (item) setRemoved({ item, dutch: e.dutch });
+    if (openId === e.id) setOpenId(null);
+  }
+
+  function undoRemove() {
+    if (!removed) return;
+    onRestore(removed.item);
+    setRemoved(null);
+  }
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -99,14 +121,24 @@ export function Browse({
         }
       />
 
-      <div className="screen__body gutter" style={{ paddingTop: 14, paddingBottom: 20 }}>
+      <div className="screen__body gutter browse-body">
+        {removed && (
+          <div className="browse-removed">
+            <Notice type="info">
+              <strong>{removed.dutch}</strong> removed from your deck
+            </Notice>
+            <button className="link-btn" onClick={undoRemove}>
+              Undo
+            </button>
+          </div>
+        )}
         {entries.length === 0 ? (
-          <p className="muted" style={{ fontSize: 15, padding: "30px 4px", textAlign: "center" }}>
+          <p className="muted browse-empty">
             Your deck is empty. Tap + to look up a word and add it here.
           </p>
         ) : noDeckMatch && lookupHasBody ? (
           <div>
-            <p className="muted" style={{ fontSize: 14, padding: "0 4px 14px" }}>
+            <p className="muted browse-count">
               No deck words match “{query}” — here’s what the dictionary has:
             </p>
             <WordLookupResult
@@ -118,7 +150,7 @@ export function Browse({
             />
           </div>
         ) : results.length === 0 ? (
-          <p className="muted" style={{ fontSize: 15, padding: "30px 4px", textAlign: "center" }}>
+          <p className="muted browse-empty">
             No deck words match “{query}”.
           </p>
         ) : (
@@ -156,7 +188,7 @@ export function Browse({
                     <MasteryBar level={levels.get(e.id) ?? 0} withLabel />
                     <IconButton
                       action="remove"
-                      onClick={() => onRemove(e.id)}
+                      onClick={() => remove(e)}
                       aria-label={`Remove ${e.dutch} from deck`}
                     />
                   </div>
@@ -165,7 +197,7 @@ export function Browse({
                     <div className="wordrow__context">
                       <div className="wordrow__rule" />
                       {editing ? (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                        <div className="wordrow__edit">
                           <label className="auth-field">
                             <span className="auth-field__label">Translation</span>
                             <input
@@ -191,13 +223,12 @@ export function Browse({
                               onChange={(ev) => setDraft({ ...draft, exampleEn: ev.target.value })}
                             />
                           </label>
-                          <div style={{ display: "flex", gap: 10, marginTop: 2 }}>
-                            <button className="btn btn--secondary" style={{ flex: 1 }} onClick={() => setEditingId(null)}>
+                          <div className="wordrow__edit-actions">
+                            <button className="btn btn--secondary wordrow__edit-btn" onClick={() => setEditingId(null)}>
                               Cancel
                             </button>
                             <button
-                              className="btn btn--primary"
-                              style={{ flex: 1 }}
+                              className="btn btn--primary wordrow__edit-btn"
                               disabled={!draft.english.trim()}
                               onClick={() => saveEdit(e.id)}
                             >
@@ -214,13 +245,12 @@ export function Browse({
                               <div className="wordrow__example-en">{e.exampleEn}</div>
                             </div>
                           ) : (
-                            <div className="faint" style={{ fontSize: 13 }}>
+                            <div className="faint wordrow__no-example">
                               No example sentence yet — the flashcard shows the translation.
                             </div>
                           )}
                           <button
-                            className="link-btn"
-                            style={{ marginTop: 10, alignSelf: "flex-start" }}
+                            className="link-btn wordrow__edit-link"
                             onClick={() => startEdit(e)}
                           >
                             Edit translation

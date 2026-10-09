@@ -42,8 +42,8 @@ interface WiktionaryUsage {
  *
  *  Parsed through DOMParser, which produces an inert document: no scripts
  *  run and no subresources are fetched. Assigning this third-party HTML to
- *  `innerHTML` — even on a detached node, as this used to — still fires
- *  handlers like `<img onerror>`. */
+ *  `innerHTML`, even on a detached node, would still fire handlers like
+ *  `<img onerror>`. */
 function stripHtml(html: string): string {
   const doc = new DOMParser().parseFromString(html, "text/html");
   return (doc.body.textContent ?? "").replace(/\s+/g, " ").trim();
@@ -165,8 +165,8 @@ export async function lookupWiktionary(
         // A noun's article is genuinely not established yet at this point —
         // it isn't in this response at all, and the extra request below may
         // still fail. Anything that isn't a noun takes no article, which is a
-        // fact rather than a gap. Recording those as the same value is what
-        // used to make a missing article invisible.
+        // fact rather than a gap. Recording those as the same value would
+        // make a missing article invisible.
         senses.push({
           english,
           example: example ? stripHtml(example.example) : "",

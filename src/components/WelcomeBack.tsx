@@ -8,6 +8,7 @@
 
    "Not now" is there because a popup without a way out is a trap, not a
    welcome; it still counts as welcomed, so it never reappears that day. */
+import type { KeyboardEvent } from "react";
 import { RETURN_WARMUP_WORDS } from "../lib/habit";
 
 export function WelcomeBack({
@@ -21,8 +22,38 @@ export function WelcomeBack({
   onDismiss: () => void;
 }) {
   const count = Math.min(words, RETURN_WARMUP_WORDS);
+
+  /** Escape is "Not now"; Tab cycles between the two buttons rather than
+   *  wandering into the screen behind, which aria-modal says isn't there. */
+  function onKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    if (e.key === "Escape") {
+      e.preventDefault();
+      onDismiss();
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const buttons = [...e.currentTarget.querySelectorAll<HTMLButtonElement>("button")];
+    if (buttons.length === 0) return;
+    const first = buttons[0];
+    const last = buttons[buttons.length - 1];
+    const active = document.activeElement;
+    if (e.shiftKey && (active === first || !buttons.includes(active as HTMLButtonElement))) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && (active === last || !buttons.includes(active as HTMLButtonElement))) {
+      e.preventDefault();
+      first.focus();
+    }
+  }
+
   return (
-    <div className="modal" role="dialog" aria-modal="true" aria-labelledby="welcome-back-title">
+    <div
+      className="modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="welcome-back-title"
+      onKeyDown={onKeyDown}
+    >
       <div className="modal__scrim" onClick={onDismiss} />
       <div className="modal__sheet">
         <p className="modal__emoji" aria-hidden="true">👋</p>

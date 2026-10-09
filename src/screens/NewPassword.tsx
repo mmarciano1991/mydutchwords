@@ -34,19 +34,19 @@ export function NewPassword({ onDone }: { onDone: () => void }) {
     <div className="screen">
       <Appbar title="Set a new password" />
 
-      <div className="screen__body gutter" style={{ paddingTop: 8, paddingBottom: 24 }}>
-        <p className="muted" style={{ fontSize: 14, lineHeight: 1.55, margin: "0 2px 18px" }}>
+      <div className="screen__body gutter auth-body">
+        <p className="muted auth-intro">
           You&rsquo;re logged in from the link in your email. Choose a new password and
           you&rsquo;ll be able to log in with it from now on.
         </p>
 
         {error && (
-          <div style={{ marginBottom: 14 }}>
+          <div className="auth-error">
             <Notice type="error">{error}</Notice>
           </div>
         )}
 
-        <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        <form className="auth-form" onSubmit={submit}>
           <label className="auth-field">
             <span className="auth-field__label">New password</span>
             <input
@@ -61,14 +61,13 @@ export function NewPassword({ onDone }: { onDone: () => void }) {
               required
             />
           </label>
-          <button className="btn btn--primary" type="submit" disabled={busy} style={{ marginTop: 4 }}>
+          <button className="btn btn--primary auth-submit" type="submit" disabled={busy}>
             {busy ? "One moment…" : "Save password"}
           </button>
         </form>
 
         <button
-          className="link-btn"
-          style={{ margin: "22px auto 0", display: "block" }}
+          className="link-btn link-btn--center"
           onClick={onDone}
         >
           Not now

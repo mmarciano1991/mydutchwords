@@ -21,6 +21,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # The same gates as CI, so a manual deploy can't ship a red build.
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
       - name: Build
         run: npm run build
         env:

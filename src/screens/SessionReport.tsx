@@ -83,23 +83,15 @@ export function SessionReport({
 
   return (
     <div className="screen pad-top">
-      <div className="screen__body gutter" style={{ paddingTop: 22, paddingBottom: 8 }}>
-        <div style={{ textAlign: "center" }}>
+      <div className="screen__body gutter report-body">
+        <div className="report-head">
           <Badge>
             {dayJustDone ? "Today’s goal ✓" : `${total} word${total === 1 ? "" : "s"} practised`}
           </Badge>
-          <div
-            style={{
-              fontFamily: "var(--font-serif)",
-              fontSize: 30,
-              fontWeight: 600,
-              color: "var(--text-display)",
-              marginTop: 14,
-            }}
-          >
+          <div className="report-title">
             {title}
           </div>
-          <p className="muted" style={{ fontSize: 14, margin: "7px 0 0" }}>
+          <p className="muted report-sub">
             {sub}
           </p>
         </div>
@@ -123,36 +115,22 @@ export function SessionReport({
           <WeekGoalStatus week={week} card />
         </div>
 
-        <div style={{ display: "flex", gap: 12, marginTop: 18 }}>
+        <div className="report-stats">
           <StatCard value={knownIds.length} label="Knew it" tone="success" />
           <StatCard value={toReview} label="Still learning" tone="error" />
         </div>
 
         {toReview > 0 && (
           <>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                margin: "18px 2px 11px",
-              }}
-            >
-              <span
-                style={{
-                  fontFamily: "var(--font-serif)",
-                  fontSize: 16,
-                  fontWeight: 600,
-                  color: "var(--text-display)",
-                }}
-              >
+            <div className="report-learning__head">
+              <span className="report-learning__title">
                 Still learning
               </span>
-              <span className="faint" style={{ fontSize: 12.5 }}>
+              <span className="faint report-learning__note">
                 {kind === "warmup" ? "Not rescheduled" : "Coming back sooner"}
               </span>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
+            <div className="report-learning__list">
               {learningIds.map((id) => {
                 const entry = resolveEntry(id);
                 if (!entry) return null;

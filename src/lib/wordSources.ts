@@ -12,13 +12,14 @@
    progress — instead of the second meeting being answered with "you already
    have this word in your deck" and no way forward.
 
-   The primary sense's key is the bare word, with no suffix. That is exactly
-   what every deck saved before this change already contains, so nothing had
-   to be migrated: old ids keep resolving to the primary meaning, which is
-   what they always meant. */
+   The primary sense's key is the bare word, with no suffix, so an id saved
+   before senses existed needs no migration: it resolves to the primary
+   meaning, which is what it always meant. */
+import { useSyncExternalStore } from "react";
 import { DICTIONARY, findEntry, indexOfEntry } from "../data/dictionary";
 import { exampleAt } from "../data/examples";
 import { extraSensesFor } from "../data/senses";
+import { normalize } from "./exercises";
 import type { DictionaryEntry, WordSense } from "./types";
 
 const CUSTOM_KEY = "woordkast.customWords";
@@ -130,7 +131,26 @@ export function resolveEntry(id: string): DictionaryEntry | undefined {
   return custom.get(id) ?? resolveWithoutCustom(id);
 }
 
+/* Custom words live outside React state, so changes are announced: a
+   version that moves on every change, and listeners to tell. Screens re-read
+   their entries and the cloud sync pushes when it moves. */
+let customVersion = 0;
+const customListeners = new Set<() => void>();
+
+function subscribeCustom(listener: () => void): () => void {
+  customListeners.add(listener);
+  return () => customListeners.delete(listener);
+}
+
+/** A number that changes whenever a custom word is added, edited or replaced
+ *  — a dependency for anything derived from resolveEntry. */
+export function useCustomEntriesVersion(): number {
+  return useSyncExternalStore(subscribeCustom, () => customVersion);
+}
+
 function persistCustom(): void {
+  customVersion++;
+  for (const notify of customListeners) notify();
   try {
     localStorage.setItem(CUSTOM_KEY, JSON.stringify(Array.from(custom.values())));
   } catch (err) {
@@ -183,6 +203,11 @@ export function editEntry(
  *  where a user met a word — so any entry with one set is never "just the
  *  default", even when the rest matches exactly. */
 function matchesBundledDefault(entry: DictionaryEntry): boolean {
+  // A secondary meaning is always kept as its own copy: its key is a
+  // position in the word's sense list, and that list grows whenever an
+  // authored sense is added — so resolving it from the dictionary would
+  // silently swap the meaning (or lose it) on the next dictionary update.
+  if (parseSenseKey(entry.id).index > 0) return false;
   const base = resolveWithoutCustom(entry.id);
   return (
     base !== undefined &&
@@ -214,6 +239,21 @@ export function addCustomEntry(entry: DictionaryEntry): void {
   persistCustom();
 }
 
+/** Pins every secondary meaning among `ids` to what it resolves to today
+ *  (see matchesBundledDefault). Covers decks saved before pinning existed;
+ *  a no-op for ids already pinned or no longer resolvable. */
+export function pinSenseEntries(ids: string[]): void {
+  let changed = false;
+  for (const id of ids) {
+    if (parseSenseKey(id).index === 0 || custom.has(id)) continue;
+    const entry = resolveWithoutCustom(id);
+    if (!entry) continue;
+    custom.set(id, entry);
+    changed = true;
+  }
+  if (changed) persistCustom();
+}
+
 /** All user-captured custom words and overrides — for cloud sync (see
  *  lib/cloudState). */
 export function getCustomEntries(): DictionaryEntry[] {
@@ -231,6 +271,26 @@ export function setCustomEntries(entries: DictionaryEntry[]): void {
     if (!matchesBundledDefault(e)) custom.set(e.id, e);
   }
   persistCustom();
+}
+
+/** Bundled words by their primary gloss, normalized — built on first use,
+ *  since only a typed answer ever asks. */
+let byGloss: Map<string, DictionaryEntry[]> | null = null;
+
+/** Every bundled word whose primary gloss is exactly `english` (give or take
+ *  case, accents and punctuation): the Dutch answers that are just as right
+ *  as the one a typing exercise asked for. */
+export function entriesGlossed(english: string): DictionaryEntry[] {
+  if (!byGloss) {
+    byGloss = new Map();
+    for (const e of DICTIONARY) {
+      const key = normalize(e.english);
+      const list = byGloss.get(key);
+      if (list) list.push(e);
+      else byGloss.set(key, [e]);
+    }
+  }
+  return byGloss.get(normalize(english)) ?? [];
 }
 
 /** Exact lookup by typed Dutch word (dictionary ids are the lowercased word).

@@ -15,6 +15,7 @@ import {
   type SessionQueue,
 } from "../lib/sessionQueue";
 import { completionSentence } from "../lib/sentenceTarget";
+import { entriesGlossed } from "../lib/wordSources";
 import { playSound } from "../lib/sfx";
 import { preloadDutch } from "../lib/audio";
 import { withArticle } from "../components/exercises/types";
@@ -244,7 +245,9 @@ export function Practice({
           key={stepNo}
           kind="active_recall"
           entry={entry}
-          synonyms={synonymsOf(entry, pool)}
+          // Same-gloss words anywhere in the dictionary are right too, not
+          // only the ones that happen to be in this learner's deck.
+          synonyms={synonymsOf(entry, [...pool, ...entriesGlossed(entry.english)])}
           isKnownWord={isKnownWord}
           {...callbacks}
         />
