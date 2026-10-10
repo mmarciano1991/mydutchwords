@@ -340,15 +340,49 @@ describe("1. onboarding: the 5-minute promise", () => {
     expect(screenText()).toContain("no right answer");
   });
 
-  it("ends a new user on adding their first word — no starter deck", () => {
+  it("asks a new user how to begin, and starts on three starter words", () => {
     render();
     onboard("Espresso");
     // Pre-filled, so a new user can go straight through.
     expect(screenText()).toContain("Every day at 08:00, I learn 10 Dutch words.");
-    click("Add my first word");
-    expect(JSON.parse(localStorage.getItem("woordkast.deck") ?? "[]")).toHaveLength(0);
+    click("Continue");
+    expect(screenText()).toContain("How do you want to begin?");
+    expect(screenText()).toContain("Add 3 words I’ve met");
+    click("Give me 3 to start");
+    click("Continue");
+    expect(screenText()).toContain("Words you’ll meet soon");
+    expect(container.querySelectorAll(".starter-list__item")).toHaveLength(3);
+    click("Start with these 3");
+    expect(JSON.parse(localStorage.getItem("woordkast.deck") ?? "[]")).toHaveLength(3);
     expect(storedHabit()).toMatchObject({ commitment: "espresso", time: "08:00" });
-    expect(screenText()).not.toContain("How much Dutch fits your day?");
+    // Straight into the first session, on exactly those words.
+    expect(practiceCounter()).toBe("0/3");
+  });
+
+  it("offers different starter words on request", () => {
+    render();
+    onboard("Espresso");
+    click("Continue");
+    click("Give me 3 to start");
+    click("Continue");
+    const words = () => [...container.querySelectorAll(".starter-list__item")].map((li) => li.textContent);
+    const before = words();
+    click("Pick different ones");
+    expect(words()).not.toEqual(before);
+  });
+
+  it("opens the first add-a-word screen when the user picks their own", () => {
+    render();
+    onboard("Espresso");
+    click("Continue");
+    click("Add 3 words I’ve met");
+    click("Continue");
+    expect(screenText()).toContain("Word 1 of 3");
+    expect(screenText()).toContain("Add a Dutch word you’ve met");
+    expect(container.querySelector('input[aria-label^="Search a Dutch word"]')).not.toBeNull();
+    // A way out to starters, before anything is typed.
+    click("Give me 3 to start instead");
+    expect(screenText()).toContain("Words you’ll meet soon");
   });
 
   it("speaks to an existing user as a change of rhythm, and starts their first session", () => {
