@@ -219,6 +219,14 @@ export function sessionSizeFor(habit: HabitState | null, today: string): number 
   return habit?.welcomedOn === today ? Math.min(size, RETURN_WARMUP_WORDS) : size;
 }
 
+/** Words in a follow-on section — any session after the day's first is
+ *  done. Always the full commitment size, including on a return day: the
+ *  warm-up keeps coming back small, but once it's done, choosing to keep
+ *  going gets real sections, not more 5-word warm-ups. */
+export function followOnSectionSize(habit: HabitState | null): number {
+  return commitmentOf(habit?.commitment ?? "espresso").words;
+}
+
 export function todayProgress(goal: number, practised: number, alreadyDone: boolean): TodayProgress {
   const towardGoal = Math.min(practised, goal);
   return {

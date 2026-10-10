@@ -3610,6 +3610,7 @@ textarea.text-input {
   margin-top: 14px;
 }
 .report-sub { font-size: 14px; margin: 7px 0 0; }
+.report-forecast { font-size: 13px; margin: 2px 0 0; text-align: center; }
 .report-stats { display: flex; gap: 12px; margin-top: 18px; }
 .report-learning__head {
   display: flex;

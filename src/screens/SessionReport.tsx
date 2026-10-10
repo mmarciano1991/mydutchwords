@@ -35,6 +35,8 @@ export function SessionReport({
   tomorrow,
   reflectionReady,
   canExtra,
+  nextSectionWords = 0,
+  tomorrowReviews = 0,
   canReplay,
   onReviewMissed,
   onExtra,
@@ -59,6 +61,11 @@ export function SessionReport({
   /** The monthly "then vs now" is due and has something to show. */
   reflectionReady: boolean;
   canExtra: boolean;
+  /** Words the next section would hold (full section size when available). */
+  nextSectionWords?: number;
+  /** Reviews already waiting tomorrow — the cost of another section, shown
+   *  next to the offer so the learner can pace themselves. */
+  tomorrowReviews?: number;
   /** An ungraded "practise again" round is available. */
   canReplay: boolean;
   onReviewMissed: () => void;
@@ -175,9 +182,17 @@ export function SessionReport({
           </button>
         )}
         {!reflectionReady && today.done && canExtra && (
-          <button className="link-btn" onClick={onExtra}>
-            A few more, just for fun
-          </button>
+          <>
+            <button className="link-btn" onClick={onExtra}>
+              Next section · {nextSectionWords} word{nextSectionWords === 1 ? "" : "s"}
+            </button>
+            {tomorrowReviews > 0 && (
+              <p className="muted report-forecast">
+                {tomorrowReviews} review{tomorrowReviews === 1 ? "" : "s"} waiting tomorrow
+                {tomorrowReviews > today.goal * 3 ? " — already a big day" : ""}
+              </p>
+            )}
+          </>
         )}
         {/* Nothing left to grade today: words can still be gone over again,
             as many times as the user wants — ungraded, schedule untouched. */}

@@ -453,7 +453,7 @@ describe("2. the daily session", () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     expect(storedWord(missed).dueDate).toBe(tomorrow.toISOString());
     // A second session today doesn't bring it back.
-    click("A few more, just for fun");
+    click("Next section");
     const second = answer(10);
     expect(second).not.toContain(missed);
   });
@@ -464,7 +464,7 @@ describe("2. the daily session", () => {
     const [missed] = answer(10, [0], { keepMissing: true });
     expect(onResultPage()).toBe(true);
     const graded = storedWord(missed);
-    click("A few more, just for fun");
+    click("Next section");
     const second = answer(11);
     expect(second).toContain(missed);
     expect(storedWord(missed).dueDate).toBe(graded.dueDate);
@@ -483,7 +483,7 @@ describe("2. the daily session", () => {
     render();
     click("Start");
     answer(10);
-    click("A few more, just for fun");
+    click("Next section");
     expect(practiceCounter()).toBe("0/10");
     answer(10);
     expect(screenText()).toContain("Extra ✓");
@@ -498,10 +498,10 @@ describe("2. the daily session", () => {
     render();
     click("Start");
     answer(10);
-    expect(screenText()).not.toContain("A few more, just for fun");
+    expect(screenText()).not.toContain("Next section");
     click("Done");
     expect(cardText()).toContain("Today’s session is complete!");
-    expect(cardText()).not.toContain("A few more");
+    expect(cardText()).not.toContain("Next section");
   });
 
   it("ends the report on Done, with more practice only as a quiet link", () => {
@@ -732,6 +732,23 @@ describe("4. coming back", () => {
     expect(screenText()).toContain("Done for today!");
   });
 
+  it("after the warm-up, keeping going gets full sections — still one learning day", () => {
+    render();
+    click("Let’s go");
+    answer(5);
+    // The 20-word commitment, not another 5-word warm-up.
+    expect(screenText()).toContain("Next section · 20 words");
+    expect(screenText()).toContain("reviews waiting tomorrow");
+    click("Next section");
+    expect(practiceCounter()).toBe("0/20");
+    answer(20);
+    click("Next section");
+    expect(practiceCounter()).toBe("0/5"); // 30 words: 5 + 20 + the last 5
+    answer(5);
+    click("Done");
+    expect(storedHabit().doneDays).toEqual([today()]);
+  });
+
   it("is shown once a day, even when dismissed", () => {
     render();
     click("Not now");
@@ -802,7 +819,7 @@ describe("5. the monthly then vs now", () => {
     answer(10);
     click("See your month in Dutch");
     click("See you tomorrow");
-    click("A few more, just for fun");
+    click("Next section");
     answer(10);
     expect(screenText()).not.toContain("See your month in Dutch");
   });
