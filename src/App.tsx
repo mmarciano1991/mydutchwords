@@ -28,6 +28,7 @@ import {
   isLeech,
   planExercises,
   selectReplayWords,
+  reviewsDueBy,
   selectSessionWords,
   toGrade,
   type ExerciseContext,
@@ -58,6 +59,7 @@ import {
   isReturning,
   newHabit,
   reflectionDue,
+  followOnSectionSize,
   sessionSizeFor,
   todayProgress,
   tomorrowAt,
@@ -96,6 +98,7 @@ import { Auth } from "./screens/Auth";
 import { NewPassword } from "./screens/NewPassword";
 import { Welcome } from "./screens/Welcome";
 import { TabBar, type Tab } from "./components/TabBar";
+import { isAdmin } from "./lib/devMode";
 
 type Route = Tab | "practice" | "report" | "reflection" | "week" | "add-choice" | "capture" | "add-from-text";
 
@@ -190,6 +193,9 @@ export default function App() {
 
   // ── Accounts + cloud sync (optional; no-ops when Supabase isn't configured) ──
   const { user, configured, ready, recovering, clearRecovery } = useAuth();
+  // Dev tool (admins, Settings › Developer): onboarding shown again as a
+  // preview. Nothing it does is saved.
+  const [onboardingPreview, setOnboardingPreview] = useState<"new" | "existing" | null>(null);
 
   // Hard access gate (Figma 228:1789): signed-out visitors can't reach any
   // part of the app — no offline browsing, no "continue without an
@@ -374,18 +380,29 @@ export default function App() {
   const resumable =
     run !== null && run.kind !== "practice" && run.date === today && progress.status === "progress" && Boolean(run.plan);
 
-  // The words the next session would ask, by the engine's priorities —
-  // empty once every word has had its graded answer today.
-  const nextSessionWords = useMemo(
-    () => selectSessionWords(activeDeck, new Date(), { size: sessionSize }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeDeck, sessionSize, today]
-  );
-
   // ── Today ──
   // A day is done once one full session has been completed — recorded on
-  // the local day the session was finished.
+  // the local day the session was finished. Sections past that one are
+  // counted separately (by the session report) and never add a day.
   const doneToday = habit?.doneDays.includes(today) ?? false;
+
+  // Size of the next section: today's goal size for the first, the full
+  // commitment size once the day is done (also on a return day).
+  const nextSectionSize = doneToday ? followOnSectionSize(habit) : sessionSize;
+
+  // The words the next session would ask, by the engine's priorities —
+  // empty once every word has had its graded answer today and no New words
+  // are left.
+  const nextSessionWords = useMemo(
+    () => selectSessionWords(activeDeck, new Date(), { size: nextSectionSize }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeDeck, nextSectionSize, today]
+  );
+
+  // Reviews already waiting tomorrow — shown before another section, since
+  // every New word met today is due again tomorrow.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const tomorrowReviews = useMemo(() => reviewsDueBy(activeDeck, new Date(), 1), [activeDeck, today]);
   const goal = resumable ? progress.total : Math.max(1, nextSessionWords.length || sessionSize);
   const todayProg = useMemo(() => {
     const p = todayProgress(goal, resumable ? progress.answered : 0, doneToday);
@@ -517,13 +534,14 @@ export default function App() {
       showSession(words, remainingSteps(run), run, "goal");
       return;
     }
-    beginSelected("daily", doneToday ? "extra" : "goal");
+    if (doneToday) beginSelected("daily", "extra", nextSectionSize);
+    else beginSelected("daily", "goal");
   }
 
   /** Another session, past the day's first. It never repeats a word graded
    *  today, so it only exists while something is still eligible. */
   function startExtra() {
-    beginSelected("daily", "extra");
+    beginSelected("daily", "extra", followOnSectionSize(habit));
   }
 
   /** Free practice once nothing is left to grade today: repeats today's
@@ -560,7 +578,7 @@ export default function App() {
   }
 
   // ── Onboarding ──
-  function completeOnboarding(choice: { commitment: Commitment; time: HabitTime }) {
+  function completeOnboarding(choice: { commitment: Commitment; time: HabitTime }, firstWords: DictionaryEntry[] = []) {
     const now = new Date();
     const words = commitmentOf(choice.commitment).words;
 
@@ -569,10 +587,21 @@ export default function App() {
     next.doneDays = backfillDoneDays(results, words);
     setHabit(next);
 
-    // Words come only from what the learner meets — there is no starter
-    // deck. With words already saved, the first session starts now; without,
-    // onboarding ends on adding the first one.
-    if (activeDeck.length > 0) beginSelected("daily", "goal", words);
+    // A new learner's first three words — typed in onboarding, or the
+    // starters they asked for. Added now, and passed to the session
+    // directly, since the deck state hasn't updated yet in this call.
+    const fresh: DeckItem[] = [];
+    for (const entry of firstWords) {
+      if (isInDeck(activeDeck, entry.id) || fresh.some((d) => d.id === entry.id)) continue;
+      addCustomEntry(entry);
+      fresh.push(newDeckItem(entry.id, now));
+    }
+    if (fresh.length > 0) setDeck((prev) => [...fresh.filter((f) => !isInDeck(prev, f.id)), ...prev]);
+    const from = [...fresh, ...activeDeck];
+
+    // With words saved, the first session starts now; without, onboarding
+    // ends on adding the first one.
+    if (from.length > 0) beginSelected("daily", "goal", words, from);
     else {
       setExpandFrom(null);
       setRoute("add-choice");
@@ -656,7 +685,7 @@ export default function App() {
   const owner = loadOwner();
   const foreignLocal = user !== null && !hydrated && owner !== null && owner !== user.id;
 
-  const showTabs = !locked && !recovering && !needsOnboarding && !FOCUSED.includes(route);
+  const showTabs = !locked && !recovering && !needsOnboarding && !onboardingPreview && !FOCUSED.includes(route);
 
   return (
     <div className="app-shell">
@@ -688,9 +717,26 @@ export default function App() {
             <div className="screen center-col gutter" role="status">
               <p className="muted">Loading your words…</p>
             </div>
+          ) : onboardingPreview ? (
+            // Dev tool: onboarding walked through again, saving nothing.
+            <div className="dev-preview">
+              <div className="dev-preview__bar" role="status">
+                <span>Preview · nothing is saved</span>
+                <button className="link-btn" onClick={() => setOnboardingPreview(null)}>
+                  Exit
+                </button>
+              </div>
+              <Onboarding
+                key={onboardingPreview}
+                existingUser={onboardingPreview === "existing"}
+                onComplete={() => setOnboardingPreview(null)}
+              />
+            </div>
           ) : needsOnboarding ? (
             <Onboarding
               existingUser={deck.length > 0 || results.length > 0}
+              deckIds={deckIds}
+              levels={levels}
               onComplete={completeOnboarding}
             />
           ) : (
@@ -706,6 +752,7 @@ export default function App() {
                   cue={habit ? cueLine(habit) : ""}
                   tomorrow={tomorrowAt(habit)}
                   canExtra={canExtra}
+                  extraWords={nextSessionWords.length}
                   canReplay={canReplay}
                   onPractice={startPractice}
                   onExtra={startExtra}
@@ -746,6 +793,8 @@ export default function App() {
                   dutchAudio={dutchAudio}
                   onHabitChange={changeHabit}
                   onSignOut={handleSignOut}
+                  isAdmin={isAdmin(user)}
+                  onPreviewOnboarding={setOnboardingPreview}
                 />
               )}
 
@@ -776,6 +825,8 @@ export default function App() {
                   tomorrow={tomorrowAt(habit)}
                   reflectionReady={reflection !== null && todayProg.done && sittingKind === "goal"}
                   canExtra={canExtra}
+                  nextSectionWords={selectSessionWords(activeDeck, new Date(), { size: followOnSectionSize(habit) }).length}
+                  tomorrowReviews={tomorrowReviews}
                   canReplay={canReplay}
                   onReviewMissed={practiseLearningAgain}
                   onExtra={startExtra}

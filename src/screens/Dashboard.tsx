@@ -21,6 +21,7 @@ export function Dashboard({
   cue,
   tomorrow,
   canExtra,
+  extraWords = 0,
   canReplay,
   onPractice,
   onExtra,
@@ -40,6 +41,8 @@ export function Dashboard({
   cue: string;
   tomorrow: string;
   canExtra: boolean;
+  /** Words the extra practice would hold. */
+  extraWords?: number;
   /** An ungraded "practise again" round is available. */
   canReplay: boolean;
   /** Starts, or continues, today's session. */
@@ -89,10 +92,10 @@ export function Dashboard({
             status={today.done ? "done" : inProgress ? "progress" : canExtra ? "ready" : "empty"}
             goal={today.goal}
             towardGoal={today.towardGoal}
-            extra={today.extra}
             cue={cue}
             tomorrow={tomorrow}
             canExtra={canExtra}
+            extraWords={extraWords}
             canReplay={canReplay}
             onStart={onPractice}
             onExtra={onExtra}

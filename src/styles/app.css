@@ -2782,7 +2782,7 @@ textarea.text-input {
 .practice-card {
   display: flex;
   flex-direction: column;
-  gap: var(--space-6);
+  gap: var(--space-4);
   padding: var(--space-4);
   background: var(--primary);
   color: var(--on-primary);
@@ -2811,6 +2811,10 @@ textarea.text-input {
 }
 .practice-card__length {
   text-align: right;
+}
+/* Beside the "Goal reached" badge the label keeps to one line. */
+.practice-card--done .practice-card__kind {
+  white-space: nowrap;
 }
 .practice-card__content {
   display: flex;
@@ -2844,6 +2848,54 @@ textarea.text-input {
   flex-direction: column;
   gap: var(--space-3);
   width: 100%;
+}
+
+/* Progress state: a little more room around the bar (Figma 304:1150). */
+.practice-card--progress {
+  padding: var(--space-5);
+}
+/* Done state (Figma 306:1223): the day is finished, so the card steps down
+   from cobalt to a light cool surface; extra practice for today sits under
+   a divider as the one filled button. */
+.practice-card--done {
+  padding: var(--space-5);
+  background: var(--border-cool);
+  border: 1px solid var(--primary-border);
+  color: var(--primary);
+}
+.practice-card__badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--success-solid);
+  color: var(--cream-000);
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+.practice-card__divider {
+  width: 100%;
+  margin: 0;
+  border: 0;
+  border-top: 1px solid var(--primary-border);
+}
+.practice-card__more {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  width: 100%;
+}
+.practice-card__prompt {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-weight: 700;
+  font-size: var(--size-body);
+  line-height: 1.55;
+  text-align: center;
 }
 
 /* Done state: what was practised past the goal, said once and quietly. */
@@ -2910,6 +2962,45 @@ textarea.text-input {
   margin: 10px 0 22px;
   font-size: 15px;
   line-height: 1.5;
+  color: var(--text-muted);
+}
+.onb__lookup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+}
+/* Onboarding's starter words: three quiet rows, word then meaning. */
+.starter-list {
+  list-style: none;
+  margin: var(--space-5) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.starter-list__item {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  padding: var(--space-4);
+  background: var(--surface-card);
+  border: 1px solid var(--border-warm);
+  border-radius: var(--radius-card);
+}
+.starter-list__word {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.2;
+  color: var(--text-body);
+}
+.starter-list__gloss {
+  font-size: var(--size-body);
   color: var(--text-muted);
 }
 .onb__note {
@@ -3610,6 +3701,7 @@ textarea.text-input {
   margin-top: 14px;
 }
 .report-sub { font-size: 14px; margin: 7px 0 0; }
+.report-forecast { font-size: 13px; margin: 2px 0 0; text-align: center; }
 .report-stats { display: flex; gap: 12px; margin-top: 18px; }
 .report-learning__head {
   display: flex;
@@ -3657,3 +3749,35 @@ textarea.text-input {
 .settings-stat__value { font-family: var(--font-serif); font-weight: 600; color: var(--text-display); }
 .settings-stat__divider { margin: 12px 0; }
 .settings-foot { font-size: 12px; line-height: 1.5; margin-top: 18px; text-align: center; }
+
+/* ── Developer tools (admins) ── */
+.settings-dev {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.dev-preview {
+  position: relative;
+  height: 100%;
+}
+.dev-preview__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: 4px var(--space-4);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.dev-preview__bar .link-btn {
+  color: var(--on-primary);
+  text-decoration: underline;
+}
