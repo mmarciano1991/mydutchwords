@@ -39,6 +39,7 @@ import {
   MAX_NEW_WORDS_PER_SESSION,
   MC_MIN_OTHER_WORDS,
   MIN_EASE,
+  NEW_WORDS_SHARE_OF_BACKLOG,
   RESET_INTERVAL_DAYS,
   TIER3_ACTIVE_RECALL_SHARE,
 } from "./learningConfig";
@@ -487,6 +488,14 @@ export interface SessionOptions {
   section?: "first" | "followOn";
 }
 
+/** New words allowed into the day's first section, proportional to how many
+ *  New words are waiting (see NEW_WORDS_SHARE_OF_BACKLOG), bounded by the
+ *  floor and the section size. */
+export function firstSectionNewCap(newBacklog: number, size: number): number {
+  const scaled = Math.round(newBacklog * NEW_WORDS_SHARE_OF_BACKLOG);
+  return Math.max(0, Math.min(size, Math.max(MAX_NEW_WORDS_PER_SESSION, scaled)));
+}
+
 /** True once any word has had its graded answer today — every session from
  *  then on is a follow-on section of the same learning day. */
 export function hasGradedToday(words: Pick<Word, "lastGradedDay">[], now: Date): boolean {
@@ -511,7 +520,8 @@ function failedAndDue<T extends Selectable>(words: T[], now: Date): T[] {
  * Never a word already graded today. A "missed" session is step 1 only.
  *
  * Sections vs days: the new-word cap depends on the section. The day's
- * first section takes at most MAX_NEW_WORDS_PER_SESSION; a follow-on section
+ * first section takes a share of the New backlog (firstSectionNewCap: 5 for
+ * a small backlog, more for a large one); a follow-on section
  * fills up to its size (MAX_NEW_WORDS_PER_FOLLOW_ON_SECTION) so the learner
  * can keep going in full sections. Scheduling is untouched by this: words
  * graded today are excluded, and gradeWord grades a word once per day.
@@ -535,7 +545,10 @@ export function selectSessionWords<T extends Selectable>(words: T[], now: Date, 
 
   const followOn = (options.section ?? (hasGradedToday(words, now) ? "followOn" : "first")) === "followOn";
   const maxNew =
-    options.maxNewWords ?? (followOn ? Math.min(size, MAX_NEW_WORDS_PER_FOLLOW_ON_SECTION) : MAX_NEW_WORDS_PER_SESSION);
+    options.maxNewWords ??
+    (followOn
+      ? Math.min(size, MAX_NEW_WORDS_PER_FOLLOW_ON_SECTION)
+      : firstSectionNewCap(pool.filter((w) => w.state === "new").length, size));
   const out: T[] = [];
   const push = (list: T[]) => {
     for (const w of list) if (out.length < size) out.push(w);

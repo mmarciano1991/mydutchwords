@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   dayKey,
+  firstSectionNewCap,
   gradeWord,
   newWord,
   reviewsDueBy,
@@ -54,14 +55,38 @@ describe("sections within one learning day", () => {
       sizes.push(words.length);
       deck = answerSection(deck, words.map((w) => w.id), at(0, 9, s * 20 + 10)).deck;
     }
-    // First section stays review-led (only New words exist here, so 5);
-    // every section after it is full.
-    expect(sizes).toEqual([MAX_NEW_WORDS_PER_SESSION, 30, 30, 30]);
+    // First section: 10% of the 200 waiting = 20; every section after it is full.
+    expect(sizes).toEqual([20, 30, 30, 30]);
   });
 
-  it("the first section of the day keeps its new-word cap", () => {
-    const words = selectSessionWords(deckOfNew(200), at(0), { size: 30 });
-    expect(words).toHaveLength(MAX_NEW_WORDS_PER_SESSION);
+  it("the first section's new words scale with the backlog waiting", () => {
+    const first = (n: number, size: number) => selectSessionWords(deckOfNew(n), at(0), { size }).length;
+    expect(first(20, 30)).toBe(MAX_NEW_WORDS_PER_SESSION); // small deck: floor of 5
+    expect(first(49, 30)).toBe(MAX_NEW_WORDS_PER_SESSION);
+    expect(first(100, 30)).toBe(10);
+    expect(first(200, 30)).toBe(20);
+    expect(first(200, 10)).toBe(10); // never more than the section
+    expect(first(3, 30)).toBe(3); // never more than exist
+  });
+
+  it("firstSectionNewCap is bounded by the floor and the section size", () => {
+    expect(firstSectionNewCap(0, 20)).toBe(MAX_NEW_WORDS_PER_SESSION);
+    expect(firstSectionNewCap(150, 20)).toBe(15);
+    expect(firstSectionNewCap(500, 20)).toBe(20);
+    expect(firstSectionNewCap(500, 3)).toBe(3);
+  });
+
+  it("the cap shrinks as the backlog is learned", () => {
+    let deck = deckOfNew(120);
+    const firsts: number[] = [];
+    for (let d = 0; d < 4; d++) {
+      const words = selectSessionWords(deck, at(d), { size: 30 });
+      firsts.push(words.filter((w) => w.state === "new").length);
+      deck = answerSection(deck, words.map((w) => w.id), at(d, 9, 30)).deck;
+    }
+    // 120 waiting → 12; 108 → 11; 97 → 10; 87 → 9 allowed, but on day 4
+    // 22 due reviews fill the 30-word section first, leaving room for 8.
+    expect(firsts).toEqual([12, 11, 10, 8]);
   });
 
   it("follow-on sections still put due reviews before New words", () => {
@@ -178,7 +203,7 @@ describe("reviewsDueBy", () => {
       const words = selectSessionWords(deck, at(0, 9 + s), { size: 20 });
       deck = answerSection(deck, words.map((w) => w.id), at(0, 9 + s, 30)).deck;
     }
-    // 5 (first section) + 20 (follow-on) words, all due tomorrow.
-    expect(reviewsDueBy(deck, at(0, 20))).toBe(25);
+    // 6 (first section: 10% of 60) + 20 (follow-on) words, all due tomorrow.
+    expect(reviewsDueBy(deck, at(0, 20))).toBe(26);
   });
 });

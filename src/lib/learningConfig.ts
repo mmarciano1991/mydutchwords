@@ -50,8 +50,15 @@ export const FAILURES_BEFORE_RESET = 3;
 
 // ── Sessions ──
 
-/** New words (never practised, or reset) allowed into one session, so a
- *  capture binge doesn't flood it. */
+/** New words (never practised, or reset) allowed into the day's first
+ *  section scale with how many are waiting: this share of the New backlog,
+ *  never fewer than MAX_NEW_WORDS_PER_SESSION and never more than the
+ *  section size. 20 waiting → 5; 100 waiting → 10; 200 waiting → 20.
+ *  A small backlog keeps the section review-led; a big one drains steadily
+ *  instead of 5 a day forever. */
+export const NEW_WORDS_SHARE_OF_BACKLOG = 0.1;
+/** The floor of that scale — and the whole cap for backlogs under 50 —
+ *  so a capture binge doesn't flood a small deck's session. */
 export const MAX_NEW_WORDS_PER_SESSION = 5;
 /** New words allowed into a follow-on section — any session started after a
  *  word has already been graded today. The day's first section stays
