@@ -98,6 +98,7 @@ import { Auth } from "./screens/Auth";
 import { NewPassword } from "./screens/NewPassword";
 import { Welcome } from "./screens/Welcome";
 import { TabBar, type Tab } from "./components/TabBar";
+import { isAdmin } from "./lib/devMode";
 
 type Route = Tab | "practice" | "report" | "reflection" | "week" | "add-choice" | "capture" | "add-from-text";
 
@@ -192,6 +193,9 @@ export default function App() {
 
   // ── Accounts + cloud sync (optional; no-ops when Supabase isn't configured) ──
   const { user, configured, ready, recovering, clearRecovery } = useAuth();
+  // Dev tool (admins, Settings › Developer): onboarding shown again as a
+  // preview. Nothing it does is saved.
+  const [onboardingPreview, setOnboardingPreview] = useState<"new" | "existing" | null>(null);
 
   // Hard access gate (Figma 228:1789): signed-out visitors can't reach any
   // part of the app — no offline browsing, no "continue without an
@@ -681,7 +685,7 @@ export default function App() {
   const owner = loadOwner();
   const foreignLocal = user !== null && !hydrated && owner !== null && owner !== user.id;
 
-  const showTabs = !locked && !recovering && !needsOnboarding && !FOCUSED.includes(route);
+  const showTabs = !locked && !recovering && !needsOnboarding && !onboardingPreview && !FOCUSED.includes(route);
 
   return (
     <div className="app-shell">
@@ -712,6 +716,21 @@ export default function App() {
           ) : waitingForHabit || foreignLocal ? (
             <div className="screen center-col gutter" role="status">
               <p className="muted">Loading your words…</p>
+            </div>
+          ) : onboardingPreview ? (
+            // Dev tool: onboarding walked through again, saving nothing.
+            <div className="dev-preview">
+              <div className="dev-preview__bar" role="status">
+                <span>Preview · nothing is saved</span>
+                <button className="link-btn" onClick={() => setOnboardingPreview(null)}>
+                  Exit
+                </button>
+              </div>
+              <Onboarding
+                key={onboardingPreview}
+                existingUser={onboardingPreview === "existing"}
+                onComplete={() => setOnboardingPreview(null)}
+              />
             </div>
           ) : needsOnboarding ? (
             <Onboarding
@@ -774,6 +793,8 @@ export default function App() {
                   dutchAudio={dutchAudio}
                   onHabitChange={changeHabit}
                   onSignOut={handleSignOut}
+                  isAdmin={isAdmin(user)}
+                  onPreviewOnboarding={setOnboardingPreview}
                 />
               )}
 

@@ -12,6 +12,7 @@ import {
 import { notificationsSupported, requestReminderPermission } from "../lib/reminders";
 import { setSoundEffectsMuted, soundEffectsMuted } from "../lib/sfx";
 import { Notice } from "../components/Notice";
+import { readDevMode, writeDevMode } from "../lib/devMode";
 
 export type HabitPrefs = Pick<HabitState, "commitment" | "time" | "weeklyTarget" | "reminders" | "audioExercises">;
 
@@ -21,8 +22,10 @@ export function Settings({
   email,
   habit,
   dutchAudio = false,
+  isAdmin = false,
   onHabitChange,
   onSignOut,
+  onPreviewOnboarding,
 }: {
   deckCount: number;
   /** Whether cloud sync (Supabase) is configured for this build. */
@@ -39,7 +42,13 @@ export function Settings({
   /** Resolves false, without signing out, when the latest progress couldn't
    *  be saved first — unless `force`d. */
   onSignOut: (opts?: { force?: boolean }) => Promise<boolean>;
+  /** The account is an admin (Supabase app_metadata.role = "admin"):
+   *  shows the Developer card. */
+  isAdmin?: boolean;
+  /** Dev tool: walk through onboarding again as a preview — nothing saved. */
+  onPreviewOnboarding?: (as: "new" | "existing") => void;
 }) {
+  const [devMode, setDevMode] = useState(readDevMode);
   const [reminderNote, setReminderNote] = useState<string | null>(null);
   // Per device, not part of the synced habit: sound is about where you are.
   const [sfxOn, setSfxOn] = useState(() => !soundEffectsMuted());
@@ -238,6 +247,42 @@ export function Settings({
             <span className="settings-stat__value">{deckCount}</span>
           </div>
         </div>
+
+        {/* Developer — admins only. Dev mode is a per-device switch; its
+            tools preview flows without touching the account's data. */}
+        {isAdmin && (
+          <div className="card card--warm settings-card">
+            <p className="settings-habit__heading">Developer</p>
+            <label className="toggle-row">
+              <span>
+                <span className="toggle-row__title">Dev mode</span>
+                <span className="toggle-row__sub">Tools for testing flows on this device.</span>
+              </span>
+              <input
+                type="checkbox"
+                className="toggle"
+                checked={devMode}
+                onChange={(e) => {
+                  setDevMode(e.target.checked);
+                  writeDevMode(e.target.checked);
+                }}
+              />
+            </label>
+            {devMode && onPreviewOnboarding && (
+              <div className="settings-dev">
+                <button className="btn btn--secondary" onClick={() => onPreviewOnboarding("new")}>
+                  Preview onboarding · new user
+                </button>
+                <button className="btn btn--secondary" onClick={() => onPreviewOnboarding("existing")}>
+                  Preview onboarding · existing user
+                </button>
+                <p className="settings-habit__foot">
+                  A preview only: your words, progress and settings stay exactly as they are.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
 
         <p className="faint settings-foot">
           Woordkast · Dutch words, kept like fine china.
