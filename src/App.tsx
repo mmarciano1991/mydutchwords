@@ -28,6 +28,7 @@ import {
   isLeech,
   planExercises,
   selectReplayWords,
+  reviewsDueBy,
   selectSessionWords,
   toGrade,
   type ExerciseContext,
@@ -58,6 +59,7 @@ import {
   isReturning,
   newHabit,
   reflectionDue,
+  followOnSectionSize,
   sessionSizeFor,
   todayProgress,
   tomorrowAt,
@@ -374,18 +376,29 @@ export default function App() {
   const resumable =
     run !== null && run.kind !== "practice" && run.date === today && progress.status === "progress" && Boolean(run.plan);
 
-  // The words the next session would ask, by the engine's priorities —
-  // empty once every word has had its graded answer today.
-  const nextSessionWords = useMemo(
-    () => selectSessionWords(activeDeck, new Date(), { size: sessionSize }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [activeDeck, sessionSize, today]
-  );
-
   // ── Today ──
   // A day is done once one full session has been completed — recorded on
-  // the local day the session was finished.
+  // the local day the session was finished. Sections past that one are
+  // counted separately (by the session report) and never add a day.
   const doneToday = habit?.doneDays.includes(today) ?? false;
+
+  // Size of the next section: today's goal size for the first, the full
+  // commitment size once the day is done (also on a return day).
+  const nextSectionSize = doneToday ? followOnSectionSize(habit) : sessionSize;
+
+  // The words the next session would ask, by the engine's priorities —
+  // empty once every word has had its graded answer today and no New words
+  // are left.
+  const nextSessionWords = useMemo(
+    () => selectSessionWords(activeDeck, new Date(), { size: nextSectionSize }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [activeDeck, nextSectionSize, today]
+  );
+
+  // Reviews already waiting tomorrow — shown before another section, since
+  // every New word met today is due again tomorrow.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const tomorrowReviews = useMemo(() => reviewsDueBy(activeDeck, new Date(), 1), [activeDeck, today]);
   const goal = resumable ? progress.total : Math.max(1, nextSessionWords.length || sessionSize);
   const todayProg = useMemo(() => {
     const p = todayProgress(goal, resumable ? progress.answered : 0, doneToday);
@@ -517,13 +530,14 @@ export default function App() {
       showSession(words, remainingSteps(run), run, "goal");
       return;
     }
-    beginSelected("daily", doneToday ? "extra" : "goal");
+    if (doneToday) beginSelected("daily", "extra", nextSectionSize);
+    else beginSelected("daily", "goal");
   }
 
   /** Another session, past the day's first. It never repeats a word graded
    *  today, so it only exists while something is still eligible. */
   function startExtra() {
-    beginSelected("daily", "extra");
+    beginSelected("daily", "extra", followOnSectionSize(habit));
   }
 
   /** Free practice once nothing is left to grade today: repeats today's
@@ -776,6 +790,8 @@ export default function App() {
                   tomorrow={tomorrowAt(habit)}
                   reflectionReady={reflection !== null && todayProg.done && sittingKind === "goal"}
                   canExtra={canExtra}
+                  nextSectionWords={selectSessionWords(activeDeck, new Date(), { size: followOnSectionSize(habit) }).length}
+                  tomorrowReviews={tomorrowReviews}
                   canReplay={canReplay}
                   onReviewMissed={practiseLearningAgain}
                   onExtra={startExtra}

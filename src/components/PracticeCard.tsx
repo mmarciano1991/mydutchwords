@@ -110,7 +110,7 @@ export function PracticeCard({
         </div>
         {canExtra ? (
           <button className="btn btn--secondary btn--inverted" onClick={onExtra}>
-            A few more, just for fun
+            Next section
           </button>
         ) : (
           canReplay && (

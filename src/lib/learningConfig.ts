@@ -53,6 +53,14 @@ export const FAILURES_BEFORE_RESET = 3;
 /** New words (never practised, or reset) allowed into one session, so a
  *  capture binge doesn't flood it. */
 export const MAX_NEW_WORDS_PER_SESSION = 5;
+/** New words allowed into a follow-on section — any session started after a
+ *  word has already been graded today. The day's first section stays
+ *  review-led (capped above); once the user chooses to keep going, a section
+ *  is filled to its full size, due reviews first and then New words, so
+ *  "keep going" is never a 3-word scrap. Capped further by the section size.
+ *  The schedule is unaffected: each word still gets one graded answer per
+ *  day (rule 2), so extra sections add words, never extra days. */
+export const MAX_NEW_WORDS_PER_FOLLOW_ON_SECTION = 30;
 /** Default session size, before the user has picked one. */
 export const DEFAULT_SESSION_SIZE = 10;
 

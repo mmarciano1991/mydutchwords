@@ -35,6 +35,7 @@ import {
   MATCHING_MIN_WORDS,
   MAX_EASE,
   MAX_INTERVAL_DAYS,
+  MAX_NEW_WORDS_PER_FOLLOW_ON_SECTION,
   MAX_NEW_WORDS_PER_SESSION,
   MC_MIN_OTHER_WORDS,
   MIN_EASE,
@@ -476,8 +477,20 @@ export interface SessionOptions {
   /** Words wanted — the user's session size. */
   size: number;
   kind?: SessionKind;
-  /** New words allowed in; defaults to the config cap. */
+  /** New words allowed in; defaults to the config cap for the section. */
   maxNewWords?: number;
+  /** "first" — the day's first section: review-led, few New words.
+   *  "followOn" — the user chose to keep going: filled to `size` with due
+   *  reviews, then New words.
+   *  Defaults to followOn when any word was already graded today, so the
+   *  choice follows the data (and agrees across devices). */
+  section?: "first" | "followOn";
+}
+
+/** True once any word has had its graded answer today — every session from
+ *  then on is a follow-on section of the same learning day. */
+export function hasGradedToday(words: Pick<Word, "lastGradedDay">[], now: Date): boolean {
+  return words.some((w) => gradedToday(w, now));
 }
 
 type Selectable = Word & { dateAdded?: number };
@@ -497,6 +510,12 @@ function failedAndDue<T extends Selectable>(words: T[], now: Date): T[] {
  *   6. if still short: words not due yet, closest to due first
  * Never a word already graded today. A "missed" session is step 1 only.
  *
+ * Sections vs days: the new-word cap depends on the section. The day's
+ * first section takes at most MAX_NEW_WORDS_PER_SESSION; a follow-on section
+ * fills up to its size (MAX_NEW_WORDS_PER_FOLLOW_ON_SECTION) so the learner
+ * can keep going in full sections. Scheduling is untouched by this: words
+ * graded today are excluded, and gradeWord grades a word once per day.
+ *
  * Returns the words in priority order; planExercises shuffles them.
  */
 export function selectSessionWords<T extends Selectable>(words: T[], now: Date, options: SessionOptions): T[] {
@@ -514,7 +533,9 @@ export function selectSessionWords<T extends Selectable>(words: T[], now: Date, 
   const dueToday = learningDue.filter((w) => dueTime(w) >= startOfToday);
   const learnedDue = rest.filter((w) => w.state === "learned" && isDue(w, now)).sort((a, b) => dueTime(a) - dueTime(b));
 
-  const maxNew = options.maxNewWords ?? MAX_NEW_WORDS_PER_SESSION;
+  const followOn = (options.section ?? (hasGradedToday(words, now) ? "followOn" : "first")) === "followOn";
+  const maxNew =
+    options.maxNewWords ?? (followOn ? Math.min(size, MAX_NEW_WORDS_PER_FOLLOW_ON_SECTION) : MAX_NEW_WORDS_PER_SESSION);
   const out: T[] = [];
   const push = (list: T[]) => {
     for (const w of list) if (out.length < size) out.push(w);
@@ -590,6 +611,17 @@ export function dueSummary(words: Word[], now: Date): DueSummary {
     newWords: pool.filter((w) => w.state === "new" && !missedSet.has(w.id)).map((w) => w.id),
     counts,
   };
+}
+
+/**
+ * Reviews waiting on a coming day: words already met (not New) whose due
+ * date falls on or before the end of that day. `daysAhead` 1 = tomorrow.
+ * Counts today's words too — that is the point: every New word introduced
+ * today comes back tomorrow, so this shows what extra sections will cost.
+ */
+export function reviewsDueBy(words: Pick<Word, "state" | "dueDate">[], now: Date, daysAhead = 1): number {
+  const end = midnightAfter(now, daysAhead + 1).getTime();
+  return words.filter((w) => w.state !== "new" && dueTime(w) < end).length;
 }
 
 // ── Exercise planning ──
