@@ -3749,3 +3749,35 @@ textarea.text-input {
 .settings-stat__value { font-family: var(--font-serif); font-weight: 600; color: var(--text-display); }
 .settings-stat__divider { margin: 12px 0; }
 .settings-foot { font-size: 12px; line-height: 1.5; margin-top: 18px; text-align: center; }
+
+/* ── Developer tools (admins) ── */
+.settings-dev {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-4);
+}
+.dev-preview {
+  position: relative;
+  height: 100%;
+}
+.dev-preview__bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: 4px var(--space-4);
+  background: var(--primary);
+  color: var(--on-primary);
+  font-size: 12.5px;
+  font-weight: 700;
+}
+.dev-preview__bar .link-btn {
+  color: var(--on-primary);
+  text-decoration: underline;
+}
