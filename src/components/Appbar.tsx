@@ -11,26 +11,11 @@
    Passing `progress` switches to the Type=Progress variant (Figma 375:1929),
    used by focused flows like Practice: close button and progress bar on the
    top row, the title centred beneath them. */
-import type { Ref } from "react";
 import { IconButton } from "./IconButton";
 import { Dock } from "./Dock";
-import { SearchIcon } from "./icons";
-import { Close } from "../icons";
+import { SearchField, type SearchFieldProps } from "./SearchField";
 
-export type AppbarSearch = {
-  value: string;
-  onChange: (value: string) => void;
-  placeholder: string;
-  /** Accessible name for the field — placeholder text disappears once
-   *  typing starts and isn't a reliable name for assistive tech, so this is
-   *  required rather than falling back to `placeholder` silently. */
-  ariaLabel: string;
-  autoFocus?: boolean;
-  /** Lets the screen refocus the field — e.g. ready for the next word. */
-  inputRef?: Ref<HTMLInputElement>;
-  /** Enter key — e.g. "look this up online anyway". */
-  onSubmit?: () => void;
-};
+export type AppbarSearch = SearchFieldProps;
 
 export type AppbarProgress = {
   value: number;
@@ -101,38 +86,7 @@ export function Appbar({
         )}
       </div>
 
-      {search && (
-        <form
-          className={`appbar__search${search.value ? " appbar__search--active" : ""}`}
-          onSubmit={(e) => {
-            e.preventDefault();
-            search.onSubmit?.();
-          }}
-        >
-          <SearchIcon />
-          <input
-            ref={search.inputRef}
-            value={search.value}
-            onChange={(e) => search.onChange(e.target.value)}
-            placeholder={search.placeholder}
-            aria-label={search.ariaLabel}
-            autoFocus={search.autoFocus}
-            autoComplete="off"
-            autoCapitalize="off"
-            spellCheck={false}
-          />
-          {search.value && (
-            <button
-              type="button"
-              className="appbar__clear"
-              onClick={() => search.onChange("")}
-              aria-label="Clear search"
-            >
-              <Close size={20} />
-            </button>
-          )}
-        </form>
-      )}
+      {search && <SearchField {...search} />}
     </>
   );
 

@@ -574,7 +574,7 @@ export default function App() {
   }
 
   // ── Onboarding ──
-  function completeOnboarding(choice: { commitment: Commitment; time: HabitTime }) {
+  function completeOnboarding(choice: { commitment: Commitment; time: HabitTime }, firstWords: DictionaryEntry[] = []) {
     const now = new Date();
     const words = commitmentOf(choice.commitment).words;
 
@@ -583,10 +583,21 @@ export default function App() {
     next.doneDays = backfillDoneDays(results, words);
     setHabit(next);
 
-    // Words come only from what the learner meets — there is no starter
-    // deck. With words already saved, the first session starts now; without,
-    // onboarding ends on adding the first one.
-    if (activeDeck.length > 0) beginSelected("daily", "goal", words);
+    // A new learner's first three words — typed in onboarding, or the
+    // starters they asked for. Added now, and passed to the session
+    // directly, since the deck state hasn't updated yet in this call.
+    const fresh: DeckItem[] = [];
+    for (const entry of firstWords) {
+      if (isInDeck(activeDeck, entry.id) || fresh.some((d) => d.id === entry.id)) continue;
+      addCustomEntry(entry);
+      fresh.push(newDeckItem(entry.id, now));
+    }
+    if (fresh.length > 0) setDeck((prev) => [...fresh.filter((f) => !isInDeck(prev, f.id)), ...prev]);
+    const from = [...fresh, ...activeDeck];
+
+    // With words saved, the first session starts now; without, onboarding
+    // ends on adding the first one.
+    if (from.length > 0) beginSelected("daily", "goal", words, from);
     else {
       setExpandFrom(null);
       setRoute("add-choice");
@@ -705,6 +716,8 @@ export default function App() {
           ) : needsOnboarding ? (
             <Onboarding
               existingUser={deck.length > 0 || results.length > 0}
+              deckIds={deckIds}
+              levels={levels}
               onComplete={completeOnboarding}
             />
           ) : (
