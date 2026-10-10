@@ -2,12 +2,13 @@
    (Figma 304:1118). Three states, all read from the day's GOAL rather than
    from a fixed-size set:
 
-     ready    — nothing practised yet today: the cue, the size, one button
+     ready    — nothing practised yet today: how many words wait, one button
      progress — part of the goal done: an inverted ProgressBar, "Continue"
-     done     — the goal is reached. The day is finished, and the card says
-                so plainly. Extra practice is always offered, quietly, as an
-                outlined button — never as the primary action, and never with
-                any suggestion that tomorrow will ask for more.
+     done     — the goal is reached (Figma 306:1223). A light card with a
+                "Goal reached" badge says the day is finished and when
+                tomorrow's session starts; under a divider, extra practice
+                for TODAY is offered ("Keep going – N more words"), worded so
+                it never reads as starting tomorrow's session early.
 
    The old "caught up / practise ahead" and "add 16 words before you can
    practise" states are gone: the daily set always tops up from the whole
@@ -18,7 +19,7 @@
    dashboard, and everything nested inside it uses the inverted/on-cobalt
    treatment. */
 import type { ReactNode } from "react";
-import { CardsStack } from "../icons";
+import { CardsStack, CheckCircle } from "../icons";
 import { ProgressBar } from "./ProgressBar";
 
 /** ready / progress / done as above, plus `empty`: no full session today,
@@ -34,13 +35,24 @@ export function sessionMinutes(cardCount: number): number {
   return Math.max(1, Math.floor(cardCount / 2));
 }
 
-function Shell({ length, children }: { length: string | null; children: ReactNode }) {
+function Shell({
+  length,
+  badge,
+  variant,
+  children,
+}: {
+  length: string | null;
+  badge?: ReactNode;
+  variant?: "progress" | "done";
+  children: ReactNode;
+}) {
   return (
-    <section className="practice-card">
+    <section className={`practice-card${variant ? ` practice-card--${variant}` : ""}`}>
       <div className="practice-card__top">
         <CardsStack className="practice-card__icon" />
         <p className="practice-card__kind">Today&rsquo;s Dutch</p>
         {length && <p className="practice-card__length">{length}</p>}
+        {badge}
       </div>
       {children}
     </section>
@@ -51,10 +63,9 @@ export function PracticeCard({
   status,
   goal,
   towardGoal,
-  extra,
-  cue,
   tomorrow,
   canExtra,
+  extraWords = 0,
   canReplay,
   onStart,
   onExtra,
@@ -65,14 +76,15 @@ export function PracticeCard({
   goal: number;
   /** Of those, how many are done. */
   towardGoal: number;
-  /** Practised past the goal today. */
-  extra: number;
-  /** "☀️ Your Dutch at 08:00" */
-  cue: string;
+  /** Habit cue — no longer shown on the card (Figma 304:1067); kept so
+   *  callers needn't change. */
+  cue?: string;
   /** " at 08:00", or "" without a reminder — completes "See you tomorrow…". */
   tomorrow: string;
   /** Whether anything is still eligible to practise today. */
   canExtra: boolean;
+  /** Words the extra practice would hold (the next section's size). */
+  extraWords?: number;
   /** Words can be gone over again, ungraded, once nothing is left to grade. */
   canReplay: boolean;
   /** Starts, or continues, today's goal. */
@@ -102,22 +114,38 @@ export function PracticeCard({
 
   if (status === "done") {
     return (
-      <Shell length="✓ Done">
+      <Shell
+        length={null}
+        variant="done"
+        badge={
+          <span className="practice-card__badge">
+            <CheckCircle size={24} />
+            Goal reached
+          </span>
+        }
+      >
         <div className="practice-card__content">
           <p className="practice-card__title">Today’s session is complete!</p>
           <p className="practice-card__body">Your next session starts tomorrow{tomorrow}.</p>
-          {extra > 0 && <p className="practice-card__extra">+{extra} extra today</p>}
         </div>
-        {canExtra ? (
-          <button className="btn btn--secondary btn--inverted" onClick={onExtra}>
-            Next section
-          </button>
-        ) : (
-          canReplay && (
-            <button className="btn btn--secondary btn--inverted" onClick={onReplay}>
-              Practise again
-            </button>
-          )
+        {(canExtra || canReplay) && (
+          <>
+            <hr className="practice-card__divider" />
+            <div className="practice-card__more">
+              <p className="practice-card__prompt">
+                {canExtra ? "Still in the mood for more practice today?" : "Want to go over today’s words again?"}
+              </p>
+              {canExtra ? (
+                <button className="btn btn--primary" onClick={onExtra}>
+                  Keep going – {extraWords} more word{extraWords === 1 ? "" : "s"}
+                </button>
+              ) : (
+                <button className="btn btn--primary" onClick={onReplay}>
+                  Practise again
+                </button>
+              )}
+            </div>
+          </>
         )}
       </Shell>
     );
@@ -127,9 +155,9 @@ export function PracticeCard({
 
   if (status === "progress") {
     return (
-      <Shell length={`~${sessionMinutes(left)} min left`}>
+      <Shell length={`${sessionMinutes(left)} min left`} variant="progress">
         <div className="practice-card__content">
-          <p className="practice-card__title">Almost there</p>
+          <p className="practice-card__title">Your daily practice</p>
           <p className="practice-card__body">Pick up where you left off.</p>
         </div>
         {/* Forward-looking caption, per the ProgressBar's Figma notes: the
@@ -148,15 +176,15 @@ export function PracticeCard({
   }
 
   return (
-    <Shell length={`~${sessionMinutes(goal)} min`}>
+    <Shell length={`${sessionMinutes(goal)} min`}>
       <div className="practice-card__content">
-        <p className="practice-card__title">
-          {goal} word{goal === 1 ? "" : "s"}
+        <p className="practice-card__title">Your daily practice</p>
+        <p className="practice-card__body">
+          {goal} word{goal === 1 ? " is" : "s are"} ready for you.
         </p>
-        <p className="practice-card__body">{cue}</p>
       </div>
       <button className="btn btn--primary btn--inverted" onClick={onStart}>
-        Start
+        Start practice
       </button>
     </Shell>
   );

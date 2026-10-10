@@ -720,6 +720,7 @@ export default function App() {
                   cue={habit ? cueLine(habit) : ""}
                   tomorrow={tomorrowAt(habit)}
                   canExtra={canExtra}
+                  extraWords={nextSessionWords.length}
                   canReplay={canReplay}
                   onPractice={startPractice}
                   onExtra={startExtra}
