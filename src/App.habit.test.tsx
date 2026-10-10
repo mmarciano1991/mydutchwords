@@ -390,11 +390,10 @@ describe("2. the daily session", () => {
     seedHabit();
   });
 
-  it("asks for the commitment's size, with the cue", () => {
+  it("asks for the commitment's size", () => {
     render();
-    expect(cardText()).toContain("10 words");
-    expect(cardText()).toContain("~5 min");
-    expect(cardText()).toContain("Your Dutch at 08:00");
+    expect(cardText()).toContain("10 words are ready for you.");
+    expect(cardText()).toContain("5 min");
   });
 
   it("is done once every word is answered — misses included — and the day is recorded", () => {
@@ -453,7 +452,7 @@ describe("2. the daily session", () => {
     tomorrow.setDate(tomorrow.getDate() + 1);
     expect(storedWord(missed).dueDate).toBe(tomorrow.toISOString());
     // A second session today doesn't bring it back.
-    click("Next section");
+    click("Keep going");
     const second = answer(10);
     expect(second).not.toContain(missed);
   });
@@ -464,7 +463,7 @@ describe("2. the daily session", () => {
     const [missed] = answer(10, [0], { keepMissing: true });
     expect(onResultPage()).toBe(true);
     const graded = storedWord(missed);
-    click("Next section");
+    click("Keep going");
     const second = answer(11);
     expect(second).toContain(missed);
     expect(storedWord(missed).dueDate).toBe(graded.dueDate);
@@ -483,7 +482,7 @@ describe("2. the daily session", () => {
     render();
     click("Start");
     answer(10);
-    click("Next section");
+    click("Keep going");
     expect(practiceCounter()).toBe("0/10");
     answer(10);
     expect(screenText()).toContain("Extra ✓");
@@ -498,10 +497,10 @@ describe("2. the daily session", () => {
     render();
     click("Start");
     answer(10);
-    expect(screenText()).not.toContain("Next section");
+    expect(screenText()).not.toContain("Keep going");
     click("Done");
     expect(cardText()).toContain("Today’s session is complete!");
-    expect(cardText()).not.toContain("Next section");
+    expect(cardText()).not.toContain("Keep going");
   });
 
   it("ends the report on Done, with more practice only as a quiet link", () => {
@@ -563,7 +562,7 @@ describe("2. the daily session", () => {
     seedHabit({ commitment: "diner" });
     render();
     expect(cardText()).toContain("30 words");
-    expect(cardText()).toContain("~15 min");
+    expect(cardText()).toContain("15 min");
   });
 });
 
@@ -737,12 +736,12 @@ describe("4. coming back", () => {
     click("Let’s go");
     answer(5);
     // The 20-word commitment, not another 5-word warm-up.
-    expect(screenText()).toContain("Next section · 20 words");
+    expect(screenText()).toContain("Keep going – 20 more words");
     expect(screenText()).toContain("reviews waiting tomorrow");
-    click("Next section");
+    click("Keep going");
     expect(practiceCounter()).toBe("0/20");
     answer(20);
-    click("Next section");
+    click("Keep going");
     expect(practiceCounter()).toBe("0/5"); // 30 words: 5 + 20 + the last 5
     answer(5);
     click("Done");
@@ -819,7 +818,7 @@ describe("5. the monthly then vs now", () => {
     answer(10);
     click("See your month in Dutch");
     click("See you tomorrow");
-    click("Next section");
+    click("Keep going");
     answer(10);
     expect(screenText()).not.toContain("See your month in Dutch");
   });
@@ -840,7 +839,7 @@ describe("6. settings", () => {
     expect(storedHabit()).toMatchObject({ time: "21:30", weeklyTarget: 6 });
     expect(screenText()).toContain("never resets your progress");
     click("Home");
-    expect(cardText()).toContain("🌙 Your Dutch at 21:30");
+    expect(cardText()).toContain("Your daily practice");
   });
 
   it("sizes the next session to a changed commitment", () => {

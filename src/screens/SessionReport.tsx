@@ -184,7 +184,7 @@ export function SessionReport({
         {!reflectionReady && today.done && canExtra && (
           <>
             <button className="link-btn" onClick={onExtra}>
-              Next section · {nextSectionWords} word{nextSectionWords === 1 ? "" : "s"}
+              Keep going – {nextSectionWords} more word{nextSectionWords === 1 ? "" : "s"}
             </button>
             {tomorrowReviews > 0 && (
               <p className="muted report-forecast">
