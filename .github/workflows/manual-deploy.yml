@@ -6,6 +6,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    env:
+      HAS_SUPABASE: ${{ secrets.VITE_SUPABASE_URL != '' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -27,6 +29,16 @@ jobs:
 
       - name: Unit tests
         run: npm test
+
+      # With no Supabase project the app reads the dictionary from static
+      # shards next to it — the latest Dictionary workflow build.
+      - name: Static dictionary (only without Supabase)
+        if: env.HAS_SUPABASE != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download dictionary-latest --pattern dictionary.tar.gz --dir /tmp
+          mkdir -p public && tar -xzf /tmp/dictionary.tar.gz -C public
 
       - name: Build
         run: npm run build

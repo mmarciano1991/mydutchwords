@@ -58,12 +58,14 @@ export type ExerciseType =
   | "matching"
   | "listening"
   | "sentence_completion"
-  | "active_recall";
+  | "active_recall"
+  | "article"
+  | "verb_form";
 
 /** What happened on one exercise. `correct`, `almost`, `wrong` and
  *  `dont_know` are graded answers; `skipped` (Listening only) and `exposure`
  *  (flashcards) never change a word's schedule. */
-export type ReviewResult = "correct" | "almost" | "wrong" | "dont_know" | "skipped" | "exposure";
+export type ReviewResult = "correct" | "almost" | "wrong" | "dont_know" | "skipped" | "exposure" | "synonym";
 
 /** Internal measure of how strong the evidence for a word is. Drives which
  *  exercises it gets; never shown to the learner.
@@ -189,6 +191,8 @@ const EVIDENCE: Record<Exclude<ExerciseType, "flashcard">, EvidenceKind> = {
   listening: "recognition",
   sentence_completion: "contextual",
   active_recall: "production",
+  article: "recognition",
+  verb_form: "contextual",
 };
 
 /** Exercises that prove the learner can produce the word. */
@@ -205,9 +209,9 @@ function exerciseTier(type: ExerciseType): number {
  *  (see planExercises). */
 export const TIER_EXERCISES: Record<EvidenceTier, ExerciseType[]> = {
   0: ["multiple_choice", "matching", "listening"],
-  1: ["multiple_choice", "matching", "listening"],
-  2: ["sentence_completion", "active_recall"],
-  3: ["active_recall", "sentence_completion"],
+  1: ["multiple_choice", "matching", "listening", "article"],
+  2: ["sentence_completion", "active_recall", "article", "verb_form"],
+  3: ["active_recall", "sentence_completion", "verb_form"],
 };
 
 // ── Words ──
@@ -268,6 +272,9 @@ export interface AnswerInput {
   sessionId?: string | null;
   /** A practice round (re-going over missed words): logged, never graded. */
   practice?: boolean;
+  /** False for a cognate (sauna, podcast): the answer schedules the word
+   *  but is no evidence it was learned. */
+  evidence?: boolean;
 }
 
 /** One row of the review log, before it is given an id and a user. */
@@ -297,7 +304,7 @@ export interface GradeOutcome {
 }
 
 function isGradedResult(result: ReviewResult): boolean {
-  return result === "correct" || result === "almost" || result === "wrong" || result === "dont_know";
+  return result === "correct" || result === "almost" || result === "wrong" || result === "dont_know" || result === "synonym";
 }
 
 function round2(n: number): number {
@@ -352,8 +359,13 @@ export function gradeWord(word: Word, input: AnswerInput, now: Date): GradeOutco
     if (result === "skipped" && exerciseType === "listening" && !input.practice) {
       next = { ...word, listeningSkipped: true };
     }
+  } else if (result === "synonym") {
+    // A verified synonym of the target: not a mistake, but no proof the
+    // target word is known either. Nothing is earned or lost; the word comes
+    // back tomorrow.
+    next = { ...word, dueDate: midnightAfter(now, RESET_INTERVAL_DAYS).toISOString() };
   } else if (result === "correct" || result === "almost") {
-    next = applyCorrect(word, exerciseType, result, now);
+    next = applyCorrect(word, exerciseType, result, now, input.evidence !== false);
   } else {
     next = applyFailure(word, result as "wrong" | "dont_know", now);
   }
@@ -390,7 +402,7 @@ export function gradeWord(word: Word, input: AnswerInput, now: Date): GradeOutco
   };
 }
 
-function applyCorrect(word: Word, type: ExerciseType, result: "correct" | "almost", now: Date): Word {
+function applyCorrect(word: Word, type: ExerciseType, result: "correct" | "almost", now: Date, evidence = true): Word {
   const kind: EvidenceKind = result === "almost" ? "recognition" : EVIDENCE[type as keyof typeof EVIDENCE];
   const production = PRODUCTION_EXERCISES.has(type);
   const tierUp = exerciseTier(type) >= word.evidenceTier ? 1 : 0;
@@ -398,8 +410,9 @@ function applyCorrect(word: Word, type: ExerciseType, result: "correct" | "almos
   const common = {
     reps: word.reps + 1,
     consecutiveFailures: 0,
-    successfulReviewDays: word.successfulReviewDays + 1,
-    hasProductionSuccess: word.hasProductionSuccess || production,
+    // A cognate's answer moves its schedule but never counts toward Learned.
+    successfulReviewDays: word.successfulReviewDays + (evidence ? 1 : 0),
+    hasProductionSuccess: word.hasProductionSuccess || (production && evidence),
     evidenceTier,
   };
 
@@ -650,9 +663,20 @@ export interface ExerciseContext {
   hasAudio: (wordId: string) => boolean;
   /** The word has a sentence usable for Sentence Completion. */
   hasSentence: (wordId: string) => boolean;
-  /** Multiple Choice may top up its distractors from the bundled dictionary
-   *  when the deck is too small (see MC_DICTIONARY_FILL_WORDS). */
+  /** Multiple Choice may top up its distractors from the dictionary's
+   *  common words when the deck is too small (see MC_DICTIONARY_FILL_WORDS). */
   fillChoices?: boolean;
+  /** Whether the word's own data supports this exercise — read from its
+   *  fields (an article for the Article exercise, a past tense and
+   *  participle for Verb form, a short non-cognate gloss for Multiple
+   *  Choice…), never inferred. Absent: every exercise is allowed. */
+  hasData?: (kind: ExerciseType, wordId: string) => boolean;
+  /** Told about every exercise skipped for missing data, so the gap is
+   *  logged rather than silently filled with another exercise. */
+  onSkip?: (kind: ExerciseType, wordId: string) => void;
+  /** The gloss a Matching tile would show — two equal ones never share a
+   *  grid. */
+  glossOf?: (wordId: string) => string;
 }
 
 /** One screen of a session. A Matching step covers several words; every
@@ -666,6 +690,10 @@ export interface PlannedStep {
 
 function eligible(kind: ExerciseType, word: Word, ctx: ExerciseContext): boolean {
   if (!ctx.supported.has(kind)) return false;
+  if (kind !== "flashcard" && ctx.hasData && !ctx.hasData(kind, word.id)) {
+    ctx.onSkip?.(kind, word.id);
+    return false;
+  }
   switch (kind) {
     case "multiple_choice":
       return ctx.deckSize - 1 >= MC_MIN_OTHER_WORDS || Boolean(ctx.fillChoices);
@@ -742,36 +770,63 @@ export function planExercises(words: Word[], ctx: ExerciseContext, random: () =>
   const groupCount = Math.floor(matching.length / MATCHING_MIN_WORDS);
   const grouped = Math.min(matching.length, groupCount * MATCHING_MAX_WORDS);
   for (let g = 0; g < groupCount; g++) groups.push([]);
-  matching.slice(0, grouped).forEach((w, i) => groups[i % groupCount].push(w.id));
-  for (const w of matching.slice(grouped)) choice.set(w.id, chooseExercise(w, ctx, random, "matching"));
+  const leftover: Word[] = [];
+  matching.slice(0, grouped).forEach((w, i) => {
+    // Two identical glosses on one grid would make a pair unanswerable.
+    const gloss = ctx.glossOf?.(w.id);
+    const target = [i % groupCount, ...groups.keys()].find(
+      (g) => groups[g].length < MATCHING_MAX_WORDS && !(gloss && groups[g].some((id) => ctx.glossOf?.(id) === gloss))
+    );
+    if (target === undefined) leftover.push(w);
+    else groups[target].push(w.id);
+  });
+  for (let g = groups.length - 1; g >= 0; g--) {
+    if (groups[g].length < MATCHING_MIN_WORDS) {
+      for (const id of groups[g]) leftover.push(matching.find((w) => w.id === id)!);
+      groups.splice(g, 1);
+    }
+  }
+  for (const w of [...matching.slice(grouped), ...leftover]) choice.set(w.id, chooseExercise(w, ctx, random, "matching"));
 
-  // Units keep a tier-0 intro directly in front of its exercise — for a
-  // Matching grid, the intros of every new word on it.
+  // Graded steps, one per word (or one per grid); intros for tier-0 words.
   const byId = new Map(words.map((w) => [w.id, w]));
-  const units: PlannedStep[][] = groups.map((ids) => [
-    ...ids
-      .filter((id) => exerciseTierFor(byId.get(id)!) === 0)
-      .map((id): PlannedStep => ({ kind: "flashcard", wordIds: [id], graded: false })),
-    { kind: "matching", wordIds: ids, graded: true },
-  ]);
+  const graded: PlannedStep[] = groups.map((ids) => ({ kind: "matching", wordIds: ids, graded: true }));
+  const intros: PlannedStep[] = groups.flatMap((ids) =>
+    ids.filter((id) => exerciseTierFor(byId.get(id)!) === 0).map((id): PlannedStep => ({ kind: "flashcard", wordIds: [id], graded: false }))
+  );
   for (const w of words) {
     const kind = choice.get(w.id);
     if (kind === "matching") continue;
-    const unit: PlannedStep[] = [];
-    if (exerciseTierFor(w) === 0 || kind === null) unit.push({ kind: "flashcard", wordIds: [w.id], graded: false });
-    if (kind) unit.push({ kind, wordIds: [w.id], graded: true });
-    units.push(unit);
+    if (exerciseTierFor(w) === 0 || kind === null) intros.push({ kind: "flashcard", wordIds: [w.id], graded: false });
+    if (kind) graded.push({ kind, wordIds: [w.id], graded: true });
   }
+  return orderSteps(shuffle(intros, random), shuffle(graded, random));
+}
 
-  // Shuffle, then greedily avoid two exercises of the same kind in a row
-  // (an intro flashcard in between doesn't count as a break).
-  const remaining = shuffle(units, random);
-  const ordered: PlannedStep[] = [];
-  const kindOf = (u: PlannedStep[]) => u[u.length - 1].kind;
-  while (remaining.length > 0) {
-    const last = ordered.length > 0 ? ordered[ordered.length - 1].kind : undefined;
-    const i = Math.max(0, remaining.findIndex((u) => kindOf(u) !== last));
-    ordered.push(...remaining.splice(i, 1)[0]);
+/** Steps between a new word's intro flashcard and its graded exercise — so
+ *  the exercise tests memory, not the last few seconds. */
+export const INTRO_GAP = 2;
+
+/**
+ * Orders a session: the new words' intro flashcards first, then the graded
+ * exercises — each at least INTRO_GAP steps after its words' intros, and
+ * two of the same kind kept apart where possible. When a session is too
+ * small for the gap (one new word), the gap is as wide as it allows.
+ */
+function orderSteps(intros: PlannedStep[], graded: PlannedStep[]): PlannedStep[] {
+  const ordered: PlannedStep[] = [...intros];
+  const introAt = new Map(intros.map((s, i) => [s.wordIds[0], i]));
+  const pending = [...graded];
+  const ready = (s: PlannedStep) => s.wordIds.every((id) => !introAt.has(id) || ordered.length - introAt.get(id)! > INTRO_GAP);
+  let lastKind: ExerciseType | undefined;
+  while (pending.length) {
+    const candidates = pending.filter(ready);
+    // Nothing can go yet: the session is too short for the gap.
+    const pool = candidates.length ? candidates : pending;
+    const pick = pool.find((s) => s.kind !== lastKind) ?? pool[0];
+    pending.splice(pending.indexOf(pick), 1);
+    ordered.push(pick);
+    lastKind = pick.kind;
   }
   return ordered;
 }

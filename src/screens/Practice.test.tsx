@@ -148,7 +148,7 @@ describe("Multiple Choice", () => {
     expect(text()).toContain("It’ll come back in a moment.");
     click("Got it");
     // On with the main queue; the miss waits for review.
-    expect(container.querySelector(".exercise__word")?.textContent).toBe("bike");
+    expect(container.querySelector(".exercise__word")?.textContent).toBe("the bike");
   });
 
   it("grades the right option correct", () => {
@@ -174,11 +174,11 @@ describe("Multiple Choice", () => {
 });
 
 describe("Active Recall", () => {
-  it("shows the translation with the article it takes", () => {
+  it("shows the English translation with an English article, not the Dutch one", () => {
     render([step("active_recall", "huis")]);
-    expect(container.querySelector(".exercise__word")?.textContent).toBe("house");
-    // A noun shows the article its Dutch answer takes, as the chip.
-    expect(container.querySelector(".exercise__prompt .chip")?.textContent).toBe("het");
+    expect(container.querySelector(".exercise__word")?.textContent).toBe("the house");
+    // The Dutch article is part of the answer, so the prompt does not give it.
+    expect(container.querySelector(".exercise__prompt .chip")).toBeNull();
   });
 
   it("accepts a wrong article, and says which is right", () => {
@@ -223,11 +223,14 @@ describe("Sentence Completion", () => {
     expect(text()).toContain("Right word — in this sentence it’s doet");
   });
 
-  it("is asked as Active Recall when the word has no usable sentence", () => {
-    render([step("sentence_completion", "fiets")]);
-    expect(container.querySelector(".exercise__prompt .chip")?.textContent).toBe("de");
-    type("fiets");
-    expect(answers[0].exerciseType).toBe("active_recall");
+  it("is skipped — never swapped for another exercise — when the word has no usable sentence", () => {
+    render([step("sentence_completion", "fiets"), step("active_recall", "huis")]);
+    // Logged as a skip of the exercise that was planned, not graded.
+    expect(answers[0]).toMatchObject({ wordId: "fiets", exerciseType: "sentence_completion", result: "skipped" });
+    // The word is asked another way (the queue's rule for a skip) — never
+    // typed as Active Recall in place of the sentence.
+    expect(container.querySelector(".answer-bar__input")).toBeNull();
+    expect(answers.filter((a) => a.wordId === "fiets" && a.exerciseType === "active_recall")).toHaveLength(0);
   });
 });
 
@@ -251,7 +254,7 @@ describe("Listening", () => {
     expect(answers[1]).toMatchObject({ wordId: "huis", exerciseType: "multiple_choice", result: "correct", final: true, review: false });
     expect(progressNow()).toBe("1/2");
     click("Continue");
-    expect(container.querySelector(".exercise__word")?.textContent).toBe("bike");
+    expect(container.querySelector(".exercise__word")?.textContent).toBe("the bike");
   });
 });
 

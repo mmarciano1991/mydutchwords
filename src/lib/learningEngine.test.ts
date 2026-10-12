@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  INTRO_GAP,
   dayKey,
   dueSummary,
   exerciseTierFor,
@@ -353,14 +354,37 @@ describe("exercise eligibility", () => {
     expect(plan[4].wordIds.sort()).toEqual(["n0", "n1", "n2", "n3"]);
   });
 
-  it("puts a tier-0 word's flashcard intro directly before its exercise", () => {
-    const words = [newWord("a", day(0)), newWord("b", day(0)), learningWord("c", 0, 1)];
-    const plan = planExercises(words, ctx({ supported: new Set(["flashcard", "multiple_choice", "active_recall"]) }), seeded(3));
-    for (const id of ["a", "b"]) {
-      const i = plan.findIndex((s) => s.wordIds.includes(id));
-      expect(plan[i]).toMatchObject({ kind: "flashcard", graded: false });
-      expect(plan[i + 1]).toMatchObject({ wordIds: [id], graded: true });
+  it("keeps at least two other steps between a new word's intro flashcard and its exercise", () => {
+    const words = [newWord("a", day(0)), newWord("b", day(0)), learningWord("c", 0, 1), learningWord("d", 0, 1), learningWord("e", 0, 1)];
+    for (let seed = 1; seed < 15; seed++) {
+      const plan = planExercises(words, ctx({ supported: new Set(["flashcard", "multiple_choice", "active_recall"]) }), seeded(seed));
+      for (const id of ["a", "b"]) {
+        const intro = plan.findIndex((s) => s.kind === "flashcard" && s.wordIds.includes(id));
+        const graded = plan.findIndex((s) => s.graded && s.wordIds.includes(id));
+        expect(intro).toBeGreaterThanOrEqual(0);
+        expect(graded - intro, `seed ${seed}, word ${id}`).toBeGreaterThan(INTRO_GAP);
+      }
     }
+  });
+
+  it("still introduces a lone new word before its exercise when the session is too short for the gap", () => {
+    const plan = planExercises([newWord("a", day(0))], ctx({ supported: new Set(["flashcard", "multiple_choice"]) }), seeded());
+    expect(plan.map((s) => s.kind)).toEqual(["flashcard", "multiple_choice"]);
+  });
+
+  it("skips an exercise the word has no data for, and says so", () => {
+    const skipped: string[] = [];
+    const plan = planExercises(
+      [learningWord("a", 0, 1, { evidenceTier: 2 })],
+      ctx({
+        supported: new Set(["sentence_completion", "active_recall", "article", "verb_form"]),
+        hasData: (kind) => kind === "active_recall",
+        onSkip: (kind) => skipped.push(kind),
+      }),
+      seeded()
+    );
+    expect(plan).toEqual([{ kind: "active_recall", wordIds: ["a"], graded: true }]);
+    expect(skipped).toEqual(expect.arrayContaining(["article", "verb_form"]));
   });
 
   it("avoids two steps of the same kind in a row when it can", () => {
@@ -539,3 +563,24 @@ describe("early recall (a word pulled forward before it is due)", () => {
     expect(w.state).not.toBe("learned");
   });
 });
+
+describe("synonyms and cognates", () => {
+  it("a synonym typed in Active Recall is no mistake and no proof: nothing earned, back tomorrow", () => {
+    const w = learningWord("a", -7, 7, { successfulReviewDays: 2 });
+    const out = gradeWord(w, { exerciseType: "active_recall", result: "synonym" }, day(0));
+    expect(out.graded).toBe(true);
+    expect(out.word.successfulReviewDays).toBe(2);
+    expect(out.word.hasProductionSuccess).toBe(w.hasProductionSuccess);
+    expect(out.word.lapses).toBe(w.lapses);
+    expect(out.word.ease).toBe(w.ease);
+    expect(out.word.dueDate).toBe(midnight(1));
+  });
+
+  it("a cognate's correct answer moves its schedule but is no evidence of learning", () => {
+    const w = learningWord("sauna", -1, 1, { successfulReviewDays: 1 });
+    const out = gradeWord(w, { exerciseType: "multiple_choice", result: "correct", evidence: false }, day(0));
+    expect(out.word.successfulReviewDays).toBe(1);
+    expect(out.word.interval).toBeGreaterThan(w.interval);
+  });
+});
+

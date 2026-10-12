@@ -1,0 +1,124 @@
+# Builds the dictionary from its sources and publishes it.
+#
+#   1. download   English + Dutch Wiktionary (kaikki.org), OpenTaal,
+#                 frequency list, Tatoeba — cached between runs
+#   2. build      words → uses → senses → examples, with the cross-source
+#                 checks; disagreements go to the doubt queue, never out
+#   3. model      (only when ANTHROPIC_API_KEY is set) shorten glosses by
+#                 selection, write missing examples, check "same sense?"
+#   4. validate   every published sense, every example, corpus coverage —
+#                 the run stops here on any failure
+#   5. publish    Supabase (when its secrets are set) and the static shards
+#                 as the `dictionary-latest` release asset, for builds with no
+#                 Supabase project
+#
+# The doubt queue is attached to the run (and written to dict_doubt): it is
+# what a reviewer works through. Run it by hand, or let the weekly schedule
+# pick up the sources' changes.
+name: Dictionary
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Run the model step (needs ANTHROPIC_API_KEY)"
+        type: boolean
+        default: true
+      publish:
+        description: "Publish to Supabase and the release asset"
+        type: boolean
+        default: true
+  schedule:
+    - cron: "0 3 * * 1"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Cache sources
+        uses: actions/cache@v4
+        with:
+          path: .cache/dictionary
+          key: dictionary-sources-${{ github.run_id }}
+          restore-keys: dictionary-sources-
+
+      - name: Download sources
+        run: npm run dictionary:download -- ${{ github.event_name == 'schedule' && '--force' || '' }}
+
+      # Stable sense ids: reuse the ids already published, so no learner's
+      # deck loses a sense to a reworded gloss.
+      - name: Pull the sense-id registry
+        if: env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != ''
+        run: mkdir -p .cache/dictionary-build && npm run dictionary:publish -- --pull-registry
+
+      - name: Build
+        run: |
+          if [ -n "$ANTHROPIC_API_KEY" ] && [ "${{ github.event_name == 'schedule' || inputs.model }}" = "true" ]; then
+            npm run dictionary:build -- --llm
+          else
+            npm run dictionary:build
+          fi
+
+      - name: Validate
+        run: npm run dictionary:validate
+
+      - name: Report
+        if: always()
+        run: |
+          {
+            echo "## Dictionary build"
+            echo '```json'
+            cat .cache/dictionary-build/report.json 2>/dev/null | head -60
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Keep the doubt queue and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dictionary-doubt-queue
+          path: |
+            .cache/dictionary-build/doubt.jsonl
+            .cache/dictionary-build/report.json
+
+      - name: Publish to Supabase
+        if: env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' && (github.event_name == 'schedule' || inputs.publish)
+        run: npm run dictionary:publish
+
+      - name: Publish the static shards
+        if: github.event_name == 'schedule' || inputs.publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          npm run dictionary:static -- dist-dictionary/dictionary
+          tar -czf dictionary.tar.gz -C dist-dictionary dictionary
+          gh release view dictionary-latest >/dev/null 2>&1 || gh release create dictionary-latest --title "Dictionary (latest build)" --notes "Static dictionary shards for builds without a Supabase project. Rebuilt by the Dictionary workflow."
+          gh release upload dictionary-latest dictionary.tar.gz --clobber
+
+      # The test fixture, from this build — commit it if the acceptance
+      # cases should follow the new data.
+      - name: Fixture from this build
+        run: npm run dictionary:fixture
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dictionary-fixture
+          path: src/lib/dictionary/fixture.json

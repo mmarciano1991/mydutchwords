@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Appbar } from "../components/Appbar";
 import { CommitmentIcon } from "../components/CommitmentIcon";
-import { DICTIONARY } from "../data/dictionary";
 import {
   COMMITMENTS,
   WEEKLY_TARGET_OPTIONS,
@@ -237,11 +236,6 @@ export function Settings({
         )}
 
         <div className="card card--warm settings-card">
-          <div className="spread">
-            <span className="muted settings-stat__label">Words in the dictionary</span>
-            <span className="settings-stat__value">{DICTIONARY.length}</span>
-          </div>
-          <div className="divider settings-stat__divider" />
           <div className="spread">
             <span className="muted settings-stat__label">Words in your deck</span>
             <span className="settings-stat__value">{deckCount}</span>

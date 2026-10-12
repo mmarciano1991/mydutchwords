@@ -11,10 +11,11 @@
 
    Exposure, never evidence: "I knew it" and "Still learning" are logged,
    and change nothing about the word's schedule (learningEngine, rule 4). */
-import { useEffect, useId, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type CSSProperties, type KeyboardEvent, type PointerEvent } from "react";
 import type { DictionaryEntry } from "../../lib/types";
 import { Divider } from "../Divider";
 import { GenderChip } from "../GenderChip";
+import { contextSentence } from "../../lib/sentenceTarget";
 import { Check, Close } from "../../icons";
 import type { ExerciseCallbacks } from "./types";
 import { Dock } from "../Dock";
@@ -63,6 +64,9 @@ export function FlashcardExercise({ entry, onResult, onNext }: { entry: Dictiona
   useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
   // The card's face is the Dutch word: say it as the card comes in.
   usePronunciation(entry.dutch);
+  // The sentence the learner met it in, else the dictionary's example for
+  // this meaning — never another meaning's.
+  const context = useMemo(() => contextSentence(entry), [entry]);
 
   function answer(v: Verdict) {
     if (answered.current) return;
@@ -195,17 +199,21 @@ export function FlashcardExercise({ entry, onResult, onNext }: { entry: Dictiona
                   the translation and the word out together and give the
                   answer away before it's earned. */}
               <div className="flashcard__face flashcard__face--front" aria-hidden={flipped}>
-                <GenderChip gender={entry.gender} />
-                <div className="flashcard__word">{entry.dutch}</div>
-                {entry.example && <Divider />}
-                {entry.example && <div className="flashcard__example">{entry.example}</div>}
+                <GenderChip gender={entry.gender} unverified={Boolean(entry.snapshot?.articleUnverified)} />
+                <div className="flashcard__word" lang="nl">{entry.dutch}</div>
+                <Divider />
+                {context ? (
+                  <div className="flashcard__example" lang="nl">{context.sentence}</div>
+                ) : (
+                  <div className="flashcard__example flashcard__example--missing">Example coming soon</div>
+                )}
                 {hint}
               </div>
               <div className="flashcard__face flashcard__face--back" aria-hidden={!flipped}>
-                <GenderChip gender={entry.gender} />
-                <div className="flashcard__word">{entry.english}</div>
-                {entry.exampleEn && <Divider />}
-                {entry.exampleEn && <div className="flashcard__example">{entry.exampleEn}</div>}
+                <GenderChip gender={entry.gender} unverified={Boolean(entry.snapshot?.articleUnverified)} />
+                <div className="flashcard__word" lang="en">{entry.english}</div>
+                {context?.translation && <Divider />}
+                {context?.translation && <div className="flashcard__example" lang="en">{context.translation}</div>}
                 {hint}
               </div>
             </div>

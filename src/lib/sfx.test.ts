@@ -16,6 +16,7 @@ function node() {
 class FakeContext {
   state = "running";
   currentTime = 0;
+  sampleRate = 8000;
   destination = node();
   constructor() {
     contexts++;
@@ -31,6 +32,15 @@ class FakeContext {
   }
   createDynamicsCompressor() {
     return { ...node(), threshold: param(), ratio: param() };
+  }
+  createConvolver() {
+    return { ...node(), buffer: null };
+  }
+  createBuffer(_channels: number, length: number) {
+    return { getChannelData: () => new Float32Array(length) };
+  }
+  createStereoPanner() {
+    return { ...node(), pan: param() };
   }
   createOscillator() {
     oscillators++;

@@ -11,6 +11,7 @@
    Passing `progress` switches to the Type=Progress variant (Figma 375:1929),
    used by focused flows like Practice: close button and progress bar on the
    top row, the title centred beneath them. */
+import type { ReactNode } from "react";
 import { IconButton } from "./IconButton";
 import { Dock } from "./Dock";
 import { SearchField, type SearchFieldProps } from "./SearchField";
@@ -31,6 +32,7 @@ export function Appbar({
   onEdit,
   divider = false,
   search,
+  searchSlot,
   progress,
   floating = false,
   closeLabel = "Close",
@@ -42,6 +44,9 @@ export function Appbar({
   onEdit?: () => void;
   divider?: boolean;
   search?: AppbarSearch;
+  /** A search control of the screen's own in the search slot — the Add a
+   *  word autocomplete (components/WordSearch). */
+  searchSlot?: ReactNode;
   progress?: AppbarProgress;
   /** Float over the body on a fade-and-blur (the Progress variant always does). */
   floating?: boolean;
@@ -87,6 +92,7 @@ export function Appbar({
       </div>
 
       {search && <SearchField {...search} />}
+      {searchSlot}
     </>
   );
 

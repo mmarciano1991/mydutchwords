@@ -15,7 +15,6 @@ import {
   type SessionQueue,
 } from "../lib/sessionQueue";
 import { completionSentence } from "../lib/sentenceTarget";
-import { entriesGlossed } from "../lib/wordSources";
 import { playSound } from "../lib/sfx";
 import { preloadDutch } from "../lib/audio";
 import { withArticle } from "../components/exercises/types";
@@ -24,6 +23,9 @@ import { FlashcardExercise } from "../components/exercises/FlashcardExercise";
 import { ChoiceExercise } from "../components/exercises/ChoiceExercise";
 import { TypedExercise } from "../components/exercises/TypedExercise";
 import { MatchingExercise } from "../components/exercises/MatchingExercise";
+import { ArticleExercise } from "../components/exercises/ArticleExercise";
+import { VerbFormExercise } from "../components/exercises/VerbFormExercise";
+import { hasExerciseData } from "../lib/exerciseData";
 
 export interface PracticeCard {
   entry: DictionaryEntry;
@@ -50,6 +52,7 @@ export interface StepAnswer {
  *  right). "I do not know", skips and flashcard ratings make none — not
  *  knowing isn't a mistake. */
 function feedbackSound(kind: Prepared["kind"], result: ReviewResult) {
+  if (kind === "unavailable") return;
   if (kind === "matching") return;
   if (PASSED.has(result)) playSound("correct");
   else if (result === "wrong") playSound("wrong");
@@ -60,13 +63,16 @@ const PASSED = new Set<ReviewResult>(["correct", "almost"]);
 
 /** What a step turns into on screen. A step whose content can't be built
  *  (options the deck can't supply, a sentence the word can't be found in)
- *  is asked as Active Recall instead. */
+ *  is skipped and logged — never quietly asked as another exercise. */
 type Prepared =
   | { kind: "flashcard" }
   | { kind: "multiple_choice" | "listening"; options: string[] }
   | { kind: "active_recall" }
   | { kind: "sentence_completion"; completion: NonNullable<ReturnType<typeof completionSentence>> }
-  | { kind: "matching" };
+  | { kind: "matching" }
+  | { kind: "article" }
+  | { kind: "verb_form" }
+  | { kind: "unavailable"; wanted: ExerciseType };
 
 /** The screen title for each exercise (Figma "Practice session" board). */
 const TITLE: Record<Prepared["kind"], string> = {
@@ -76,27 +82,36 @@ const TITLE: Record<Prepared["kind"], string> = {
   matching: "Match the pairs",
   sentence_completion: "Fill in the missing word",
   active_recall: "Type the Dutch word",
+  article: "de or het?",
+  verb_form: "Type the verb form",
+  unavailable: "",
 };
 
 function prepare(step: PlannedStep, entry: DictionaryEntry, pool: DictionaryEntry[], filler: DictionaryEntry[]): Prepared {
+  const unavailable = (): Prepared => {
+    console.info(`[woordkast] ${step.kind} skipped for ${entry.dutch}: its content couldn't be built`);
+    return { kind: "unavailable", wanted: step.kind };
+  };
+  if (step.kind !== "flashcard" && step.kind !== "matching" && !hasExerciseData(step.kind, entry)) return unavailable();
   switch (step.kind) {
     case "flashcard":
     case "matching":
+    case "article":
+    case "verb_form":
+    case "active_recall":
       return { kind: step.kind };
     case "multiple_choice": {
       const options = buildEnglishChoices(entry, pool, Math.random, filler);
-      return options ? { kind: "multiple_choice", options } : { kind: "active_recall" };
+      return options ? { kind: "multiple_choice", options } : unavailable();
     }
     case "listening": {
       const options = buildListeningChoices(entry, pool, Math.random, filler);
-      return options ? { kind: "listening", options } : { kind: "active_recall" };
+      return options ? { kind: "listening", options } : unavailable();
     }
     case "sentence_completion": {
       const completion = completionSentence(entry);
-      return completion ? { kind: "sentence_completion", completion } : { kind: "active_recall" };
+      return completion ? { kind: "sentence_completion", completion } : unavailable();
     }
-    default:
-      return { kind: "active_recall" };
   }
 }
 
@@ -194,13 +209,22 @@ export function Practice({
   // Built once per step, so options don't reshuffle under a finger.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const prepared = useMemo(() => (step ? prepare(step, entry, pool, choiceFiller) : null), [stepNo]);
-  if (!step || !prepared) return null;
+
+  // A step that can't be shown is skipped: the word is asked another way
+  // later (the queue hands it on), and nothing is graded.
+  useEffect(() => {
+    if (prepared?.kind !== "unavailable" || !step) return;
+    for (const id of step.wordIds) report(id, "skipped");
+    proceed(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prepared]);
+  if (!step || !prepared || prepared.kind === "unavailable") return null;
 
   function report(wordId: string, result: ReviewResult) {
     const q = queueRef.current!;
     onAnswer({
       wordId,
-      exerciseType: prepared!.kind,
+      exerciseType: prepared!.kind === "unavailable" ? prepared!.wanted : prepared!.kind,
       result,
       responseTimeMs: Date.now() - shownAt.current,
       final: isFinalFor(q, wordId),
@@ -247,7 +271,7 @@ export function Practice({
           entry={entry}
           // Same-gloss words anywhere in the dictionary are right too, not
           // only the ones that happen to be in this learner's deck.
-          synonyms={synonymsOf(entry, [...pool, ...entriesGlossed(entry.english)])}
+          synonyms={synonymsOf(entry)}
           isKnownWord={isKnownWord}
           {...callbacks}
         />
@@ -263,6 +287,8 @@ export function Practice({
         />
       )}
       {prepared.kind === "matching" && <MatchingExercise key={stepNo} entries={entries} {...callbacks} />}
+      {prepared.kind === "article" && <ArticleExercise key={stepNo} entry={entry} {...callbacks} />}
+      {prepared.kind === "verb_form" && <VerbFormExercise key={stepNo} entry={entry} isKnownWord={isKnownWord} {...callbacks} />}
     </div>
   );
 }

@@ -14,7 +14,7 @@ const log = vi.hoisted(() => ({ sounds: [] as string[], spoken: [] as string[], 
 
 vi.mock("../lib/sfx", () => ({
   playSound: (name: string) => log.sounds.push(name),
-  SOUND_MS: { correct: 380, wrong: 480, complete: 1500 },
+  SOUND_MS: { correct: 420, wrong: 520, complete: 2000 },
   soundEffectsMuted: () => false,
   setSoundEffectsMuted: () => {},
 }));

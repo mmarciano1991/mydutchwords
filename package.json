@@ -14,11 +14,15 @@
     "tokens": "node scripts/build-tokens.mjs",
     "test": "vitest run",
     "lint": "eslint . --max-warnings 0",
-    "dictionary": "node scripts/gen-dictionary.mjs",
     "survey": "node scripts/survey-words.mjs",
-    "validate": "node scripts/validate-dictionary.mjs",
-    "complete": "node scripts/complete-entries.mjs",
-    "promote": "node scripts/promote-generated.mjs"
+    "validate": "node scripts/dictionary/validate.mjs",
+    "dictionary:download": "node scripts/dictionary/download.mjs",
+    "dictionary:build": "node --max-old-space-size=8192 scripts/dictionary/build.mjs",
+    "dictionary:validate": "node scripts/dictionary/validate.mjs --build",
+    "dictionary:fixture": "node scripts/dictionary/fixture.mjs",
+    "dictionary:static": "node scripts/dictionary/static.mjs",
+    "dictionary:publish": "node scripts/dictionary/publish.mjs",
+    "dictionary:inspect": "node scripts/dictionary/inspect.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.110.8",

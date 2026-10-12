@@ -19,26 +19,34 @@ import type { DictionaryEntry } from "./types";
 
 export type Shape = "verb" | "noun" | "other";
 
-/** A rough part of speech, so distractors look like plausible answers:
- *  "to meet" should be offered verbs, not "tegenwoordig". There is no
- *  structured part-of-speech field: verbs are glossed "to …", nouns carry
- *  de/het. Everything else is "other" — unknown, not "not a noun". */
+/** The part of speech, so distractors look like plausible answers: "to
+ *  meet" is offered verbs, not "tegenwoordig". Dictionary senses carry it;
+ *  an entry saved before them is read from its shape (verbs are glossed
+ *  "to …", nouns carry de/het) and is otherwise "other" — unknown. */
 export function shapeOf(entry: DictionaryEntry): Shape {
+  const pos = entry.snapshot?.pos;
+  if (pos === "verb" || pos === "noun") return pos;
+  if (pos) return "other";
   if (/^to\s/i.test(entry.english.trim())) return "verb";
   if (entry.gender === "de" || entry.gender === "het") return "noun";
   return "other";
 }
 
-const POS_LABELS = ["noun", "verb", "adjective", "adverb", "preposition", "pronoun", "conjunction", "numeral", "interjection"];
+/** The part of speech when it is known exactly — what "same pos" means
+ *  for a distractor. */
+function posOf(entry: DictionaryEntry): string {
+  return entry.snapshot?.pos ?? shapeOf(entry);
+}
 
-/** The Active Recall hint: "noun · het", "verb", or a part of speech the
- *  online dictionary gave. Null when it isn't known — better no hint than a
- *  guessed one. */
+export const POS_LABELS = ["noun", "verb", "adjective", "adverb", "preposition", "pronoun", "conjunction", "numeral", "interjection"];
+
+/** The Active Recall hint: "noun · het", "verb", "adjective"… Null when it
+ *  isn't known — better no hint than a guessed one. */
 export function posHint(entry: DictionaryEntry): string | null {
   const shape = shapeOf(entry);
-  if (shape === "noun") return `noun · ${entry.gender}`;
+  if (shape === "noun") return entry.gender === "de" || entry.gender === "het" ? `noun · ${entry.gender}` : "noun";
   if (shape === "verb") return "verb";
-  const label = entry.senses?.[0]?.label?.toLowerCase().trim();
+  const label = (entry.snapshot?.pos ?? entry.senses?.[0]?.label)?.toLowerCase().trim();
   return label && POS_LABELS.includes(label) ? label : null;
 }
 
@@ -107,20 +115,24 @@ export function buildEnglishChoices(
   const own = glosses(answer);
   const seen = new Set([normalize(answer.english)]);
   const dutchSeen = new Set([normalize(answer.dutch)]);
-  const shape = shapeOf(answer);
+  const shape = posOf(answer);
   const needed = MC_OPTION_COUNT - 1;
 
   /** Usable distractors from `source`, same shape first, at most `limit`. */
   function draw(source: DictionaryEntry[], limit: number): DictionaryEntry[] {
     const usable: DictionaryEntry[] = [];
     for (const e of shuffle(source, random)) {
+      // A learner's own translation is never offered as a wrong answer.
+      if (e.userEdited?.includes("english")) continue;
       const english = normalize(e.english);
       const dutch = normalize(e.dutch);
       if (!english || dutchSeen.has(dutch) || seen.has(english)) continue;
       if ([...glosses(e)].some((g) => own.has(g))) continue;
       usable.push(e);
     }
-    const ranked = [...usable.filter((e) => shapeOf(e) === shape), ...usable.filter((e) => shapeOf(e) !== shape)];
+    // Same part of speech only, when it is known: a distractor of another
+    // kind gives the answer away.
+    const ranked = shape === "other" ? usable : usable.filter((e) => posOf(e) === shape);
     const picked: DictionaryEntry[] = [];
     for (const e of ranked) {
       if (picked.length === limit) break;
@@ -189,9 +201,9 @@ export function normalize(text: string): string {
     .trim();
 }
 
-/** Dutch words in `pool` that translate `entry` exactly as well — accepted
- *  as typed answers. */
-export function synonymsOf(entry: DictionaryEntry, pool: DictionaryEntry[]): string[] {
-  const english = normalize(entry.english);
-  return pool.filter((e) => e.id !== entry.id && normalize(e.english) === english).map((e) => e.dutch);
+/** Verified synonyms of this sense (from the dictionary, per sense). A
+ *  typed synonym is a half answer: right, but no proof the target word is
+ *  known (see TypedExercise). */
+export function synonymsOf(entry: DictionaryEntry): string[] {
+  return entry.snapshot?.synonyms ?? [];
 }

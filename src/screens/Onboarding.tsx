@@ -24,16 +24,17 @@
 
    Every choice is editable later in Settings, and the screens say so —
    picking the small option should never feel like locking oneself in. */
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
-import { useWordLookup } from "../lib/useWordLookup";
-import { resolveEntry } from "../lib/wordSources";
+import { deckMembership } from "../lib/deckMembership";
+import { lookup as lookupWord } from "../lib/dictionary/service";
+import { useLookup } from "../lib/useLookup";
 import { STARTER_COUNT, pickStarterWords } from "../lib/starterWords";
+import { SenseResults, senseItems } from "../components/SenseResults";
+import { WordSearch } from "../components/WordSearch";
 import { TulipMedallion } from "../components/brand";
 import { GenderChip } from "../components/GenderChip";
 import { Notice } from "../components/Notice";
-import { SearchField } from "../components/SearchField";
-import { WordLookupResult } from "../components/WordLookupResult";
 import { CommitmentIcon } from "../components/CommitmentIcon";
 import { IconButton } from "../components/IconButton";
 import {
@@ -55,24 +56,38 @@ const STEPS_NEW: Step[] = [...STEPS_EXISTING, "start", "words"];
 /** How a new user's first words arrive. */
 type FirstWords = "add" | "starter";
 
-/** Resolves starter ids to entries (with their example sentence when
- *  loaded); an id missing from the dictionary is simply skipped. */
-function starterEntries(ids: string[]): DictionaryEntry[] {
-  return ids.map((id) => resolveEntry(id)).filter((e): e is DictionaryEntry => Boolean(e));
+/** Each starter word's first meaning, from the dictionary; a word it
+ *  can't find is simply skipped. */
+async function starterEntries(forms: string[]): Promise<DictionaryEntry[]> {
+  const found = await Promise.all(forms.map((f) => lookupWord(f).then((r) => senseItems(r)[0]?.entry, () => undefined)));
+  return found.filter((e): e is DictionaryEntry => Boolean(e));
+}
+
+/** The starters for `forms`, loaded as they arrive. */
+function useStarters(forms: string[]): DictionaryEntry[] {
+  const [entries, setEntries] = useState<DictionaryEntry[]>([]);
+  const key = forms.join("|");
+  useEffect(() => {
+    let live = true;
+    void starterEntries(forms).then((e) => live && setEntries(e));
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  return entries;
 }
 
 export function Onboarding({
   existingUser,
-  deckIds = new Set<string>(),
-  levels = new Map<string, number>(),
+  deckEntries = [],
   onComplete,
 }: {
   /** Already has words or history: the welcome speaks to a change of rhythm,
    *  and no starter deck is added. */
   existingUser: boolean;
-  /** Words already in the deck, so a lookup can say "already in your deck". */
-  deckIds?: Set<string>;
-  levels?: Map<string, number>;
+  /** The deck, so a lookup can say "In your deck". */
+  deckEntries?: DictionaryEntry[];
   /** `firstWords`: the new user's first three words, to add to the deck and
    *  practise straight away. Empty for an existing user. */
   onComplete: (choice: { commitment: Commitment; time: HabitTime }, firstWords: DictionaryEntry[]) => void;
@@ -88,11 +103,12 @@ export function Onboarding({
   const [added, setAdded] = useState<DictionaryEntry[]>([]);
   const [starterIds, setStarterIds] = useState<string[]>(() => pickStarterWords());
   const [query, setQuery] = useState("");
+  const [picked, setPicked] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const lookup = useWordLookup(query);
-  const starters = useMemo(() => starterEntries(starterIds), [starterIds]);
-  // A word added a moment ago reads as "already in your deck" if looked up again.
-  const knownIds = useMemo(() => new Set([...deckIds, ...added.map((e) => e.id)]), [deckIds, added]);
+  const lookup = useLookup(picked);
+  const starters = useStarters(starterIds);
+  // A word added a moment ago reads as "In your deck" if looked up again.
+  const membership = useMemo(() => deckMembership([...deckEntries, ...added]), [deckEntries, added]);
   const lastAdded = added.length > 0 ? added[added.length - 1] : null;
 
   const steps = existingUser ? STEPS_EXISTING : STEPS_NEW;
@@ -100,7 +116,7 @@ export function Onboarding({
 
   function editQuery(value: string) {
     setQuery(value);
-    lookup.reset();
+    if (!value.trim()) setPicked(null);
   }
 
   function finish(firstWords: DictionaryEntry[]) {
@@ -109,11 +125,12 @@ export function Onboarding({
 
   /** One of the three "add a word" screens saved its word: on to the next,
    *  or — on the third — into the first session. */
-  function addWord(entry: DictionaryEntry) {
-    if (knownIds.has(entry.id)) return;
-    const next = [...added, entry];
+  function addWords(entries: DictionaryEntry[]) {
+    const fresh = entries.filter((e) => !membership.has({ senseId: e.id, form: e.dutch, gloss: e.english }));
+    if (!fresh.length) return;
+    const next = [...added, ...fresh];
     setQuery("");
-    lookup.reset();
+    setPicked(null);
     if (next.length >= STARTER_COUNT) {
       finish(next);
       return;
@@ -123,9 +140,9 @@ export function Onboarding({
   }
 
   /** From the add screens: keep what was typed, top up with starters. */
-  function fillWithStarters() {
-    const taken = new Set(added.map((e) => e.id));
-    const fill = starterEntries(pickStarterWords(Math.random, taken)).filter((e) => !taken.has(e.id));
+  async function fillWithStarters() {
+    const taken = new Set(added.map((e) => e.dutch));
+    const fill = (await starterEntries(pickStarterWords(Math.random, taken))).filter((e) => !added.some((a) => a.id === e.id));
     finish([...added, ...fill].slice(0, STARTER_COUNT));
   }
 
@@ -134,7 +151,7 @@ export function Onboarding({
     if (step === "words" && way === "add" && added.length > 0) {
       setAdded(added.slice(0, -1));
       setQuery("");
-      lookup.reset();
+      setPicked(null);
       return;
     }
     if (index > 0) setStep(steps[index - 1]);
@@ -306,28 +323,36 @@ export function Onboarding({
             </p>
             <h1 className="title-serif onb__question">Add a Dutch word you’ve met</h1>
             <p className="onb__hint">Look it up, then add it to your deck.</p>
-            <SearchField
+            <WordSearch
               value={query}
               onChange={editQuery}
-              placeholder="Search a Dutch word"
+              onPick={(p) => {
+                setPicked(p.form);
+                setQuery(p.form);
+              }}
+              inDeckWordIds={membership.wordIds}
               ariaLabel={`Search a Dutch word to add, word ${added.length + 1} of ${STARTER_COUNT}`}
               autoFocus
               inputRef={inputRef}
-              onSubmit={lookup.retry}
             />
             <div className="onb__lookup">
               {lastAdded && !query && (
                 <Notice type="success">
-                  <strong>{lastAdded.dutch}</strong> added · {STARTER_COUNT - added.length} to go
+                  <strong lang="nl">{lastAdded.dutch}</strong> added · {Math.max(0, STARTER_COUNT - added.length)} to go
                 </Notice>
               )}
-              <WordLookupResult
-                lookup={lookup}
-                deckIds={knownIds}
-                levels={levels}
-                onSave={addWord}
-                onEditSuggestion={editQuery}
-              />
+              {picked && lookup.status === "done" && (
+                <SenseResults
+                  result={lookup.result}
+                  isInDeck={(i) => membership.has(i.snapshot)}
+                  onSave={addWords}
+                  onPickSuggestion={(form) => {
+                    setPicked(form);
+                    setQuery(form);
+                  }}
+                />
+              )}
+              {picked && lookup.status === "error" && <Notice type="error">The dictionary didn&rsquo;t respond. Check your connection and try again.</Notice>}
             </div>
           </div>
           <Dock className="gutter onb__foot">
@@ -336,7 +361,7 @@ export function Onboarding({
                 Give me {STARTER_COUNT} to start instead
               </button>
             ) : (
-              <button className="link-btn link-btn--center" onClick={fillWithStarters}>
+              <button className="link-btn link-btn--center" onClick={() => void fillWithStarters()}>
                 Fill the rest with starter words
               </button>
             )}
@@ -355,7 +380,7 @@ export function Onboarding({
                 <li key={e.id} className="starter-list__item">
                   <span className="starter-list__word">
                     <GenderChip gender={e.gender} />
-                    {e.dutch}
+                    <span lang="nl">{e.dutch}</span>
                   </span>
                   <span className="starter-list__gloss">{e.english}</span>
                 </li>

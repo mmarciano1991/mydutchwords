@@ -85,7 +85,10 @@ export function AnswerPanel(props: AnswerPanelProps) {
           {right ? <CheckCircle size={24} aria-hidden="true" /> : <Cancel size={24} aria-hidden="true" />}
           <span>{props.message}</span>
         </p>
-        {props.entry && <ContextSentence entry={props.entry} context={props.context} />}
+        {props.entry && <ContextSentence entry={props.entry} context={props.context} showParts />}
+        {props.entry?.snapshot && !props.entry.metIn && props.entry.snapshot.examples.length === 0 && (
+          <p className="answer-panel__note">Example coming soon</p>
+        )}
         {props.note && <p className="answer-panel__note">{props.note}</p>}
       </div>
       <button ref={continueRef} type="button" className="btn answer-panel__continue" onClick={props.onContinue}>

@@ -8,7 +8,7 @@ function entry(dutch: string, over: Partial<DictionaryEntry> = {}): DictionaryEn
 
 describe("findTargetForm", () => {
   it("finds the headword as a whole word", () => {
-    expect(findTargetForm("Ik eet elke ochtend een appel.", "appel")).toEqual({ form: "appel", start: 24, end: 29 });
+    expect(findTargetForm("Ik eet elke ochtend een appel.", "appel")).toMatchObject({ form: "appel", start: 24, end: 29, answer: "appel" });
   });
 
   it("finds the inflected form the sentence uses", () => {

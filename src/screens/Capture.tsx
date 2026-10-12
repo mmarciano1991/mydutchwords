@@ -1,79 +1,62 @@
-/* Capture — "Add a word" (Figma 252:3612). The search lives in the appbar,
-   and the body renders whichever state the flowchart lands on:
+/* Capture — "Add a word" (Figma 252:3612, states A–D 194:484 · 445:4464 ·
+   445:4649 · 445:4706).
 
-     1. Start           — nothing typed yet
-     2. Suggestions     — no exact match, but close spellings to offer
-     3a. Found          — the word, ready to add
-     3b. Not found      — neither locally nor online
-     3c. Already in deck — the existing row, so the user can see its progress
-
-   The lookup pipeline lives in useWordLookup and the result rendering in
-   WordLookupResult — both shared with Add from text, which taps a word out
-   of pasted reading instead of typing one. */
-import { useRef, useState } from "react";
+   The search field suggests as the learner types (components/WordSearch);
+   picking a suggestion shows every sense of the word as result cards
+   (components/SenseResults), where each one is added on its own. The
+   screen stays put after an add, ready for the next word. */
+import { useMemo, useRef, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
-import { useWordLookup } from "../lib/useWordLookup";
+import { deckMembership } from "../lib/deckMembership";
+import { useLookup } from "../lib/useLookup";
 import { Appbar } from "../components/Appbar";
 import { Notice } from "../components/Notice";
-import { WordLookupResult } from "../components/WordLookupResult";
+import { SenseResults } from "../components/SenseResults";
+import { WordSearch } from "../components/WordSearch";
 
 export function Capture({
-  deckIds,
-  levels,
+  deckEntries,
   onSave,
-  onUndo,
-  onViewDeck,
+  onSavePersonal,
   onBack,
 }: {
-  deckIds: Set<string>;
-  /** Ladder level per deck word id — drives the mastery bar on state 3c. */
-  levels: Map<string, number>;
-  onSave: (entry: DictionaryEntry) => void;
-  /** Takes the last-added word back out of the deck. */
-  onUndo: (entryId: string) => void;
-  onViewDeck: () => void;
+  /** The deck, resolved — for "In your deck" and offline search. */
+  deckEntries: DictionaryEntry[];
+  /** Adds senses to the deck. */
+  onSave: (entries: DictionaryEntry[]) => void;
+  /** Saves a word the dictionary doesn't have, with the learner's own
+   *  translation. */
+  onSavePersonal: (form: string, translation: string) => void;
   onBack: () => void;
 }) {
   const [query, setQuery] = useState("");
-  // The word just added, so the screen can confirm it without navigating
-  // away, and the count of words added since this screen opened.
-  const [added, setAdded] = useState<DictionaryEntry | null>(null);
+  const [picked, setPicked] = useState<string | null>(null);
+  const [added, setAdded] = useState<DictionaryEntry[] | null>(null);
   const [addedCount, setAddedCount] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const lookup = useWordLookup(query);
-  const { entry, deinflectionAmbiguous, notFound, failed, showSuggestions, searching, retry, reset } = lookup;
+  const membership = useMemo(() => deckMembership(deckEntries), [deckEntries]);
+  const lookup = useLookup(picked);
 
   function edit(value: string) {
     setQuery(value);
-    setAdded(null); // typing again means we're past the last confirmation
-    reset(); // abort any in-flight lookup; the spinner disappears at once
-  }
-
-  /** Adds the word and stays put, ready for the next one. */
-  function save(entryToSave: DictionaryEntry) {
-    // A word already in the deck isn't added again, so there is nothing to
-    // confirm — and an Undo here would delete the copy that was already there.
-    if (deckIds.has(entryToSave.id)) return;
-    onSave(entryToSave);
-    setAdded(entryToSave);
-    setAddedCount((n) => n + 1);
-    setQuery("");
-    reset();
-    inputRef.current?.focus();
-  }
-
-  function undo() {
-    if (!added) return;
-    onUndo(added.id);
     setAdded(null);
-    setAddedCount((n) => Math.max(0, n - 1));
-    inputRef.current?.focus();
+    if (!value.trim()) setPicked(null);
   }
 
-  const hasBody = Boolean(
-    entry || deinflectionAmbiguous || notFound || failed || showSuggestions || searching || added
-  );
+  function pick(form: string) {
+    setPicked(form);
+    setQuery(form);
+  }
+
+  function save(entries: DictionaryEntry[]) {
+    const fresh = entries.filter((e) => !membership.has({ senseId: e.id, form: e.dutch, gloss: e.english }));
+    if (!fresh.length) return;
+    onSave(fresh);
+    setAdded(fresh);
+    setAddedCount((n) => n + fresh.length);
+  }
+
+  const hasBody = Boolean(picked || added);
 
   return (
     <div className="screen">
@@ -81,54 +64,67 @@ export function Capture({
         title="Add a word"
         onBack={onBack}
         divider={hasBody}
-        search={{
-          value: query,
-          onChange: edit,
-          // Says what is searched (the dictionary's Dutch side), not "your
-          // word" — which read as "search the words you already have".
-          placeholder: "Search a Dutch word",
-          // Placeholder text disappears once typing starts, so the
-          // accessible name says the same thing plus where the result goes.
-          ariaLabel: "Search a Dutch word to add to your deck",
-          autoFocus: true,
-          inputRef,
-          onSubmit: retry,
-        }}
+        searchSlot={
+          <WordSearch
+            value={query}
+            onChange={edit}
+            onPick={(p) => pick(p.form)}
+            inDeckWordIds={membership.wordIds}
+            saved={deckEntries}
+            autoFocus
+            inputRef={inputRef}
+          />
+        }
       />
 
       <div className="screen__body gutter capture-body">
-        {/* ── 1. Start ── the screen is otherwise blank before anything is
-            typed, which left "add a word" meaning whatever the user assumed.
-            One line, naming both halves: where the word comes from, and
-            where it goes. */}
-        {!hasBody && (
+        {!hasBody && !query && (
           <div className="capture-empty">
-            <p className="muted add-lede">
-              Look up a Dutch word in the dictionary, then add it to your deck.
-            </p>
+            <p className="muted add-lede">Look up a Dutch word in the dictionary, then add it to your deck.</p>
           </div>
         )}
 
-        {/* ── Just added ── the confirmation that replaces navigating to the
-            deck, so a second word costs two taps instead of four. */}
         {added && (
           <div className="addword__block">
             <Notice type="success">
-              <strong>{added.dutch}</strong> added to your deck
-              {addedCount > 1 ? ` · ${addedCount} words this visit` : ""}
+              {added.length === 1 ? (
+                <>
+                  <strong lang="nl">{added[0].dutch}</strong> added to your deck
+                </>
+              ) : (
+                <>{added.length} words added to your deck</>
+              )}
+              {addedCount > added.length ? ` · ${addedCount} this visit` : ""}
             </Notice>
-            <div className="capture-empty__actions">
-              <button className="link-btn" onClick={undo}>
-                Undo
-              </button>
-              <button className="link-btn" onClick={onViewDeck}>
-                View your deck
-              </button>
-            </div>
           </div>
         )}
 
-        <WordLookupResult lookup={lookup} deckIds={deckIds} levels={levels} onSave={save} onEditSuggestion={edit} />
+        {picked && lookup.status === "loading" && (
+          <div className="result-card result-card--loading" role="status" aria-label="Looking up the word">
+            <div className="skeleton skeleton--chip" />
+            <div className="skeleton skeleton--word" />
+          </div>
+        )}
+        {picked && lookup.status === "error" && (
+          <div className="addword__block">
+            <Notice type="error">The dictionary didn&rsquo;t respond. Check your connection and try again.</Notice>
+            <button className="btn btn--secondary" onClick={lookup.retry}>
+              Try again
+            </button>
+          </div>
+        )}
+        {picked && lookup.status === "done" && (
+          <SenseResults
+            result={lookup.result}
+            isInDeck={(i) => membership.has(i.snapshot)}
+            onSave={save}
+            onPickSuggestion={(form) => pick(form)}
+            onSavePersonal={(form, translation) => {
+              onSavePersonal(form, translation);
+              setAddedCount((n) => n + 1);
+            }}
+          />
+        )}
       </div>
     </div>
   );

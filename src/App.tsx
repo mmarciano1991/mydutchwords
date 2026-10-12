@@ -3,11 +3,15 @@ import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import {
   addCustomEntry,
   editEntry,
-  pinSenseEntries,
+  pinLegacyEntries,
+  refreshEntries,
   resolveEntry,
   setCustomEntries,
   useCustomEntriesVersion,
 } from "./lib/wordSources";
+import { commonWords } from "./lib/dictionary/service";
+import { entryFromPreview, personalEntry } from "./lib/dictionary/snapshot";
+import { hasExerciseData } from "./lib/exerciseData";
 import { useToday } from "./lib/useToday";
 import {
   isInDeck,
@@ -72,11 +76,9 @@ import {
 import { appendReviewEvent, flushReviewEvents, newSessionId } from "./lib/reviewEvents";
 import { completionSentence } from "./lib/sentenceTarget";
 import { dutchAudioAvailable, onVoicesChanged } from "./lib/audio";
-import { DICTIONARY, findEntry } from "./data/dictionary";
 import { MC_DICTIONARY_FILL_WORDS } from "./lib/learningConfig";
 import { buildReflection, hasSomethingToShow } from "./lib/reflection";
 import { useDailyReminder } from "./lib/reminders";
-import { loadExamples, onExamplesLoaded } from "./data/examples";
 import { expandOriginFrom, type ExpandOrigin } from "./lib/expandOrigin";
 import { useAuth } from "./lib/useAuth";
 import { useCloudSync } from "./lib/useCloudSync";
@@ -119,6 +121,8 @@ const SUPPORTED_EXERCISES: ReadonlySet<ExerciseType> = new Set<ExerciseType>([
   "listening",
   "sentence_completion",
   "active_recall",
+  "article",
+  "verb_form",
 ]);
 
 /** Joins deck words back to their dictionary content for display. */
@@ -175,16 +179,6 @@ export default function App() {
   useEffect(() => saveRun(run), [run]);
   useEffect(() => saveHabit(habit), [habit]);
 
-  // Example sentences are a separate chunk (they're most of the dictionary's
-  // weight and none of what the first screen needs). Fetch them as soon as
-  // the app is interactive, and re-render when they land so anything already
-  // on screen picks up its sentence.
-  const [examplesVersion, setExamplesVersion] = useState(0);
-  useEffect(() => {
-    const unsubscribe = onExamplesLoaded(() => setExamplesVersion((v) => v + 1));
-    void loadExamples();
-    return unsubscribe;
-  }, []);
 
   // Bumped whenever a word's saved content changes without the deck itself
   // changing (editEntry) — deckEntries otherwise has no reason to recompute,
@@ -264,32 +258,42 @@ export default function App() {
     return true;
   }
 
-  // Resolve the deck (newest first) into full dictionary entries. Recomputed
-  // when the examples chunk lands (rows pick up their sentence) or a word's
-  // content is edited in place (customWordsVersion).
+  // Resolve the deck (newest first) into full entries — each a local copy
+  // of its sense (see lib/wordSources). Recomputed when a copy changes: an
+  // edit, a dictionary refresh, a legacy card pinned.
+  const customEntriesVersion = useCustomEntriesVersion();
   const deckEntries = useMemo(
     () => deck.map((d) => resolveEntry(d.id)).filter((e): e is DictionaryEntry => Boolean(e)),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [deck, examplesVersion, customWordsVersion]
+    [deck, customWordsVersion, customEntriesVersion]
   );
-  const deckIds = useMemo(() => new Set(deck.map((d) => d.id)), [deck]);
 
   // The deck words that can actually be shown — what every count and draw
   // works from. A word whose entry no longer resolves (a headword since
   // dropped from the dictionary) keeps its place in the deck, in case it
   // comes back, but can't be asked: counting it would leave the day's goal
   // forever one word out of reach.
-  const customEntriesVersion = useCustomEntriesVersion();
   const activeDeck = useMemo(
     () => deck.filter((d) => resolveEntry(d.id) !== undefined),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [deck, customWordsVersion, customEntriesVersion]
   );
 
-  // Secondary meanings are keyed by their position in a word's sense list,
-  // which a dictionary update can shift — so each one in the deck keeps its
-  // own copy of the meaning that was saved.
-  useEffect(() => pinSenseEntries(deck.map((d) => d.id)), [deck]);
+  // Cards saved before the server dictionary keep the content they had: the
+  // frozen legacy dictionary is loaded once to pin them, then never again.
+  useEffect(() => {
+    void pinLegacyEntries(deck.map((d) => d.id));
+  }, [deck]);
+
+  // Once per launch, while online: refresh the deck's copies from the
+  // dictionary (new examples, corrected glosses). What the learner edited is
+  // kept; a sense the dictionary dropped keeps its copy.
+  const refreshed = useRef(false);
+  useEffect(() => {
+    if (refreshed.current || deck.length === 0 || (typeof navigator !== "undefined" && navigator.onLine === false)) return;
+    refreshed.current = true;
+    refreshEntries(deck.map((d) => d.id)).catch((err) => console.info("[woordkast] deck refresh skipped", err));
+  }, [deck]);
 
   // Whether this device can speak Dutch — voices often load after start-up.
   const [dutchAudio, setDutchAudio] = useState(() => dutchAudioAvailable());
@@ -302,9 +306,8 @@ export default function App() {
     setCustomWordsVersion((v) => v + 1);
   }
 
-  // Legacy 0–6 level per deck word (derived from the learning state), drives
-  // the mastery bars in Browse.
-  const levels = useMemo(() => new Map(deck.map((d) => [d.id, d.level])), [deck]);
+  // Learning state per deck id — the deck cards' mastery pill.
+  const deckWords = useMemo(() => new Map(deck.map((d) => [d.id, d])), [deck]);
 
   // Leech words (4+ lapses) — tagged "Tricky" in lists, prioritized in sessions.
   const tricky = useMemo(() => new Set(deck.filter(isLeech).map((d) => d.id)), [deck]);
@@ -342,17 +345,25 @@ export default function App() {
     );
   }
 
-  /** Save from the capture flow. Words from the online lookup aren't in the
-   *  bundled dictionary, so they're persisted as custom entries first.
+  /** Adds senses to the deck: each sense's copy is stored, then the deck
+   *  item. A sense already in the deck is never added twice — the id is the
+   *  sense, however it was reached.
    *
-   *  Deliberately does not navigate: the capture screen confirms the save
-   *  itself and clears for the next word. Landing on the deck after every
-   *  add cost four taps per word on a task that asks for three. */
-  function saveCapturedWord(entry: DictionaryEntry) {
-    addCustomEntry(entry);
-    setDeck((prev) =>
-      isInDeck(prev, entry.id) ? prev : [newDeckItem(entry.id, new Date()), ...prev]
-    );
+   *  Deliberately does not navigate: the add screens confirm the save
+   *  themselves and stay ready for the next word. */
+  function saveSenses(entries: DictionaryEntry[]) {
+    const now = new Date();
+    for (const entry of entries) addCustomEntry(entry);
+    setDeck((prev) => {
+      const fresh = entries.filter((e, i) => !isInDeck(prev, e.id) && entries.findIndex((x) => x.id === e.id) === i);
+      return fresh.length ? [...fresh.map((e) => newDeckItem(e.id, now)), ...prev] : prev;
+    });
+  }
+
+  /** A word the dictionary doesn't have, saved with the learner's own
+   *  translation — marked personal. */
+  function savePersonalWord(form: string, translation: string, sentence?: string) {
+    saveSenses([personalEntry(form, translation, sentence)]);
   }
 
   // Today — kept current while the app stays open (a timer past midnight,
@@ -451,7 +462,7 @@ export default function App() {
       .filter((w): w is string => Boolean(w));
     return [...new Set(names)];
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [results, today, examplesVersion]);
+  }, [results, today, customEntriesVersion]);
 
   // ── Monthly "then vs now" ──
   // Only built when due — it walks the whole log.
@@ -475,20 +486,43 @@ export default function App() {
         return entry ? completionSentence(entry) !== null : false;
       },
       fillChoices: choiceFiller.length > 0,
+      // Each exercise needs data of its own (lib/exerciseData); without it,
+      // the exercise is skipped and logged, not replaced.
+      hasData: (kind, id) => {
+        const entry = resolveEntry(id);
+        return entry ? hasExerciseData(kind, entry) : false;
+      },
+      onSkip: (kind, id) => console.info(`[woordkast] ${kind} skipped for ${resolveEntry(id)?.dutch ?? id}: data missing`),
+      glossOf: (id) => resolveEntry(id)?.english.trim().toLowerCase() ?? id,
     };
   }
 
-  // Tops up Multiple Choice distractors while the deck is too small to
-  // supply them, so a learner's first words can be recognised from day one.
-  const choiceFiller = useMemo(() => DICTIONARY.slice(0, MC_DICTIONARY_FILL_WORDS), []);
+  // Tops up Multiple Choice and Listening distractors while the deck is too
+  // small to supply them: common words from the dictionary, fetched once.
+  const [choiceFiller, setChoiceFiller] = useState<DictionaryEntry[]>([]);
+  useEffect(() => {
+    let live = true;
+    commonWords()
+      .then((rows) => {
+        if (!live) return;
+        const entries = rows.flatMap((r) => r.preview.senses.slice(0, 1).map((p) => entryFromPreview(r.wordId, r.form, p)));
+        setChoiceFiller(entries.slice(0, MC_DICTIONARY_FILL_WORDS));
+      })
+      .catch(() => {
+        // Offline: the deck alone supplies the options.
+      });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   // A typed answer that is itself another real Dutch word is never accepted
   // as a typo of the right one.
-  const deckDutch = useMemo(() => new Set(deckEntries.map((e) => e.dutch.toLowerCase())), [deckEntries]);
-  const isKnownWord = useCallback(
-    (word: string) => deckDutch.has(word.toLowerCase()) || Boolean(findEntry(word.toLowerCase())),
-    [deckDutch]
+  const knownDutch = useMemo(
+    () => new Set([...deckEntries, ...choiceFiller].map((e) => e.dutch.toLowerCase())),
+    [deckEntries, choiceFiller]
   );
+  const isKnownWord = useCallback((word: string) => knownDutch.has(word.toLowerCase()), [knownDutch]);
 
   /** Puts a session on screen. Every session is a fresh run, so its report
    *  shows what just happened and nothing older. */
@@ -636,6 +670,9 @@ export default function App() {
           sessionId: session?.sessionId ?? null,
           // A review re-ask is never evidence (one graded answer per session).
           practice: session?.kind === "practice" || answer.review,
+          // A cognate (sauna, podcast) stays in the deck for recognition but
+          // proves nothing about learning.
+          evidence: !resolveEntry(answer.wordId)?.snapshot?.cognate,
         },
         now
       );
@@ -735,8 +772,7 @@ export default function App() {
           ) : needsOnboarding ? (
             <Onboarding
               existingUser={deck.length > 0 || results.length > 0}
-              deckIds={deckIds}
-              levels={levels}
+              deckEntries={deckEntries}
               onComplete={completeOnboarding}
             />
           ) : (
@@ -774,13 +810,13 @@ export default function App() {
               {route === "browse" && (
                 <Browse
                   entries={deckEntries}
-                  levels={levels}
+                  words={deckWords}
                   tricky={tricky}
-                  deckIds={deckIds}
                   onRemove={removeWord}
                   onRestore={restoreWord}
                   onEdit={editDeckWord}
-                  onSave={saveCapturedWord}
+                  onSave={saveSenses}
+                  onSavePersonal={savePersonalWord}
                 />
               )}
 
@@ -867,20 +903,18 @@ export default function App() {
 
               {route === "capture" && (
                 <Capture
-                  deckIds={deckIds}
-                  levels={levels}
-                  onSave={saveCapturedWord}
-                  onUndo={(entryId) => setDeck((prev) => prev.filter((d) => d.id !== entryId))}
-                  onViewDeck={() => setRoute("browse")}
+                  deckEntries={deckEntries}
+                  onSave={saveSenses}
+                  onSavePersonal={savePersonalWord}
                   onBack={() => setRoute("add-choice")}
                 />
               )}
 
               {route === "add-from-text" && (
                 <AddFromText
-                  deckIds={deckIds}
-                  levels={levels}
-                  onSave={saveCapturedWord}
+                  deckEntries={deckEntries}
+                  onSave={saveSenses}
+                  onSavePersonal={savePersonalWord}
                   onBack={() => setRoute("add-choice")}
                 />
               )}

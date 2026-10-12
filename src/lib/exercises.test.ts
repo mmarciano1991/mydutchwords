@@ -142,8 +142,10 @@ describe("posHint (Active Recall)", () => {
 });
 
 describe("synonymsOf", () => {
-  it("finds deck words with the same meaning", () => {
+  it("is the sense's own verified synonyms — never a guess from matching glosses", () => {
     const meet = entry("ontmoeten", "to meet");
-    expect(synonymsOf(meet, [meet, entry("treffen", "to meet"), entry("volgen", "to follow")])).toEqual(["treffen"]);
+    expect(synonymsOf(meet)).toEqual([]);
+    const withSyn = { ...meet, snapshot: { synonyms: ["treffen"] } } as unknown as typeof meet;
+    expect(synonymsOf(withSyn)).toEqual(["treffen"]);
   });
 });

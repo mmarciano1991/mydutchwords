@@ -38,8 +38,8 @@ function generatedString(file, exportName) {
 }
 
 function loadDictionary() {
-  const core = generatedString("src/data/core.generated.ts", "CORE").split("\n");
-  const examples = generatedString("src/data/examples.generated.ts", "EXAMPLES").split("\n");
+  const core = generatedString("src/data/legacy/core.generated.ts", "CORE").split("\n");
+  const examples = generatedString("src/data/legacy/examples.generated.ts", "EXAMPLES").split("\n");
 
   const byId = new Map();
   core.forEach((line, i) => {

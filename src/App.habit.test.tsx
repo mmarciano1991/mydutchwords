@@ -16,11 +16,49 @@ import type { DeckItem } from "./lib/types";
 import { dayKey } from "./lib/dailySet";
 import { newHabit, type HabitState } from "./lib/habit";
 
-// The dictionary chunk is irrelevant here and pulls in ~1MB of examples.
-vi.mock("./data/examples", () => ({
-  loadExamples: () => Promise.resolve(),
-  onExamplesLoaded: () => () => {},
-}));
+// No dictionary server in tests: a word looks up to one noun sense of its
+// own, and three common words top up Multiple Choice.
+vi.mock("./lib/dictionary/service", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./lib/dictionary/service")>();
+  const word = (form: string) => ({
+    id: form,
+    form,
+    kind: "word",
+    variants: [],
+    frequency: 1,
+    searchKey: form,
+    meta: { sources: [], confidence: "verified" },
+    uses: [
+      {
+        id: "noun",
+        pos: "noun",
+        subtype: "common",
+        forms: [],
+        article: "de",
+        fieldMeta: { article: { sources: [], confidence: "verified" } },
+        senses: [{ id: `s_${form}`, gloss: `${form}-en`, variety: "NL", rank: 0, synonyms: [], antonyms: [], examples: [], meta: { sources: [], confidence: "verified" } }],
+      },
+    ],
+  });
+  const preview = (form: string, i: number) => ({
+    wordId: form,
+    form,
+    frequency: i,
+    preview: { senseCount: 1, senses: [{ senseId: `s_${form}`, useId: "noun", pos: "noun", article: "de", gloss: `common-${i}` }] },
+  });
+  return {
+    ...actual,
+    commonWords: () => Promise.resolve(["fiets", "boom", "stoel"].map(preview)),
+    lookup: (form: string) => Promise.resolve({ query: form, matches: [{ word: word(form), useIds: null, via: "lemma", matched: form }], compound: null, didYouMean: [] }),
+  };
+});
+
+/** Lets pending dictionary answers land. */
+async function settle() {
+  await act(async () => {
+    for (let i = 0; i < 5; i++) await Promise.resolve();
+  });
+}
 
 // Resolve every id to a minimal entry so the queue isn't silently emptied.
 vi.mock("./lib/wordSources", () => ({
@@ -30,9 +68,8 @@ vi.mock("./lib/wordSources", () => ({
   getCustomEntries: () => [],
   setCustomEntries: () => {},
   useCustomEntriesVersion: () => 0,
-  pinSenseEntries: () => {},
-  entriesGlossed: () => [],
-  parseSenseKey: (id: string) => ({ baseId: id, index: 0 }),
+  pinLegacyEntries: () => Promise.resolve(),
+  refreshEntries: () => Promise.resolve(0),
 }));
 
 /* jsdom 30 under vitest 2 ships no localStorage, and the app persists
@@ -340,7 +377,7 @@ describe("1. onboarding: the 5-minute promise", () => {
     expect(screenText()).toContain("no right answer");
   });
 
-  it("asks a new user how to begin, and starts on three starter words", () => {
+  it("asks a new user how to begin, and starts on three starter words", async () => {
     render();
     onboard("Espresso");
     // Pre-filled, so a new user can go straight through.
@@ -350,6 +387,7 @@ describe("1. onboarding: the 5-minute promise", () => {
     expect(screenText()).toContain("Add 3 words I’ve met");
     click("Give me 3 to start");
     click("Continue");
+    await settle();
     expect(screenText()).toContain("Words you’ll meet soon");
     expect(container.querySelectorAll(".starter-list__item")).toHaveLength(3);
     click("Start with these 3");
@@ -359,15 +397,17 @@ describe("1. onboarding: the 5-minute promise", () => {
     expect(practiceCounter()).toBe("0/3");
   });
 
-  it("offers different starter words on request", () => {
+  it("offers different starter words on request", async () => {
     render();
     onboard("Espresso");
     click("Continue");
     click("Give me 3 to start");
     click("Continue");
+    await settle();
     const words = () => [...container.querySelectorAll(".starter-list__item")].map((li) => li.textContent);
     const before = words();
     click("Pick different ones");
+    await settle();
     expect(words()).not.toEqual(before);
   });
 
@@ -626,10 +666,11 @@ describe("2b. new words", () => {
 });
 
 describe("2b'. a deck of one", () => {
-  it("can still be recognised — and become Learning — in its first session", () => {
+  it("can still be recognised — and become Learning — in its first session", async () => {
     seedNewDeck(1);
     seedHabit();
     render();
+    await settle();
     click("Start");
     click("I knew it");
     act(() => vi.advanceTimersByTime(ANSWER_MS));
@@ -897,7 +938,8 @@ describe("7. the deck", () => {
     localStorage.setItem("woordkast.deck", JSON.stringify([practised, newDeckItem("w1", new Date(Date.now() - 1))]));
     render();
     click("Deck");
-    click("Remove w0 from deck");
+    click("More actions for w0");
+    click("Delete");
     expect(screenText()).toContain("w0 removed from your deck");
     expect(JSON.parse(localStorage.getItem("woordkast.deck")!).map((d: { id: string }) => d.id)).toEqual(["w1"]);
 

@@ -1914,6 +1914,13 @@ textarea.text-input {
   line-height: 1.5;
   color: var(--text-muted);
 }
+/* A declared gap, not a sentence: plain, quieter. */
+.flashcard__example--missing {
+  font-family: var(--font-sans);
+  font-style: normal;
+  font-size: var(--size-body-sm);
+  color: var(--text-faint);
+}
 .flashcard__hint {
   color: var(--text-faint);
   font-size: var(--size-label);
@@ -3681,7 +3688,6 @@ textarea.text-input {
 .readtext__lookup { margin-top: 20px; }
 .capture-body { padding-top: 16px; padding-bottom: 16px; }
 .capture-empty { padding: 24px 6px; text-align: center; }
-.capture-empty__actions { display: flex; gap: 18px; justify-content: center; margin-top: 2px; }
 .lookup-note { font-size: 14px; margin: -4px 2px 0; text-align: center; }
 
 /* Practice */
@@ -3780,4 +3786,759 @@ textarea.text-input {
 .dev-preview__bar .link-btn {
   color: var(--on-primary);
   text-decoration: underline;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   Dictionary — search, result cards, deck cards (Figma App-Word: result_card
+   443:2861, states A–D, dictionary_card 104:161, search input 250:2486)
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* Article chip, soft tone: light blue, serif — result and deck cards. */
+.chip--soft {
+  padding: 0 var(--space-2);
+  background: var(--blue-100);
+  color: var(--primary);
+  box-shadow: none;
+  font: var(--type-word-row);
+}
+.chip--soft.chip--sm {
+  padding: 0 var(--space-2);
+  font-size: var(--size-body);
+}
+.chip--unknown {
+  background: var(--cream-100);
+  color: var(--text-faint);
+  box-shadow: inset 0 0 0 1px var(--border-warm);
+}
+/* Single-source article: a dashed edge, and words on the card say it. */
+.chip--unverified {
+  box-shadow: inset 0 0 0 1.5px var(--blue-300);
+  outline: 1px dashed var(--blue-300);
+  outline-offset: 1px;
+}
+
+/* Part-of-speech pill (Figma "Badge" in result_card). */
+.pos-pill {
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--success-bg);
+  color: var(--success-fg);
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: normal;
+  white-space: nowrap;
+}
+.pos-pill--solid {
+  background: var(--success-solid);
+  color: var(--cream-000);
+}
+
+/* Explanatory pills: a button with a full label; one line opens beneath. */
+.info-pill-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+}
+.info-pill {
+  min-height: 28px;
+  padding: 2px var(--space-2);
+  border: 1px solid var(--line-cool-strong);
+  border-radius: var(--radius-pill);
+  background: var(--surface-tint);
+  color: var(--primary);
+  font-size: var(--size-label);
+  font-weight: 700;
+  position: relative;
+}
+/* A 44pt hit area around the small pill. */
+.info-pill::after {
+  content: "";
+  position: absolute;
+  inset: -8px -4px;
+}
+.info-pill--generated,
+.info-pill--reconstructed {
+  background: var(--caution-bg);
+  border-color: var(--caution-border);
+  color: var(--caution-fg);
+}
+.info-pill--vulgar {
+  background: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-fg);
+}
+.info-pill__explanation {
+  font: var(--type-body-sm);
+  color: var(--text-muted);
+  max-width: 32ch;
+}
+.info-pill:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+/* ── result_card ── */
+.result-list,
+.dict-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.result-card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-button);
+  background: var(--surface-card);
+}
+.result-card--checked {
+  border-color: var(--primary-border);
+  background: var(--surface-tint);
+}
+.result-card--indeck {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+}
+.result-card--loading {
+  min-height: 78px;
+}
+.result-card__control {
+  flex-shrink: 0;
+}
+.result-card__control.icon-btn {
+  width: 44px;
+  height: 44px;
+}
+.result-card__control.icon-btn:disabled {
+  opacity: 0.5;
+}
+.result-card__done {
+  width: 38px;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--success-fg);
+}
+/* Checkbox (Figma 448:856): a 22px box inside a 44×44 target. */
+.result-card__checkbox {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.result-card__checkbox input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.checkbox-box {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--blue-300);
+  border-radius: 5px;
+  background: var(--surface-card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.result-card__checkbox input:checked + .checkbox-box {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.result-card__checkbox input:checked + .checkbox-box::after {
+  content: "";
+  width: 6px;
+  height: 11px;
+  border: solid var(--cream-000);
+  border-width: 0 2.5px 2.5px 0;
+  transform: translateY(-1px) rotate(45deg);
+}
+.result-card__checkbox input:focus-visible + .checkbox-box {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+.result-card__checkbox input:disabled + .checkbox-box {
+  opacity: 0.5;
+}
+.result-card__body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: var(--space-3);
+  align-items: flex-start;
+}
+/* Word + gloss, then the grammar explanation 10px below (Figma 465:5054). */
+.result-card__main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.result-card__head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+.result-card__word {
+  font: var(--type-word-row);
+  color: var(--text-display);
+  overflow-wrap: anywhere;
+}
+.result-card--indeck .result-card__word {
+  color: var(--success-fg);
+}
+.result-card__gloss {
+  font: var(--type-body);
+  line-height: normal;
+  color: var(--text-display);
+}
+.result-card__note {
+  color: var(--text-muted);
+}
+/* Grammar explanation — only rendered when there is one. */
+.result-card__grammar {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--text-display);
+}
+.result-card__hint {
+  font-size: var(--size-label);
+  color: var(--text-faint);
+}
+.result-card__pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+/* "Save the words" — pinned under the list (Figma ButtonContainer). */
+.sense-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.sense-results__actions {
+  position: sticky;
+  bottom: 0;
+  padding: var(--space-4) 0;
+  background: linear-gradient(to top, var(--bg-canvas) 70%, transparent);
+}
+.sense-results__actions .btn {
+  width: 100%;
+}
+.personal-word {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+/* ── Autocomplete (Figma 465:5290) ──
+   Field and suggestions are one card. Closed, the field is the rounded
+   search pill; open, its corners settle to the card's radius and the list
+   unfolds beneath it as the card's lower half — a grid row going from 0fr
+   to 1fr, so the height animates to whatever the list needs. The card
+   floats over the screen rather than pushing it down. Folding back runs
+   the same 300 ms ease-out, then the list is hidden from taps and
+   assistive tech (visibility, after the fold). */
+.word-search {
+  position: relative;
+}
+.word-search__card {
+  position: relative;
+}
+.word-search__field {
+  /* Half the field's height: a pill, but a radius that can animate. */
+  border-radius: 26px;
+  transition:
+    border-color var(--motion-fast) ease,
+    border-radius var(--motion-unfold) ease-out,
+    box-shadow var(--motion-unfold) ease-out;
+}
+.word-search.is-open .word-search__field {
+  border-radius: var(--radius-card) var(--radius-card) 0 0;
+  border-color: var(--primary-border);
+  border-bottom-color: transparent;
+  box-shadow: none;
+}
+.appbar__search--disabled {
+  opacity: 0.6;
+}
+.suggest {
+  position: absolute;
+  z-index: 20;
+  top: 100%;
+  left: 0;
+  right: 0;
+  display: grid;
+  grid-template-rows: 0fr;
+  background: var(--surface-card);
+  border: 1px solid var(--primary-border);
+  border-top: none;
+  border-radius: 0 0 var(--radius-card) var(--radius-card);
+  box-shadow: var(--shadow-float);
+  /* The shadow falls below the card only, never back over the field. */
+  clip-path: inset(0 -48px -64px -48px);
+  visibility: hidden;
+  transition:
+    grid-template-rows var(--motion-unfold) ease-out,
+    visibility 0s linear var(--motion-unfold);
+}
+.word-search.is-open .suggest {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows var(--motion-unfold) ease-out,
+    visibility 0s;
+}
+.suggest__list {
+  min-height: 0;
+  margin: 0;
+  padding: 0 0 var(--space-2);
+  list-style: none;
+  /* Stays above the on-screen keyboard: never taller than the visible area. */
+  max-height: min(60dvh, 440px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+@media (prefers-reduced-motion: reduce) {
+  .word-search__field,
+  .suggest,
+  .word-search.is-open .suggest {
+    transition: none;
+  }
+}
+.suggest__header {
+  padding: var(--space-2) var(--space-4) var(--space-1);
+  font-size: var(--size-label);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--text-faint);
+}
+.suggest__option {
+  min-height: 44px;
+  padding: var(--space-2) var(--space-4);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  cursor: pointer;
+}
+.suggest__option.is-active,
+.suggest__option:hover {
+  background: var(--surface-tint);
+}
+.suggest__option.is-active {
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+/* Word, then its pill 10px on (Figma 465:5327). */
+.suggest__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: var(--space-1);
+}
+.suggest__line .pos-pill {
+  align-self: center;
+}
+.suggest__word {
+  font: var(--type-word-row);
+  color: var(--text-muted);
+}
+.suggest__article {
+  font: var(--type-word-row);
+  color: var(--text-muted);
+}
+/* The typed prefix: bold and underlined — never colour alone. */
+.suggest__match {
+  background: none;
+  color: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.suggest__via {
+  font-size: var(--size-body-sm);
+  color: var(--text-faint);
+}
+.suggest__tag {
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-pill);
+  background: var(--cream-100);
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+.suggest__tag--deck {
+  background: var(--success-bg);
+  color: var(--success-fg);
+}
+.suggest__gloss {
+  font: var(--type-body-sm);
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.suggest__more {
+  font-weight: 700;
+  color: var(--primary);
+}
+.suggest__state {
+  margin: var(--space-2) 0 0;
+  font: var(--type-body-sm);
+  color: var(--text-muted);
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+.suggest__state--error {
+  color: var(--error-fg);
+}
+.appbar:has(.word-search) {
+  position: relative;
+  z-index: 5;
+}
+
+/* ── Compound breakdown ── */
+.compound {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.compound__breakdown {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.compound__piece {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.compound__part {
+  font: var(--type-word-row);
+  color: var(--text-display);
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-chip);
+  background: var(--surface-tint);
+  border: 1px solid transparent;
+}
+.compound__part--open {
+  min-height: 44px;
+  border-color: var(--line-cool-strong);
+  cursor: pointer;
+}
+.compound__part--open[aria-expanded="true"] {
+  border-color: var(--primary);
+}
+.compound__kind {
+  font: var(--type-body-sm);
+  color: var(--text-faint);
+}
+.compound__plus {
+  color: var(--text-faint);
+}
+.compound__sub,
+.compound__note {
+  margin: 0;
+  font: var(--type-body-sm);
+  color: var(--text-muted);
+}
+
+/* ── Add from text: units ── */
+.readtext__word--unit {
+  background: var(--line-blue-soft);
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.unit-offers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+.unit-offer {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-4);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-button);
+  background: var(--surface-card);
+  color: var(--text-body);
+  font: var(--type-body);
+  text-align: left;
+}
+.unit-offer.is-selected {
+  border-color: var(--primary);
+  background: var(--surface-tint);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.unit-offer__form {
+  font: var(--type-word-row);
+  color: var(--text-display);
+}
+.unit-offer__kind {
+  font-size: var(--size-label);
+  color: var(--text-faint);
+}
+
+/* ── dictionary_card (Figma 465:4994: "Defaul" / "Open") ── */
+.dict-card {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-button);
+  background: var(--surface-card);
+}
+.dict-card__row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+  /* The ⋮ keeps its 44px target without growing the row. */
+  padding-right: calc(var(--space-4) - 10px);
+}
+.dict-card__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+.dict-card__status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.dict-card__text {
+  display: flex;
+  flex-direction: column;
+}
+.dict-card__line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+/* Word + arrow: one button, one toggle. */
+.dict-card__main {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+/* A 44px-tall hit area around the 21px line. */
+.dict-card__main::after {
+  content: "";
+  position: absolute;
+  inset: -12px -4px;
+}
+.dict-card__main:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 4px;
+  border-radius: 6px;
+}
+.dict-card__word {
+  font: var(--type-word-row);
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+.dict-card__arrow {
+  flex-shrink: 0;
+  color: var(--blue-700);
+  transition: transform var(--motion-base) var(--ease-standard);
+}
+.dict-card.is-open .dict-card__arrow {
+  transform: rotate(180deg);
+}
+@media (prefers-reduced-motion: reduce) {
+  .dict-card__arrow {
+    transition: none;
+  }
+}
+.dict-card__gloss {
+  font: var(--type-body);
+  line-height: normal;
+  color: var(--text-muted);
+}
+.dict-card__context {
+  border-top: 1px solid var(--line-divider);
+  padding: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* The example in an open card (Figma 465:5033): no box, serif italic. */
+.dict-card__context .context-sentence {
+  padding: 0;
+  background: none;
+  border: none;
+}
+.dict-card__context .context-sentence__nl {
+  font: var(--type-quote);
+  font-style: italic;
+  color: var(--text-muted);
+}
+.dict-card__context .context-sentence__en {
+  margin: 0;
+  font-style: normal;
+}
+
+/* Learning status (Figma 465:4895): ring + label. */
+.mastery-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--size-label);
+  font-weight: 700;
+  line-height: normal;
+  letter-spacing: 0.02em;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+.mastery-status__ring {
+  flex-shrink: 0;
+}
+.mastery-status--new .mastery-status__track { fill: var(--ink-300); }
+.mastery-status--new .mastery-status__arc { fill: var(--ink-500); }
+.mastery-status--learning .mastery-status__track { fill: var(--caution-border); }
+.mastery-status--learning .mastery-status__arc { fill: var(--caution-solid); }
+.mastery-status--mastering .mastery-status__track { fill: var(--success-border); }
+.mastery-status--mastering .mastery-status__arc { fill: var(--success-solid); }
+.mastery-status__disc { fill: var(--success-solid); }
+.mastery-status__check { fill: var(--blue-050); }
+
+/* ── ⋮ menu ── */
+.more-menu {
+  position: relative;
+  flex-shrink: 0;
+}
+.more-menu__button {
+  width: 44px;
+  height: 44px;
+}
+.more-menu__list {
+  position: absolute;
+  right: 0;
+  z-index: 30;
+  min-width: 160px;
+  margin: 0;
+  padding: var(--space-1);
+  list-style: none;
+  background: var(--surface-card);
+  border: 1px solid var(--border-cool);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-float);
+}
+.more-menu__list--below {
+  top: calc(100% + 4px);
+}
+.more-menu__list--above {
+  bottom: calc(100% + 4px);
+}
+.more-menu__item {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text-body);
+  font: var(--type-button);
+  text-align: left;
+}
+.more-menu__item:hover,
+.more-menu__item:focus-visible {
+  background: var(--surface-tint);
+  outline: none;
+}
+.more-menu__item--danger {
+  color: var(--error-fg);
+}
+
+/* ── Word parts (after an answer) ── */
+.word-parts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2) var(--space-3);
+  margin-top: var(--space-2);
+}
+.word-parts__list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.word-part {
+  display: flex;
+  flex-direction: column;
+  padding: 2px var(--space-2);
+  border-radius: var(--radius-chip);
+  border: 1px solid var(--border-cool);
+  background: var(--cream-100);
+}
+.word-part__text {
+  font: var(--type-word-row);
+  font-size: var(--size-body);
+}
+.word-part__label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-faint);
+}
+.word-part--separablePrefix { background: #dce4f1; border-color: #9db6d8; }
+.word-part--inseparablePrefix { background: #ece3f4; border-color: #c7b2dd; }
+.word-part--on { background: #fbe9dc; border-color: #ecc29f; }
+.word-part--suffix { background: var(--success-bg); border-color: var(--success-border); }
+.word-parts__stress {
+  font: var(--type-body);
+  color: var(--text-muted);
+}
+.word-parts__stressed {
+  font-weight: 700;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  color: var(--text-display);
+}
+
+.answer-options--pair {
+  flex-direction: row;
+}
+.answer-options--pair .answer-option {
+  flex: 1;
+  justify-content: center;
 }

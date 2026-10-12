@@ -1,4 +1,5 @@
 import type { Grade, Word } from "./learningEngine";
+import type { SenseSnapshot } from "./dictionary/model";
 
 /**
  * Dutch grammatical article.
@@ -9,6 +10,7 @@ import type { Grade, Word } from "./learningEngine";
  *
  *   "none"     this word takes no article. Verbs, adjectives, adverbs,
  *              prepositions. Correct, complete, nothing to fix.
+ *   "de/het"   both are correct (de/het filter) — a fact, not a gap.
  *   "unknown"  nobody has established the article yet. A noun imported from
  *              a word list that didn't carry gender, or an online lookup
  *              whose headword line couldn't be read.
@@ -19,7 +21,7 @@ import type { Grade, Word } from "./learningEngine";
  * something the app doesn't know. Splitting them is what makes
  * scripts/validate-dictionary.mjs able to fail a build over it.
  */
-export type Gender = "de" | "het" | "none" | "unknown";
+export type Gender = "de" | "het" | "de/het" | "none" | "unknown";
 
 /**
  * One meaning of a word — its own translation, example, and article.
@@ -69,26 +71,8 @@ export interface WordSense {
   provisional?: boolean;
 }
 
-/**
- * The AUTHORED shape of a dictionary word, as written in data/curated.ts.
- *
- * Deliberately not the same type as DictionaryEntry: what an author writes is
- * one word with one gloss, one article and one example, and `senses` is
- * DERIVED from that at decode time (see data/dictionary.ts, which splits a
- * gloss like "to park; to put away" into two). Making authors hand-write a
- * senses array would be asking them to maintain the derivation by hand, and
- * making DictionaryEntry.senses optional would let an entry with no meanings
- * at all typecheck.
- */
-export interface CuratedEntry {
-  dutch: string;
-  english: string;
-  gender: Gender;
-  example: string;
-  exampleEn: string;
-}
-
-/** A bundled dictionary word (offline, authored).
+/** A word as the app shows and practises it — one SENSE of a dictionary
+ *  word (see `snapshot`), a legacy card, or a personal word.
  *
  *  `senses` is the source of truth and is never empty. The top-level
  *  english/gender/example/exampleEn mirror `senses[0]` exactly — they're
@@ -114,6 +98,17 @@ export interface DictionaryEntry {
    *  (see docs/recommendations.md, item 1c). Dutch only — the point is to
    *  recognise it, not translate it again. */
   metIn?: string;
+  /** The dictionary sense this entry is, with everything a card or an
+   *  exercise needs (article, forms, examples, synonyms…). Absent only on
+   *  entries saved before the server dictionary (legacy ids like
+   *  "aanslag#1"), which keep working from their stored content. */
+  snapshot?: SenseSnapshot;
+  /** Fields the learner edited — a dictionary update never overwrites
+   *  them, and they are never used as distractors. */
+  userEdited?: ("english" | "example" | "exampleEn")[];
+  /** Saved by the learner with their own translation: the word wasn't in
+   *  the dictionary. */
+  personal?: boolean;
 }
 
 /** A word the user has added to their flashcard deck: dictionary entry id +

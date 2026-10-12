@@ -1,7 +1,7 @@
 /* TypedExercise — produce the Dutch word. Two kinds, one answer field:
 
      active_recall        the English translation, with a part-of-speech
-                          hint (and the article for a noun); type the Dutch.
+                          hint (or "the" for a noun); type the Dutch.
      sentence_completion  the context sentence with the word blanked, and
                           its English below; type the word in the exact form
                           the sentence needs ("doet", not "doen").
@@ -11,7 +11,7 @@
    by lib/answerCheck, and the verdict and the word in its context sentence
    show in the panel while the field keeps what was typed. */
 import { useId, useState, type FormEvent, type ReactNode } from "react";
-import { checkAnswer, type AnswerCheck } from "../../lib/answerCheck";
+import { checkAnswer, foldDiacritics, type AnswerCheck } from "../../lib/answerCheck";
 import { posHint } from "../../lib/exercises";
 import type { ReviewResult } from "../../lib/learningEngine";
 import type {
@@ -19,7 +19,6 @@ import type {
   TargetForm,
 } from "../../lib/sentenceTarget";
 import type { DictionaryEntry } from "../../lib/types";
-import { GenderChip } from "../GenderChip";
 import { withArticle, type ExerciseCallbacks } from "./types";
 import { speakDutch } from "../../lib/audio";
 import { SOUND_MS } from "../../lib/sfx";
@@ -28,7 +27,20 @@ import { AnswerPanel, notQuite } from "./AnswerPanel";
 
 type Outcome =
   | { kind: "checked"; typed: string; check: AnswerCheck }
+  | { kind: "synonym"; typed: string }
   | { kind: "dont_know" };
+
+/** Lower case, accents and a leading article off — for comparing a typed
+ *  word with a synonym. */
+function bare(text: string): string {
+  return foldDiacritics(text.trim().toLowerCase()).replace(/^(de|het|een|'t)\s+/, "").replace(/\s+/g, " ");
+}
+
+/** An English noun gloss with "the" in front, unless it already has an
+ *  article ("a dog", "the Netherlands"). */
+function englishWithArticle(english: string): string {
+  return /^(the|a|an)\s/i.test(english.trim()) ? english : `the ${english}`;
+}
 
 export function TypedExercise({
   kind,
@@ -44,7 +56,8 @@ export function TypedExercise({
   entry: DictionaryEntry;
   /** Sentence Completion: the sentence, and where the word sits in it. */
   completion?: Context & { target: TargetForm };
-  /** Other deck words with the same meaning — just as right (Active Recall). */
+  /** Verified synonyms of this sense (Active Recall): typing one is a half
+   *  answer — right, but not proof the target word is known. */
   synonyms?: string[];
   /** True for a real Dutch word — a typed one is never a "typo" of another. */
   isKnownWord?: (word: string) => boolean;
@@ -55,26 +68,36 @@ export function TypedExercise({
   const sentence = kind === "sentence_completion" ? completion : undefined;
   const article =
     entry.gender === "de" || entry.gender === "het" ? entry.gender : null;
-  // What's shown as the right answer: the sentence's form, or the word with its article.
-  const shown = sentence ? sentence.target.form : withArticle(entry);
+  // What's shown as the right answer: the sentence's form (both parts of a
+  // split verb: "bel … op"), or the word with its article.
+  const parts = sentence?.target.parts ?? [];
+  const shown = sentence ? (parts.length > 1 ? parts.map((p) => p.form).join(" … ") : sentence.target.form) : withArticle(entry);
   // Nothing said up front — the word is the answer. Said once it's shown.
   usePronunciation(null);
 
   function submit(e: FormEvent) {
     e.preventDefault();
     if (outcome || !typed.trim()) return;
+    // A verified synonym of the target (Active Recall only): not a mistake,
+    // not proof either — the word comes back soon.
+    if (!sentence && bare(typed) !== bare(entry.dutch) && synonyms.some((syn) => bare(syn) === bare(typed))) {
+      onResult(entry.id, "synonym");
+      setOutcome({ kind: "synonym", typed });
+      speakDutch(shown, { delayMs: SOUND_MS.correct });
+      return;
+    }
     const check = checkAnswer(
       typed,
       sentence
         ? {
-            answer: sentence.target.form,
+            // Both parts of a split verb, in order: "bel op".
+            answer: sentence.target.answer,
             dictionaryForm: entry.dutch,
             isOtherWord: isKnownWord,
           }
         : {
             answer: entry.dutch,
             article,
-            alternatives: synonyms,
             isOtherWord: isKnownWord,
           },
     );
@@ -93,14 +116,32 @@ export function TypedExercise({
   }
 
   const passed =
-    outcome?.kind === "checked" && outcome.check.verdict !== "wrong";
+    outcome?.kind === "synonym" || (outcome?.kind === "checked" && outcome.check.verdict !== "wrong");
   const right = <strong lang="nl">{shown}</strong>;
-  const after = sentence ? sentence.sentence.slice(sentence.target.end) : "";
+  const last = parts[parts.length - 1];
+  const after = sentence && last ? sentence.sentence.slice(last.end) : "";
   const trailing = after.match(/^[.,!?;:…»”’)]+/)?.[0] ?? "";
+  // What's typed, split over the gaps: "bel op" fills "__ … __".
+  const typedParts = parts.length > 1 ? [typed.trim().split(/\s+/)[0] ?? "", typed.trim().split(/\s+/).slice(1).join(" ")] : [typed.trim()];
+  const gap = (i: number, width: number) => (
+    <span
+      className={`exercise__gap${typedParts[i] ? " is-filled" : ""}${outcome ? (passed ? " is-right" : " is-wrong") : ""}`}
+      style={{ minWidth: `${Math.max(4, width) + 1}ch` }}
+      aria-hidden="true"
+    >
+      {typedParts[i] || "\u00a0"}
+    </span>
+  );
 
   // The panel's title: plain "Correct", or what's worth knowing about the answer.
   let message: ReactNode = null;
-  if (outcome?.kind === "dont_know") {
+  if (outcome?.kind === "synonym") {
+    message = (
+      <>
+        Correct, and the word you’re learning is <em lang="nl">{entry.dutch}</em>.
+      </>
+    );
+  } else if (outcome?.kind === "dont_know") {
     message = (
       <>
         <span className="answer-panel__soft">The answer is</span> {right}
@@ -127,24 +168,27 @@ export function TypedExercise({
           {sentence ? (
             <>
               <p className="exercise__sentence" lang="nl">
-                {sentence.sentence.slice(0, sentence.target.start)}
-                {/* The gap and any punctuation right after it stay on one
-                    line, so a full stop never wraps away on its own. */}
-                <span className="exercise__gap-line">
-                  {/* The gap mirrors what's typed in the field below. */}
-                  <span
-                    className={`exercise__gap${typed ? " is-filled" : ""}${
-                      outcome ? (passed ? " is-right" : " is-wrong") : ""
-                    }`}
-                    style={{
-                      minWidth: `${Math.max(4, sentence.target.form.length) + 1}ch`,
-                    }}
-                    aria-hidden="true"
-                  >
-                    {typed.trim() || "\u00a0"}
-                  </span>
-                  {trailing}
-                </span>
+                {parts.length > 1 ? (
+                  <>
+                    {sentence.sentence.slice(0, parts[0].start)}
+                    {gap(0, parts[0].form.length)}
+                    {sentence.sentence.slice(parts[0].end, last.start)}
+                    <span className="exercise__gap-line">
+                      {gap(1, last.form.length)}
+                      {trailing}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    {sentence.sentence.slice(0, sentence.target.start)}
+                    {/* The gap and any punctuation right after it stay on one
+                        line, so a full stop never wraps away on its own. */}
+                    <span className="exercise__gap-line">
+                      {gap(0, sentence.target.form.length)}
+                      {trailing}
+                    </span>
+                  </>
+                )}
                 {after.slice(trailing.length)}
               </p>
               {/* A captured sentence has no translation (Q8): the word's
@@ -156,15 +200,12 @@ export function TypedExercise({
             </>
           ) : (
             <>
-              {/* A noun shows the article its Dutch answer takes; any other
-                  word keeps its part-of-speech hint. */}
-              {article ? (
-                <GenderChip gender={entry.gender} />
-              ) : (
-                posHint(entry) && <p className="exercise__hint">{posHint(entry)}</p>
-              )}
+              {/* The prompt stays in English: a noun reads "the house" (its
+                  Dutch article is for the user to produce); any other word
+                  keeps its part-of-speech hint. */}
+              {!article && posHint(entry) && <p className="exercise__hint">{posHint(entry)}</p>}
               <p className="exercise__word" lang="en">
-                {entry.english}
+                {article ? englishWithArticle(entry.english) : entry.english}
               </p>
             </>
           )}
@@ -177,8 +218,8 @@ export function TypedExercise({
               value={typed}
               onChange={(e) => setTyped(e.target.value)}
               readOnly={outcome !== null}
-              placeholder={sentence ? "Fill in the missing word" : "Type the Dutch word"}
-              aria-label={sentence ? "The missing Dutch word" : `Dutch for “${entry.english}”`}
+              placeholder={sentence ? (parts.length > 1 ? "Fill in both parts" : "Fill in the missing word") : "Type the Dutch word"}
+              aria-label={sentence ? (parts.length > 1 ? "Both missing parts of the verb, in order" : "The missing Dutch word") : `Dutch for “${entry.english}”`}
               lang="nl"
               autoFocus
               autoComplete="off"

@@ -1,100 +1,76 @@
+/* Deck — the senses the learner has added, as dictionary cards (Figma
+   dictionary_card 104:161). The search filters the deck; with no deck
+   match it falls through to the dictionary, so a word not yet in the deck
+   can be added from here too.
+
+   ⋮ on a card: Edit opens the edit form for that sense (same id, same
+   progress); Delete removes that sense only — never the word's other
+   senses — with Undo, the app's way of confirming a removal. A deleted
+   sense is addable again in search straight away. */
 import { useMemo, useState } from "react";
 import type { DeckItem, DictionaryEntry } from "../lib/types";
-import { useWordLookup } from "../lib/useWordLookup";
-import { parseSenseKey } from "../lib/wordSources";
+import type { Word } from "../lib/learningEngine";
+import { deckMembership } from "../lib/deckMembership";
+import { searchKey } from "../lib/dictionary/normalize";
+import { contextSentence } from "../lib/sentenceTarget";
+import { useLookup } from "../lib/useLookup";
 import { Appbar } from "../components/Appbar";
-import { GenderChip } from "../components/GenderChip";
-import { IconButton } from "../components/IconButton";
-import { MasteryBar } from "../components/MasteryBar";
+import { DictionaryCard } from "../components/DictionaryCard";
+import { InfoPill } from "../components/InfoPill";
+import { masteryOf } from "../components/MasteryStatus";
 import { Notice } from "../components/Notice";
-import { WordLookupResult } from "../components/WordLookupResult";
+import { SenseResults } from "../components/SenseResults";
+import { ContextSentence } from "../components/exercises/ContextSentence";
 
-/** Just the fields a user can correct — gender and the id stay as they are. */
 type Edit = { english: string; example: string; exampleEn: string };
 
-/* Deck screen — the words the user has added, only. Search filters the deck;
-   the FAB in the bottom navigation opens the Add-a-word flow. (Browsing the
-   full 14k bundled dictionary is gone: words enter the deck via capture now.)
-
-   A search with no deck matches falls through to the same lookup pipeline
-   and result UI as Capture ("Add a word"), so finding a word that isn't in
-   the deck yet and adding it never requires switching screens. */
 export function Browse({
   entries,
-  levels,
+  words,
   tricky,
-  deckIds,
   onRemove,
   onRestore,
   onEdit,
   onSave,
+  onSavePersonal,
 }: {
-  /** The user's deck words, resolved to dictionary content (newest first). */
+  /** The deck, resolved (newest first). */
   entries: DictionaryEntry[];
-  /** Ladder level per deck word id (from its spaced-repetition state). */
-  levels: Map<string, number>;
-  /** Deck word ids flagged as leeches (4+ lapses). */
+  /** Learning state per deck id. */
+  words: Map<string, Word>;
   tricky: Set<string>;
-  /** All deck word ids — passed straight through to the shared lookup result. */
-  deckIds: Set<string>;
-  /** Takes the word out of the deck; returns what was removed (progress
-   *  included) so it can be put back. */
   onRemove: (entryId: string) => DeckItem | undefined;
-  /** Puts a removed word back, progress and all. */
   onRestore: (item: DeckItem) => void;
-  /** Corrects a saved word's translation and example — the general form of
-   *  the sense picker's override, for the words that never had a picker. */
   onEdit: (entryId: string, edit: Edit) => void;
-  /** Adds a word found via the fallback lookup — same handler Capture uses. */
-  onSave: (entry: DictionaryEntry) => void;
+  onSave: (entries: DictionaryEntry[]) => void;
+  onSavePersonal: (form: string, translation: string) => void;
 }) {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);
-  // The row being edited, and its draft — separate from `entries` so typing
-  // doesn't touch anything until Save. Only one row can be mid-edit at once.
   const [editingId, setEditingId] = useState<string | null>(null);
   const [draft, setDraft] = useState<Edit>({ english: "", example: "", exampleEn: "" });
-  // The last word removed, kept until the next removal so one tap — easy to
-  // make by accident next to the expand button — can't cost a word's
-  // whole history.
   const [removed, setRemoved] = useState<{ item: DeckItem; dutch: string } | null>(null);
+  const membership = useMemo(() => deckMembership(entries), [entries]);
+
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return entries;
+    const k = searchKey(q);
+    return entries.filter((e) => searchKey(e.dutch).includes(k) || e.english.toLowerCase().includes(q));
+  }, [query, entries]);
+
+  const noDeckMatch = query.trim().length >= 2 && results.length === 0;
+  const lookup = useLookup(noDeckMatch ? query.trim() : null);
 
   function remove(e: DictionaryEntry) {
     const item = onRemove(e.id);
     if (item) setRemoved({ item, dutch: e.dutch });
     if (openId === e.id) setOpenId(null);
-  }
-
-  function undoRemove() {
-    if (!removed) return;
-    onRestore(removed.item);
-    setRemoved(null);
-  }
-
-  const results = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return entries;
-    return entries.filter(
-      (e) => e.dutch.toLowerCase().includes(q) || e.english.toLowerCase().includes(q)
-    );
-  }, [query, entries]);
-
-  // Only actually looked up once the deck search comes up empty — the same
-  // pipeline Capture runs, so a word not yet in the deck resolves exactly
-  // the same way it would from the Add-a-word screen.
-  const lookup = useWordLookup(results.length === 0 ? query : "");
-  const { entry, deinflectionAmbiguous, notFound, failed, showSuggestions, searching } = lookup;
-  const noDeckMatch = query.trim() !== "" && results.length === 0;
-  const lookupHasBody = Boolean(
-    entry || deinflectionAmbiguous || notFound || failed || showSuggestions || searching
-  );
-
-  function toggle(id: string) {
-    setOpenId((prev) => (prev === id ? null : id));
-    setEditingId(null); // collapsing (or opening a different row) exits editing without saving
+    if (editingId === e.id) setEditingId(null);
   }
 
   function startEdit(e: DictionaryEntry) {
+    setOpenId(e.id);
     setEditingId(e.id);
     setDraft({ english: e.english, example: e.example, exampleEn: e.exampleEn });
   }
@@ -111,12 +87,7 @@ export function Browse({
         floating
         search={
           entries.length > 0
-            ? {
-                value: query,
-                onChange: setQuery,
-                placeholder: "Search Dutch or English…",
-                ariaLabel: "Search your deck by Dutch or English word",
-              }
+            ? { value: query, onChange: setQuery, placeholder: "Search Dutch or English…", ariaLabel: "Search your deck by Dutch or English word" }
             : undefined
         }
       />
@@ -125,146 +96,114 @@ export function Browse({
         {removed && (
           <div className="browse-removed">
             <Notice type="info">
-              <strong>{removed.dutch}</strong> removed from your deck
+              <strong lang="nl">{removed.dutch}</strong> removed from your deck
             </Notice>
-            <button className="link-btn" onClick={undoRemove}>
+            <button
+              className="link-btn"
+              onClick={() => {
+                onRestore(removed.item);
+                setRemoved(null);
+              }}
+            >
               Undo
             </button>
           </div>
         )}
+
         {entries.length === 0 ? (
-          <p className="muted browse-empty">
-            Your deck is empty. Tap + to look up a word and add it here.
-          </p>
-        ) : noDeckMatch && lookupHasBody ? (
+          <p className="muted browse-empty">Your deck is empty. Tap + to look up a word and add it here.</p>
+        ) : noDeckMatch ? (
           <div>
-            <p className="muted browse-count">
-              No deck words match “{query}” — here’s what the dictionary has:
-            </p>
-            <WordLookupResult
-              lookup={lookup}
-              deckIds={deckIds}
-              levels={levels}
-              onSave={onSave}
-              onEditSuggestion={setQuery}
-            />
+            <p className="muted browse-count">No deck words match “{query}” — here’s what the dictionary has:</p>
+            {lookup.status === "done" && (
+              <SenseResults
+                result={lookup.result}
+                isInDeck={(i) => membership.has(i.snapshot)}
+                onSave={onSave}
+                onPickSuggestion={setQuery}
+                onSavePersonal={onSavePersonal}
+              />
+            )}
+            {lookup.status === "error" && <Notice type="error">The dictionary didn&rsquo;t respond. Check your connection and try again.</Notice>}
           </div>
         ) : results.length === 0 ? (
-          <p className="muted browse-empty">
-            No deck words match “{query}”.
-          </p>
+          <p className="muted browse-empty">No deck words match “{query}”.</p>
         ) : (
-          <div className="wordlist">
+          <ul className="dict-list">
             {results.map((e) => {
-              const open = openId === e.id;
+              const word = words.get(e.id);
               const editing = editingId === e.id;
               return (
-                <div key={e.id} className="wordrow">
-                  <div className="wordrow__row">
-                    <div className="wordrow__main">
-                      <IconButton
-                        action="expand"
-                        variant="no-background"
-                        onClick={() => toggle(e.id)}
-                        aria-expanded={open}
-                        aria-label={open ? `Collapse ${e.dutch}` : `Show ${e.dutch} in context`}
-                      />
-                      <div className="wordrow__content">
-                        <span className="wordrow__head">
-                          <GenderChip gender={e.gender} size="sm" />
-                          <span className="wordrow__dutch">{e.dutch}</span>
-                          {/* A word can now sit in the deck under more than one
-                              meaning, so two rows can share a spelling. Without
-                              a mark they read as an accidental duplicate rather
-                              than as the deliberate second meaning they are. */}
-                          {parseSenseKey(e.id).index > 0 && (
-                            <span className="sensecard__tag">2nd meaning</span>
-                          )}
-                          {tricky.has(e.id) && <span className="tricky-tag">Tricky</span>}
-                        </span>
-                        <span className="wordrow__gloss">{e.english}</span>
-                      </div>
-                    </div>
-                    <MasteryBar level={levels.get(e.id) ?? 0} withLabel />
-                    <IconButton
-                      action="remove"
-                      onClick={() => remove(e)}
-                      aria-label={`Remove ${e.dutch} from deck`}
-                    />
-                  </div>
-
-                  {open && (
-                    <div className="wordrow__context">
-                      <div className="wordrow__rule" />
-                      {editing ? (
-                        <div className="wordrow__edit">
-                          <label className="auth-field">
-                            <span className="auth-field__label">Translation</span>
-                            <input
-                              className="text-input"
-                              value={draft.english}
-                              onChange={(ev) => setDraft({ ...draft, english: ev.target.value })}
-                              autoFocus
-                            />
-                          </label>
-                          <label className="auth-field">
-                            <span className="auth-field__label">Example (Dutch)</span>
-                            <input
-                              className="text-input"
-                              value={draft.example}
-                              onChange={(ev) => setDraft({ ...draft, example: ev.target.value })}
-                            />
-                          </label>
-                          <label className="auth-field">
-                            <span className="auth-field__label">Example (English)</span>
-                            <input
-                              className="text-input"
-                              value={draft.exampleEn}
-                              onChange={(ev) => setDraft({ ...draft, exampleEn: ev.target.value })}
-                            />
-                          </label>
-                          <div className="wordrow__edit-actions">
-                            <button className="btn btn--secondary wordrow__edit-btn" onClick={() => setEditingId(null)}>
-                              Cancel
-                            </button>
-                            <button
-                              className="btn btn--primary wordrow__edit-btn"
-                              disabled={!draft.english.trim()}
-                              onClick={() => saveEdit(e.id)}
-                            >
-                              Save
-                            </button>
-                          </div>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="eyebrow">In context</div>
-                          {e.example ? (
-                            <div className="wordrow__example">
-                              <div className="wordrow__example-nl">{e.example}</div>
-                              <div className="wordrow__example-en">{e.exampleEn}</div>
-                            </div>
-                          ) : (
-                            <div className="faint wordrow__no-example">
-                              No example sentence yet — the flashcard shows the translation.
-                            </div>
-                          )}
-                          <button
-                            className="link-btn wordrow__edit-link"
-                            onClick={() => startEdit(e)}
-                          >
-                            Edit translation
+                <li key={e.id}>
+                  <DictionaryCard
+                    entry={e}
+                    mastery={word ? masteryOf(word) : "New"}
+                    tricky={tricky.has(e.id)}
+                    open={openId === e.id}
+                    onToggle={() => {
+                      setOpenId((prev) => (prev === e.id ? null : e.id));
+                      setEditingId(null);
+                    }}
+                    onEdit={() => startEdit(e)}
+                    onDelete={() => remove(e)}
+                  >
+                    {editing ? (
+                      <form
+                        className="wordrow__edit"
+                        onSubmit={(ev) => {
+                          ev.preventDefault();
+                          if (draft.english.trim()) saveEdit(e.id);
+                        }}
+                      >
+                        <label className="auth-field">
+                          <span className="auth-field__label">Translation</span>
+                          <input className="text-input" lang="en" value={draft.english} onChange={(ev) => setDraft({ ...draft, english: ev.target.value })} autoFocus />
+                        </label>
+                        <label className="auth-field">
+                          <span className="auth-field__label">Example (Dutch)</span>
+                          <input className="text-input" lang="nl" value={draft.example} onChange={(ev) => setDraft({ ...draft, example: ev.target.value })} />
+                        </label>
+                        <label className="auth-field">
+                          <span className="auth-field__label">Example (English)</span>
+                          <input className="text-input" lang="en" value={draft.exampleEn} onChange={(ev) => setDraft({ ...draft, exampleEn: ev.target.value })} />
+                        </label>
+                        <div className="wordrow__edit-actions">
+                          <button type="button" className="btn btn--secondary wordrow__edit-btn" onClick={() => setEditingId(null)}>
+                            Cancel
                           </button>
-                        </>
-                      )}
-                    </div>
-                  )}
-                </div>
+                          <button type="submit" className="btn btn--primary wordrow__edit-btn" disabled={!draft.english.trim()}>
+                            Save
+                          </button>
+                        </div>
+                      </form>
+                    ) : (
+                      <InContext entry={e} />
+                    )}
+                  </DictionaryCard>
+                </li>
               );
             })}
-          </div>
+          </ul>
         )}
       </div>
     </div>
+  );
+}
+
+/** The word in its sentence — the captured one first — or, with none, a
+ *  declared gap. Never another sense's example. */
+function InContext({ entry }: { entry: DictionaryEntry }) {
+  const ctx = contextSentence(entry);
+  if (!ctx) {
+    return <p className="faint wordrow__no-example">Example coming soon</p>;
+  }
+  return (
+    <>
+      <ContextSentence entry={entry} context={ctx} />
+      {ctx.generated && <InfoPill kind="generated" />}
+      {ctx.source === "captured" && !entry.snapshot?.examples.some((x) => x.source !== "captured") && (
+        <p className="faint wordrow__no-example">A dictionary example is coming soon — this is the sentence you saved it from.</p>
+      )}
+    </>
   );
 }
