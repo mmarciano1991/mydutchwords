@@ -256,7 +256,7 @@ export function WordSearch({
               if (o.kind === "saved") {
                 return (
                   <li key={`s${o.entry.id}`} {...common}>
-                    <SuggestBody form={o.entry.dutch} query={value} article={articleOfGender(o.entry.gender)} pos={o.entry.snapshot?.pos} gloss={o.entry.english} inDeck />
+                    <SuggestBody form={o.entry.dutch} query={value} article={articleOfGender(o.entry.gender)} pos={o.entry.snapshot?.pos ?? o.entry.pos ?? undefined} gloss={o.entry.english} inDeck />
                   </li>
                 );
               }

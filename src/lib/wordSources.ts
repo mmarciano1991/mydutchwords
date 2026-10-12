@@ -14,9 +14,9 @@
 
    The store is synced to the learner's account (lib/cloudState). */
 import { useSyncExternalStore } from "react";
-import { dictionarySource } from "./dictionary/service";
+import { dictionarySource, lookup, type WordMatch } from "./dictionary/service";
 import { entryOf, snapshotOf } from "./dictionary/snapshot";
-import type { WordEntry } from "./dictionary/model";
+import type { Pos, WordEntry } from "./dictionary/model";
 import type { DictionaryEntry } from "./types";
 
 const STORE_KEY = "woordkast.customWords";
@@ -173,6 +173,65 @@ export async function refreshEntries(ids: string[], signal?: AbortSignal): Promi
         }
       }
     }
+  }
+  if (changed) persist();
+  return changed;
+}
+
+/** The core of a gloss, for comparing one with another: "To wash (clothes)"
+ *  → "wash (clothes)" → "wash". */
+function glossCore(gloss: string): string {
+  return gloss
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, "")
+    .replace(/^\s*to\s+/, "")
+    .replace(/[!?.]+$/, "")
+    .trim();
+}
+
+/** The part of speech an entry with no snapshot most likely has, from what
+ *  its form looks up to; null when the dictionary can't tell. Only the word
+ *  itself counts (not "liep" → lopen). With several, the gloss saved on the
+ *  card picks the use, then "to …" means a verb; still unclear → null, never
+ *  a guess. */
+export function posFromMatches(entry: Pick<DictionaryEntry, "english">, matches: WordMatch[]): Pos | null {
+  const uses = matches.filter((m) => m.via === "lemma" || m.via === "variant").flatMap((m) => m.word.uses);
+  const all = [...new Set(uses.map((u) => u.pos))];
+  if (all.length <= 1) return all[0] ?? null;
+  const parts = new Set(entry.english.split(/[,;/]/).map(glossCore).filter(Boolean));
+  const byGloss = [...new Set(uses.filter((u) => u.senses.some((s) => parts.has(glossCore(s.gloss)))).map((u) => u.pos))];
+  if (byGloss.length === 1) return byGloss[0];
+  if (/^\s*to\s/i.test(entry.english) && (byGloss.length ? byGloss : all).includes("verb")) return "verb";
+  return null;
+}
+
+/** Finds the part of speech of every entry among `ids` that has no snapshot
+ *  (cards saved before the server dictionary), so its card can show it. A
+ *  card with de/het already reads as a noun; personal words aren't in the
+ *  dictionary. A lookup that fails is tried again next launch. */
+export async function fillMissingPos(ids: string[], signal?: AbortSignal): Promise<number> {
+  const todo = ids
+    .map((id) => store.get(id))
+    .filter((e): e is DictionaryEntry => !!e && !e.snapshot && !e.personal && e.pos === undefined && e.gender !== "de" && e.gender !== "het");
+  let changed = 0;
+  for (let i = 0; i < todo.length; i += 8) {
+    const batch = todo.slice(i, i + 8);
+    const found = await Promise.all(
+      batch.map((e) =>
+        lookup(e.dutch, { signal }).then(
+          (r) => posFromMatches(e, r.matches),
+          () => undefined
+        )
+      )
+    );
+    batch.forEach((e, j) => {
+      const pos = found[j];
+      const current = store.get(e.id);
+      if (pos === undefined || !current) return;
+      store.set(e.id, { ...current, pos });
+      changed++;
+    });
+    if (signal?.aborted) break;
   }
   if (changed) persist();
   return changed;

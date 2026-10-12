@@ -36,7 +36,7 @@ export function DictionaryCard({
   children?: ReactNode;
 }) {
   const s = entry.snapshot;
-  const pos = s?.pos ?? (entry.gender === "de" || entry.gender === "het" ? "noun" : null);
+  const pos = s?.pos ?? entry.pos ?? (entry.gender === "de" || entry.gender === "het" ? "noun" : null);
   const pills = s ? sensePills(s) : [];
   const article = entry.gender === "de" || entry.gender === "het" || entry.gender === "de/het" ? entry.gender : "";
   const word = article ? `${article} ${entry.dutch}` : entry.dutch;

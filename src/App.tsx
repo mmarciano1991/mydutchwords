@@ -3,6 +3,7 @@ import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import {
   addCustomEntry,
   editEntry,
+  fillMissingPos,
   pinLegacyEntries,
   refreshEntries,
   resolveEntry,
@@ -281,8 +282,14 @@ export default function App() {
 
   // Cards saved before the server dictionary keep the content they had: the
   // frozen legacy dictionary is loaded once to pin them, then never again.
+  // Their cards had no part of speech: once pinned, it is looked up
+  // (while online) so the card can show it.
   useEffect(() => {
-    void pinLegacyEntries(deck.map((d) => d.id));
+    const ids = deck.map((d) => d.id);
+    void pinLegacyEntries(ids).then(() => {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+      return fillMissingPos(ids).catch((err) => console.info("[woordkast] part-of-speech lookup skipped", err));
+    });
   }, [deck]);
 
   // Once per launch, while online: refresh the deck's copies from the

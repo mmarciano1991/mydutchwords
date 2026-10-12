@@ -69,6 +69,7 @@ vi.mock("./lib/wordSources", () => ({
   setCustomEntries: () => {},
   useCustomEntriesVersion: () => 0,
   pinLegacyEntries: () => Promise.resolve(),
+  fillMissingPos: () => Promise.resolve(0),
   refreshEntries: () => Promise.resolve(0),
 }));
 

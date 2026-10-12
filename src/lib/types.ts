@@ -1,5 +1,5 @@
 import type { Grade, Word } from "./learningEngine";
-import type { SenseSnapshot } from "./dictionary/model";
+import type { Pos, SenseSnapshot } from "./dictionary/model";
 
 /**
  * Dutch grammatical article.
@@ -103,6 +103,10 @@ export interface DictionaryEntry {
    *  entries saved before the server dictionary (legacy ids like
    *  "aanslag#1"), which keep working from their stored content. */
   snapshot?: SenseSnapshot;
+  /** Part of speech for an entry with no snapshot, found afterwards by
+   *  looking the word up (lib/wordSources fillMissingPos). null = looked up,
+   *  but the dictionary couldn't say which one it is. */
+  pos?: Pos | null;
   /** Fields the learner edited — a dictionary update never overwrites
    *  them, and they are never used as distractors. */
   userEdited?: ("english" | "example" | "exampleEn")[];
