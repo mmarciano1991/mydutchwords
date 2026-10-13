@@ -2439,3 +2439,57 @@ hollen	verb	to drag
 beamen	verb	to say
 holte	noun	hamlet in Stadskanaal
 social media	noun	social media
+provisie	noun	provision
+Konings	adjective	royal
+Konings	adjective	excellent
+koperen bout	noun	pig
+bit	noun	bit
+toonbeeld	noun	imitation
+rozenkrans	noun	less commonly
+rozenkrans	noun	youth
+rozenkrans	noun	virginity
+klef	noun	hamlet in Gemert-Bakel
+klef	adjective	sad
+klef	adjective	half-baked
+Pino	noun	Bloke
+beuren	verb	to befall
+col	noun	glue
+Waterman	noun	water boy
+aanloop	noun	element
+woonruimte	noun	portion
+Indië	noun	West Indies
+doodstil	noun	hamlet in Het Hogeland
+castreren	verb	to mutilate oneself
+koker	noun	device used for boiling
+koker	noun	someone who cooks
+verhangen	verb	to cause to hang
+bubbel	noun	embezzlement
+knorrig	adjective	knotty
+lauw	adjective	nice
+zandloper	noun	protective ship part
+doorkruisen	verb	to compass
+zittend	noun	hamlet in Drechterland
+aanhang	noun	appendix
+verdorvenheid	noun	act
+ritsen	verb	to stir
+provider	noun	Internet
+steenrijk	noun	neighbourhood of Willemstad
+grind	noun	diseases scabies (human)
+beffen	verb	to put on an ornamental band
+beffen	verb	to wear such a collar
+consequent	adjective	consequent
+tippelen	verb	to steal
+tippelen	verb	to fall
+ondergrond	noun	compartment
+aanhalen	verb	to magnify
+aanhalen	verb	to mark
+aanhalen	verb	to underline
+vrijstelling	noun	act of making someone
+moor	noun	something black
+Moor	noun	black person
+procederen	verb	to proceed
+vleien	verb	to convince
+vleien	verb	to fondle
+vleien	verb	to fling
+vleien	verb	to form a membrane
+vleien	verb	to be covered by one
