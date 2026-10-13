@@ -1814,3 +1814,42 @@ wen	conjunction	if
 buis	noun	buss
 Donnie	noun	10-euro banknote
 oversteken	verb	to protrude
+Donnie	noun	10-guilders banknote
+kartel	noun	political cartel
+tering	noun	expenses
+vraag	noun	interrogative
+specialiteit van het huis	noun	signature move
+garde	noun	rod
+allereerst	adjective	very first
+stralen	verb	to miscarry
+stralen	verb	to hit with an arrow
+stralen	verb	to prick
+stralen	verb	to squirt out
+overleg	noun	forum
+evenveel	adjective	much
+voldoen	verb	to fill up
+intrekken	verb	to march in (see binnentrekken)
+demonstratie	noun	exposition
+secretaris	noun	secretary bird
+maatje	noun	small size
+maatje	noun	young
+dwerg	noun	dwarf (small folkloristic humanoid)
+wijd	adjective	far
+feitelijk	adverb	actually
+schaap	noun	someone with very curly hair
+schaap	noun	member of a priest's
+ram	noun	male rabbit
+slordig	adjective	undisciplined
+verbond	noun	union
+li	noun	li
+drukken	verb	to hide
+drukken	verb	to defecate
+voor spek en bonen	preposition	useless
+billen	verb	to sharpen
+billen	verb	to bed
+net	noun	omentum
+bedienen	verb	to utilise
+bedienen van	verb	to utilise of
+degelijk	adjective	honest
+kaak	noun	ship biscuit
+specialiteit	noun	specialist
