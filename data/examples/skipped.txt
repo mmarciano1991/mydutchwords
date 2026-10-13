@@ -2493,3 +2493,48 @@ vleien	verb	to fondle
 vleien	verb	to fling
 vleien	verb	to form a membrane
 vleien	verb	to be covered by one
+lummel	noun	piggy in the middle
+gebergte	noun	hamlet in Someren
+bronwater	noun	glass
+hobbel	noun	hobble
+kuis	noun	(bovine) calf
+kuis	noun	pig
+kuis	noun	(playing) marble
+kuis	noun	club
+vogelvrij	adjective	free from birds
+afmeting	noun	act
+aai	noun	pinch
+ritten	noun	ritten
+ritten	verb	to run back and forth playing (said of children)
+musket	noun	hundreds and thousands
+sluizen	noun	Sluizen
+sluizen	noun	L'Écluse
+façade	noun	face
+ijver	noun	jealousy
+o.m.	adverb	among others
+fok	noun	head of a cogwheel
+fok	noun	activity
+fok	noun	nose
+ara	verb	give
+prut	interjection	cheers
+verstrijken	verb	to use up by smearing
+prul	noun	turd
+prul	noun	nickname
+Verne	adjective	of the past year
+nichterig	adjective	stereotypically
+Marker	adjective	of
+bonk	noun	large
+zigeunerin	noun	female Gypsy
+textiel	adjective	made of
+zwavelzuur	noun	anhydride crystalline mass
+uitsluitsel	noun	exclusion
+uitslaan	verb	to overplay
+eczeem	noun	analogous porcine disease
+ligging	noun	act
+zwabber	noun	dradenstoffer m
+zwabber	noun	zeilveger m
+statistiek	adjective	statistical
+symboliek	adjective	symbolic
+maren	verb	to announce
+Mieke	noun	girl
+lelijkheid	noun	someone
