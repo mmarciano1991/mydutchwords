@@ -2313,3 +2313,38 @@ smal	adjective	small
 afwerken	verb	to finish work for the day
 kathedraal	adjective	cathedral
 pip	noun	of humans
+werf	noun	field of interest and action
+stroop	noun	poaching
+coup	noun	quick
+pieper	noun	voyeur
+pieper	noun	kiss
+ui	noun	Nickname for someone from Rijnsburg
+afschieten	verb	to pay
+werven	noun	hamlet in Heerde
+zalf	noun	mayonnaise
+fokken	verb	to strike
+klooien	verb	to (give a) beat
+klooien	verb	to sleep with
+deeg	adjective	sound
+onderling	adjective	under each other
+parket	noun	small confined space
+radicaal	adverb	radical
+doormidden	adverb	through the middle
+mom	noun	specific kind of beer
+balk	noun	section
+zit	noun	seat in a legislative
+omzetten	verb	to cast
+ronduit	noun	hamlet in Sluis
+log	adjective	plumb
+uiteinde	noun	hamlet in Smallingerland
+uiteinde	noun	hamlet in Eemsdelta
+kraak	noun	instance
+kraai	noun	craye
+kraai	noun	crow's creaky sound
+slak	noun	hard
+SOS	noun	socialist
+galg	noun	stake
+overschot	noun	hamlet in Gemert-Bakel
+reëel	adjective	pertaining
+vacuüm	adjective	in
+Willem	noun	Bill
