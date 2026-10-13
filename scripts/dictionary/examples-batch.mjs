@@ -116,6 +116,7 @@ if (cmd === "status") {
     const u = w.uses.find((x) => x.id === item.useId);
     const example = { nl: (nl ?? "").normalize("NFC").trim(), en: (en ?? "").normalize("NFC").trim() };
     const { issues } = exampleIssues(example, targetForms(w, u), ctx);
+    if (!/\p{L}{2}/u.test(example.en)) issues.push("no real translation");
     if (issues.length) {
       failed.push(`${n}\t${item.key.replace(/\t/g, " | ")}\t${example.nl}\t→ ${issues.join("; ")}`);
       continue;
@@ -137,6 +138,7 @@ if (cmd === "status") {
       continue;
     }
     const { issues } = exampleIssues(ex, targetForms(hit.w, hit.u), ctx);
+    if (!/\p{L}{2}/u.test(ex.en)) issues.push("no real translation");
     if (issues.length) bad.push(`${ex.file}\t${key.replace(/\t/g, " | ")}\t${ex.nl}\t→ ${issues.join("; ")}`);
     else ok++;
   }
