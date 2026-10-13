@@ -2145,3 +2145,48 @@ dollen	verb	to lift
 dollen	verb	to lift and turn with a rake
 fair	noun	fair
 rubber	noun	condom
+conventie	noun	assembly
+verknallen	verb	to shoot a firework
+verkouden	verb	to cool
+noot	noun	testicle
+noot	noun	note
+lens	adjective	empty
+lens	adjective	weak
+afslag	noun	reduction of price
+akte	noun	act of charity
+rits	adjective	randy
+email	noun	tincture
+onnozel	adjective	senseless
+onnozel	adjective	innocent
+flippen	verb	to roll
+scherpe lava	noun	aa
+reservaat	noun	distinct
+geschut	noun	one
+kalf	noun	lintel
+jegens	preposition	against
+claim	noun	claim
+adjudant	noun	assistant
+cliché	noun	unoriginal work
+tienduizend	noun	ten thousand
+Dakota	noun	Dakota
+zaag	noun	female nagger
+rib	noun	truss (wooden frame)
+kas	noun	public
+kas	noun	counter
+kas	noun	protective casing
+kas stelsel	noun	cash accounting scheme
+pal	adverb	firm
+voorspel	noun	prefatory play
+voorspel	noun	foreplay
+stallen	verb	to put aside
+optrekken	verb	to rise up (against)
+roofdier	noun	carnivore
+roofdier	noun	carnivoran
+dragon	noun	treacle mustard (Erysimum cheiranthoides)
+dragon	noun	(French) dragoon
+aanwijzen	verb	to attest
+knokken	verb	to hit
+kweken	verb	to quack
+lokaliseren	verb	to localize (make local)
+een veer in de reet steken	verb	to heap excessive
+veer	noun	twisted leaf
