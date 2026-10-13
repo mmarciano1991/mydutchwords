@@ -37,3 +37,104 @@ klaar	adjective	clear
 nog lang	adverb	so far
 helemaal	adverb	especially
 onder	adverb	covered
+want	noun	horse tackle
+beetje	pronoun	something of
+gek	noun	cowl (on a chimney)
+bang	noun	sharp
+o	adjective	neutral
+o	adverb	east
+heen	noun	sea clubrush (Bolboschoenus maritimus)
+gelijk krijgen	verb	to be found correct
+gelijk krijgen van	verb	to be found correct by
+naar buiten komen met	verb	to make public
+hoop	noun	pile of manure
+hoop	noun	mass
+hoop	noun	multitude
+geen kind hebben aan	verb	have no difficulty with
+orde	noun	group
+orde	noun	taxonomic order
+orde	noun	order (decoration)
+hoofd	noun	oral sex
+van kant maken	verb	to kill
+blij	noun	lead (metal)
+blij	noun	colour of lead
+de goede oude tijd	noun	days of yore
+moment	noun	moment of force
+een plaats geven	verb	To come to terms with something
+plaats	noun	settlement
+plaats	noun	location in a text
+pas	adverb	hardly
+pas	noun	mountain pass
+pas	noun	pass
+pas	adverb	now … really
+pas op de plaats maken	verb	to mark time
+pas op de plaats maken	verb	to pause
+hulp	noun	helper
+om het leven brengen	verb	to kill
+pijn	noun	pine (tree)
+school	noun	movement
+kamer	noun	board
+kamer	noun	special
+aan de haal gaan met	verb	to run off with
+agent	noun	undercover agent
+agent	noun	broker
+agent	noun	middleman
+onder ogen krijgen	verb	to get sight of
+dochter	noun	offshoot
+water	noun	bodily fluid (especially amniotic fluid)
+Goede Week	noun	Holy Week
+eerder	noun	plower
+met de handen in het haar zitten	verb	to be at one's wits' end
+gek als een deur	adjective	mad as a hatter
+te boven gaan	interjection	surpass
+groot	adverb	largely
+hoeven	verb	to need to urinate
+moeilijk	adverb	used as an intensifier
+land	noun	territorial government
+zoveel	numeral	that much
+zoveel	pronoun	that many
+zoveel	numeral	as much
+zoveel	pronoun	that much
+druk	adjective	preoccupied
+verhaal	noun	redress
+schat	noun	rich collection
+gebeuren	noun	something which is happening
+bloed	noun	grave consequence
+bloed	noun	whole body
+bed	noun	patch
+bed	noun	layer
+bed	noun	bed of a body of water
+voorbij	adjective	past
+dood door schuld	noun	involuntary manslaughter
+eraan moeten geloven	verb	to suffer the consequences
+eraan moeten geloven	verb	to be destroyed
+rond	noun	sphericity
+rond	noun	circularity
+rond	noun	sphere
+rond	noun	circle
+rond	noun	round – of a race
+baas	noun	fellow
+baas	noun	strong
+moord	noun	tragedy
+lichaam	noun	corpse
+lichaam	noun	legal body
+lichaam	noun	field
+lichaam	noun	division ring
+gezicht	noun	seeing
+gezicht	noun	sight
+gezicht	noun	vision
+gezicht	noun	figurehead
+van God los	preposition	without God
+van God los	preposition	having loose morals
+nummer	noun	number of an item on a menu
+fout	adjective	unfashionable
+zo meteen	adverb	not immediately
+zeer	noun	physical pain
+zeer	adjective	painful
+zeer	noun	grief
+zeer	adverb	sorely
+zeer	adjective	hurtful
+zeer	noun	sore spot
+zeer	noun	cause of physical pain
+iemand liggen hebben	verb	take advantage of
+vaak	noun	sleepiness
