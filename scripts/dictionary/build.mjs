@@ -4,7 +4,8 @@
      1. download sources            (download.mjs, cached)
      2. build words, uses, senses   (assemble.mjs)
      3. sources agree?              (assemble.mjs → doubt queue)
-     4. an example per sense        (examples.mjs; model step optional)
+     4. an example per sense        (examples.mjs; stored examples in
+                                    data/examples; model step optional)
      5. mechanical checks           (src/lib/dictionary/checks.ts)
      6. same sense?                 (llm.mjs, when ANTHROPIC_API_KEY is set)
      7. publish                     (publish.mjs → Supabase; static.mjs → shards)
@@ -30,7 +31,8 @@ import { loadOpenTaal } from "./sources/opentaal.mjs";
 import { loadFrequency, UNRANKED } from "./sources/frequency.mjs";
 import { loadTatoeba } from "./sources/tatoeba.mjs";
 import { assembleWord, glossFailures } from "./assemble.mjs";
-import { assignExamples, indexTatoeba } from "./examples.mjs";
+import { assignExamples, exampleIssues, indexTatoeba, targetForms } from "./examples.mjs";
+import { loadStoredExamples, storedKey } from "./stored.mjs";
 import { assignSenseIds, loadRegistry, saveRegistry } from "./ids.mjs";
 import { buildCompound, morphemesOf, stressOf } from "./morphology.mjs";
 
@@ -52,7 +54,7 @@ const [en, nl, opentaal, frequency, tatoebaPairs] = await Promise.all([
 log(`en: ${en.entries.size} words · nl: ${nl.entries.size} words · OpenTaal: ${opentaal.size} · Tatoeba: ${tatoebaPairs?.length ?? 0}`);
 
 const doubts = [];
-const report = { startedAt: new Date().toISOString(), counts: {}, doubtReasons: {}, examples: { wiktionary: 0, tatoeba: 0, rejected: 0, none: 0, sampleRejections: [] } };
+const report = { startedAt: new Date().toISOString(), counts: {}, doubtReasons: {}, examples: { wiktionary: 0, tatoeba: 0, stored: 0, storedRejected: 0, rejected: 0, none: 0, sampleRejections: [] } };
 
 // ── 1. Official spelling ──
 // A record's word must be in OpenTaal — exactly, or in another
@@ -368,7 +370,30 @@ for (const word of words.values()) {
   report.examples.none += s.none;
   if (report.examples.sampleRejections.length < 25) report.examples.sampleRejections.push(...s.rejections);
 }
-log(`examples: ${report.examples.wiktionary} Wiktionary, ${report.examples.tatoeba} Tatoeba, ${report.examples.rejected} rejected by checks, ${report.examples.none} senses without`);
+
+// Stored examples (data/examples): written once for senses no corpus covers,
+// checked here exactly like a corpus sentence, and only for a sense still
+// without one.
+const stored = loadStoredExamples();
+for (const word of words.values()) {
+  for (const use of word.uses) {
+    for (const sense of use.senses) {
+      if (sense.examples.length) continue;
+      const hit = stored.get(storedKey(word.form, use.pos, sense.gloss ?? ""));
+      if (!hit) continue;
+      const { issues, spans } = exampleIssues({ nl: hit.nl, en: hit.en }, targetForms(word, use), checkCtx);
+      if (issues.length) {
+        report.examples.storedRejected++;
+        doubts.push({ word: word.form, scope: "example", pos: use.pos, reason: "example: stored sentence failed checks", detail: { gloss: sense.gloss, sentence: hit.nl, issues, file: hit.file } });
+        continue;
+      }
+      sense.examples.push({ nl: hit.nl, en: hit.en, targetSpans: spans, source: "generated" });
+      report.examples.stored++;
+      report.examples.none--;
+    }
+  }
+}
+log(`examples: ${report.examples.wiktionary} Wiktionary, ${report.examples.tatoeba} Tatoeba, ${report.examples.stored} stored (${report.examples.storedRejected} failed checks), ${report.examples.rejected} rejected by checks, ${report.examples.none} senses without`);
 
 if (llm) await llm.writeAndCheckExamples(words, checkCtx, { log, doubts });
 
