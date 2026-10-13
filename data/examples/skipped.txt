@@ -1760,3 +1760,57 @@ veren	verb	to ferry
 aanzetten	verb	to set
 acteren	verb	to operate
 bevinden	verb	to discover
+aanzetten	verb	to put on to
+aanzetten	verb	to stick
+voltooid	adjective	perfect
+kleedkamer	noun	robing room
+generator	noun	generator (one that generates)
+kleinste jager	noun	long-tailed jaeger (Stercorarius longicaudus)
+pier	noun	physical trap
+pier	noun	figurative trap
+pier	noun	prison
+pier	noun	rabbit den
+hoofdstad	noun	EU-member states
+paal	adjective	pale
+paal	adjective	faded
+paal	noun	pale
+paal	noun	erect phallus
+paal	noun	Indonesian measure of distance
+paal	noun	peel
+spin	noun	particle spin
+lam	noun	kid
+korps	noun	name of a (high) echelon
+korps	noun	thickness of a letter type
+baxter	noun	infuse
+bisschop	noun	bishop's wine
+schilder	noun	Pictor
+Chinese vrijwilliger	noun	someone required to perform an unpleasant
+inval	noun	incidence
+hm	pronoun	Her Majesty
+gangster	adjective	cool
+wreken	verb	to punish
+sodemieter	noun	sodomite
+ze niet allemaal op een rijtje hebben	verb	to have a screw loose
+indiaan	noun	Indus
+verbreken	verb	to annul (a court ruling) on procedural grounds
+wrok	noun	rancor (US)
+til	noun	cage trap (for catching birds)
+intiem	adjective	warm
+poep	noun	fart
+poep	noun	very
+poep	noun	vessel's stern
+poep	noun	butt
+repetitie	noun	loop
+onderscheiden	adjective	various
+onderscheiden	adjective	diverse
+onderscheiden	adjective	several
+zonnestelsel	noun	star system
+rooie	noun	thousand-guilders banknote
+rooie rug	noun	thousand-guilders banknote
+lesbisch	adjective	between two
+lesbisch	adjective	Lesbian
+wen	adverb	when
+wen	conjunction	if
+buis	noun	buss
+Donnie	noun	10-euro banknote
+oversteken	verb	to protrude
