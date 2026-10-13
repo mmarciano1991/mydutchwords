@@ -891,3 +891,160 @@ verzet	noun	diversion
 steunen	verb	to rest
 steunen	verb	to moan
 rode wolf	noun	Red Wolf
+dwars	adjective	slantwise
+dwars	adverb	get in someone's way
+bezwaar	noun	difficulty
+bezwaar hebben tegen	interjection	confront
+groen	adjective	pertaining to terrestrial nature
+groen lachen	verb	to smile
+groen lachen	interjection	sour laughter
+groen licht	noun	green light
+stuk verdriet	noun	nasty person
+verdriet	noun	misery
+verdriet	noun	chagrin
+donder	noun	head
+mobiel	noun	mobile (kinetic arrangement)
+koers	noun	course of action
+koers	noun	circulation of money
+nat	noun	moisture
+nat gaan	verb	to fail
+uniform	adjective	uniform
+wild	noun	wildlife
+wild	noun	wilderness
+fuck	interjection	fuck!
+fuck	noun	fuck
+gok	noun	hooter
+klok	noun	watch
+klok	noun	protective cloche
+klok	noun	something bell-shaped
+gemeenschap	noun	intercourse
+wezen	noun	system
+bewust	adjective	in question
+hang	noun	support for hanging objects
+hang	noun	place to dry
+gelden	verb	to count
+gelden	verb	to be considered
+groeten	verb	to salute
+maag	noun	member of one's kin
+kist	noun	aeroplane
+kist	noun	boot
+pik	noun	pick
+wassen neus	noun	window dressing
+reageren	verb	to undergo a chemical reaction
+model	noun	model (simplified representation)
+model	noun	model (miniature)
+model	noun	model (prototype)
+model	noun	shape
+oor	noun	handle (of cup, mug)
+winst	noun	advantage
+winst	noun	victory (in a game)
+lijf	noun	corsage
+lijf	noun	field
+lijf	noun	division ring
+crimineel	adjective	terrible
+openbaar	adjective	non-affiliated
+verpesten	verb	to infect
+schutter	noun	Sagittarius
+een hekel hebben	verb	to strongly dislike
+fort	noun	castle
+spiegel	noun	mirror picture of another)
+spiegel	noun	stern of a ship
+spiegel	noun	level
+derde stand	noun	third estate
+stand	noun	posture
+stand	noun	rank
+stand	noun	stand
+gedwongen	adjective	uneasy
+seizoen	noun	term
+witte vlieg	noun	whitefly
+spannend	adjective	tensive
+botten	verb	to bump
+botten	verb	to push
+botten	verb	to strike
+herinnering	noun	act of remembering
+herinnering	noun	souvenir
+pop	noun	cocoon
+pop	noun	As a term for a girl
+pop	noun	pretty girl
+pop	noun	girl
+pop	noun	guilder
+pop	noun	pop
+twee pop	noun	twee pop
+gesteld zijn op	verb	to feel affection for
+hal	noun	hamlet in Boxtel
+hal	noun	frozen ground
+burger	noun	middle-class
+burger	noun	burger
+bedreiging	noun	menace
+ontslaan	verb	to discharge
+house	noun	house music
+koude kant	noun	family of one's spouse
+van de koude grond	preposition	amateurish
+lelijk als de nacht	adjective	ugly as sin
+vuil	adjective	dishonorable
+vuil	adjective	illegal
+vuil	adjective	fouled
+verplaatsen	verb	to remove
+scheiding	noun	separation
+scheiding	noun	parting
+in de vingers snijden	verb	to shoot oneself in the foot
+op touw zetten	verb	to engineer
+touw	noun	loom
+nep	noun	imitation
+nep	adjective	artificial
+zacht	adjective	with low calcium content (of water)
+zacht teken	noun	soft sign (Ь/ь)
+aap	noun	Term of abuse
+aap van de Oude Wereld	noun	Old World monkey
+stijl	noun	style of a pistil
+stijl	noun	bar on a metal fence
+stijl	noun	vertical part of the metal
+rand	noun	boundary
+van de hoed en de rand weten	verb	to be well informed
+tel	noun	count
+tel	noun	second
+tel	noun	short moment
+stel	noun	group
+dekking	noun	mating (of animals)
+dekking	noun	coverage
+hof	noun	court
+hof	noun	entourage of a monarch
+hof	noun	yard
+hof	noun	garden
+hof van beroep	noun	appellate court
+cheque	noun	voucher
+schaduw	noun	shadow
+schaduw	noun	blemish
+kasteel	noun	any large
+kasteel	noun	rook
+branden	verb	to be lit
+branden	verb	to write to a storage medium
+constant	adjective	continuous
+ik ben verkracht	interjection	I've been raped
+fiets	noun	motorbike
+tot daaraan toe	adverb	acceptable
+brein	noun	brain
+brein	noun	mastermind
+aan iemands neus voorbij gaan	verb	to pass by
+met iemands voeten spelen	verb	to pull someone's leg
+geschikt	adjective	friendly
+een broertje dood hebben aan	verb	to loathe
+apparaat	noun	in particular those of a bureaucracy
+storen	verb	to interfere with
+dwingen	verb	to insist forcefully
+slang	noun	Serpens
+slang	noun	slang
+amen	noun	amen
+amen	interjection	expression of strong agreement
+briljant	noun	brilliant
+briljant	adjective	brilliant (luminous, shining)
+briljant blauw	noun	brilliant blue
+het geweer van schouder veranderen	verb	to change tack
+dwaas	noun	stupid person
+Big Mac	noun	Big Mac
+bereik	noun	compass (area)
+spion	noun	peephole
+campagne	noun	offensive
+plan de campagne	noun	action plan
+dek	noun	cover
+dek	noun	surface

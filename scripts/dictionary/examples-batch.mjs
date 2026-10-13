@@ -87,7 +87,7 @@ if (cmd === "status") {
   writeFileSync(join(WORK, "worklist.json"), JSON.stringify(list.map((x) => ({ key: x.key, wordId: x.w.id, useId: x.u.id }))));
   list.forEach((x, i) => {
     const article = x.u.pos === "noun" ? x.s.article ?? x.u.article : null;
-    const others = x.u.senses.filter((o) => o !== x.s).map((o) => o.gloss);
+    const others = x.u.senses.filter((o) => o !== x.s).map((o) => o.gloss).slice(0, 4);
     const note = x.s.glossNote ? ` — ${x.s.glossNote}` : "";
     console.log(`${i + 1}\t${article ? `${article} ` : ""}${x.w.form} (${x.u.pos})\t${x.s.gloss}${note}${others.length ? `\t≠ ${others.join("; ")}` : ""}`);
   });
