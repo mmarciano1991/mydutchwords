@@ -2200,3 +2200,23 @@ debiel	adjective	weak
 slee	adjective	stiff
 slee	adjective	blunt
 slee	adjective	sour
+rammel	noun	gossip
+kloon	noun	clog
+strop	noun	rascal
+gerechtelijk	adjective	of
+klos	interjection	sound of clumsily placed
+klos	noun	wooden
+klos	noun	lump
+klos	noun	cocoon
+klos	noun	corn cob
+klos	noun	fir-cone
+klos	noun	horse's (lower) legs
+klos	noun	certain spirit (drink)
+sufferd	noun	local
+Gerard	noun	George
+kerstboom	noun	species
+verschijning	noun	likeness
+afkomen op	verb	to go straight in the direction of
+verschuilen	verb	to be hidden
+a.u.b.	adverb	please
+a.u.b.	interjection	please
