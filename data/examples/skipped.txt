@@ -2045,3 +2045,47 @@ pink	noun	one-year-old calf
 pink	noun	pink
 wijzer	noun	one who points
 viool	noun	any violet
+onrecht	adjective	incorrect
+wip	noun	hopping
+wip	noun	lever on a drawbridge
+wip	noun	sexual intercourse
+mat	noun	mullet
+handlanger	noun	assistant
+stichten	verb	to preach
+herder	noun	sheepdog
+spoed	noun	speed
+spoed	noun	thread pitch
+aspirine	noun	any tranquilizer
+graan	noun	granular particle
+uitvoering	noun	export
+cyclus	noun	repeatable series
+schepper	noun	tool used for shovelling
+cobra	noun	Indian cobra (Naja naja)
+rus	noun	sod
+rus	noun	rush (Juncus, Luzula)
+rus	noun	sea thrift (Armeria maritima)
+rus	noun	police detective
+Rus	noun	detective
+muts	noun	vagina
+fontein	noun	village in Aruba
+fontein	noun	village in Curaçao
+kool	noun	carbon
+aanhoren	verb	to hearken
+Nico	noun	Nellie
+pick-up	noun	pickup
+lusten	verb	to eat
+lusten	verb	to lust
+lusten	verb	to please
+trailer	noun	camper
+jeans	noun	any denim garment
+jeans	noun	cotton fabric denim
+yard	noun	yard
+Verenigde Arabische Republiek	noun	United Arab Republic
+doorrijden	verb	to ride
+doorrijden	verb	to ride from start to end
+doorrijden	verb	to ride
+zucht	noun	pathological desire
+zucht	noun	disease
+extreem strijken	noun	extreme ironing
+zweven	verb	to go back and forth
+duimen	verb	to twiddle one's thumbs
