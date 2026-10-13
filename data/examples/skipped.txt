@@ -1594,3 +1594,58 @@ nabij	adjective	near
 m.	noun	march
 dun	noun	hamlet in Hilvarenbeek
 zooi	noun	something boiled
+zuiver groen	adjective	pure green
+zuiver oranje	adjective	pure orange
+zuiver rood	adjective	pure red
+zuiver wit	adjective	pure white
+vrouwe	noun	esteemed woman
+lucifer	noun	Lucifer (mythological fallen angel)
+slepen	verb	to slide
+buit	noun	spoil
+buit	noun	gains
+pijpen	verb	to whistle
+pijpen	verb	to smoke (a pipe)
+kenteken	noun	any piece of identification
+kabel	noun	cable internet
+bescheiden	verb	to apportion
+bescheiden	verb	to invite
+divisie	noun	process
+divisie	noun	hyphen
+zoet	noun	sweet taste
+zoet	noun	sweets
+zoet	noun	good things in life
+zoet	adjective	fresh
+zoet	noun	soot
+complex	adjective	complex
+conditie	noun	conditional clause
+samenleving	noun	cohabitation
+vervoer	noun	act
+persoonlijkheid	noun	person
+persoonlijkheid	noun	hypostasis
+salade	noun	sallet
+inzicht	noun	intention
+hoede	noun	remit
+Amerikaanse zwarte eend	noun	American black duck (Anas rubripes)
+re	noun	d (tone)
+site	noun	construction site
+stoot	noun	stab with a pointed object
+stoot	noun	chick
+verbeelding	noun	imagination (act of imagining)
+brutaal	adjective	savagely violent
+afleggen	verb	to perish
+zwarte rijst	noun	schwarzer rice
+blauwe hap	noun	Indo
+bastaard	noun	bastardised term
+bastaard	noun	old canon type
+beker	noun	Crater
+aanzien	verb	to watch
+cat	noun	CAT
+failliet	noun	bankrupt person
+kapper	noun	caper bush (Capparis spinosa)
+schuif	noun	drawer
+schuif	noun	slide
+schuif	noun	shove
+schuif	noun	something shoven
+schuif	noun	mouth
+geit	noun	goat (Capra aegagrus)
+verschillend	numeral	various
