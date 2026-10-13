@@ -1048,3 +1048,173 @@ campagne	noun	offensive
 plan de campagne	noun	action plan
 dek	noun	cover
 dek	noun	surface
+namelijk	adverb	especially
+schande pakken	verb	to lose face
+de liefde bedrijven	verb	to make love
+vet	adjective	emphatical
+negeren	verb	to belittle
+moet er nog zand zijn	interjection	is that enough
+zand	noun	hamlet in Deurne
+zand	noun	hamlet in Gemert-Bakel
+bo	noun	sandwich
+illegaal	noun	illegal
+bos hout voor de deur	noun	(large) breasts
+hout	noun	hamlet in Geldrop-Mierlo
+bovenop	adverb	in addition
+halve vaste	noun	slipstitch
+vaste verbinding	noun	set phrase
+merk	noun	mark
+merk	noun	Marck
+merk	noun	logo
+planten	verb	to plant an idea etc
+pen	noun	long feather of a bird
+pen	noun	pin
+stemming	noun	tuning
+levende dode	noun	living dead
+tip	noun	taxi driver
+tip	noun	filter
+tip	noun	piece of good advice
+sociale dienst	noun	social service
+concentreren	verb	to concentrate
+hek	noun	stern
+golf	noun	gulf
+korte golf	noun	shortwave
+lange golf	noun	longwave
+café	noun	snackbar
+zuurstof	noun	dioxygen
+Engels gras	noun	thrift
+meekomen	verb	to keep up with rhythm
+lading	noun	undertone
+middel	noun	hamlet in Zaanstad
+middel	noun	hamlet in Olst-Wijhe
+nicht	noun	male homosexual
+effect	noun	security
+houding	noun	stance
+schrijver	noun	scribe
+hut	noun	primitive dwelling
+hut	noun	roadhouse
+scherp	adjective	clever
+scherp	adjective	acute
+trainen	verb	to train oneself (in ...)
+trainen	verb	to be in training
+graaf	noun	earl
+graaf	adjective	cool
+graaf	noun	graph
+oproep	noun	appeal
+oproep	noun	call-up
+uitgaan	verb	to turn off
+uitgaan	verb	to expire
+voor het zingen de kerk uitgaan	verb	to practice coitus interruptus
+voer	noun	load
+gif	noun	GIF (image format)
+uitnodiging	noun	document written
+zekerheid	noun	collateral
+ramen	verb	to make an estimate
+ramen	noun	ramen (Japanese dish)
+vampier	noun	vampire bat
+krijg nou tieten	interjection	expression of surprise
+zegen	noun	fishing and catching crustaceans
+zegen	noun	hunting fowl
+mijl	noun	English
+mijl	noun	mijl
+mijl	noun	nautical
+flauw	adjective	languid
+race naar de bodem	noun	race to the bottom
+bewusteloos	adverb	unconscious
+opname	noun	act of including
+opname	noun	department
+hartslag	noun	moving force
+centrale	noun	hub
+centrale	noun	plant
+centrale	noun	exchange
+rat	noun	traitor
+rat	noun	informant
+rat	noun	urchin
+rat	noun	pauper
+rat	noun	watch
+weglopen	verb	to stream away
+mobiel medisch team	noun	air medical services
+gelegenheid	noun	venue such as a restaurant
+Zijne Majesteit	pronoun	His Majesty
+uitdaging	noun	challenge (something challenging)
+kruis	noun	hamlet in Beekdaelen
+positief	noun	positive of an image
+brigadier	noun	constable
+brigadier	noun	brigadier
+droog	adjective	dry
+aanpakken	verb	to take
+bijbel	noun	bible
+bijbel	noun	any large book
+studie	noun	activity of studying
+studie	noun	research
+studie	noun	preliminary sketch
+schema	noun	visualisation
+schema	noun	conceptual model
+gelul	noun	bullshit
+mammie	noun	mommy
+mammie	noun	granny
+boeten	verb	to expiate
+staart	noun	last part
+schedel	noun	death's-head
+schedel	noun	mound's crest
+tijdelijk	adjective	temporal
+klinken	verb	to nail
+demon	noun	genius
+demon	noun	demon
+aanslag	noun	stroke
+aanslag	noun	assessment
+proef	noun	trial
+steven	noun	bow of a ship
+het vet is van de soep	interjection	goose is cooked
+in de soep draaien	verb	to go wrong
+soep	noun	mirky mess
+nul	numeral	zero
+nul	adjective	worthless
+nul	noun	score of zero
+nul	adjective	nul
+nul	noun	good-for-nothing
+oordeel	noun	judgment
+fase	noun	phase (of a wave)
+fase	noun	state of matter
+teef	noun	bitch
+teef	noun	despicable woman
+Jo	interjection	hi
+Jo	interjection	bye
+Jo	interjection	you too
+bot	noun	bot
+bot	noun	bud
+bot	noun	boot
+bot vangen	verb	to fail
+blij ei	noun	happy person
+mr.	noun	master
+chaos	noun	primordial disorder
+uitzicht	noun	prospect
+maagd	noun	maiden
+maagd	noun	virgin of any gender
+maagd	noun	Virgo
+maagd	noun	young girl
+affaire	noun	matter
+affaire	noun	political scandal
+affaire	noun	business
+kreng	noun	cadaver
+kreng	noun	malicious and contemptible person
+minister van Buitenlandse Zaken	noun	foreign minister
+bekennen	verb	to see
+patroon	noun	patron saint
+patroon	noun	patron
+patroon	noun	boss
+patroon	noun	cartridge
+bedreigd	adjective	threatened
+bedreigd	adjective	threatened
+aanwijzing	noun	hint
+van de vrachtwagen gevallen	interjection	fell off a truck
+vrachtwagen	noun	freightwagon
+tank	noun	tank
+tank	noun	muscular
+verbranden	verb	to discredit completely
+klasse	noun	quality
+klasse	noun	social class
+klasse	noun	classification
+klasse	noun	class
+sociale klasse	noun	social class
+humor	noun	humour (bodily fluid)
