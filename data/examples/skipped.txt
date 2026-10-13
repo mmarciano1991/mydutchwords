@@ -241,3 +241,125 @@ bank	noun	bank
 bank	noun	banknote
 vol	adjective	complete
 zin	noun	sense
+bedrijf	noun	profession
+blijkbaar	adjective	evident
+zolang	conjunction	all the time
+straat	noun	straight
+geest	noun	life force
+geest	noun	heath
+vuur	noun	heater
+open rug	noun	spina bifida
+rug	noun	thousand-guilders banknote
+in de gaten houden	verb	to remember
+dragen	verb	to transfer
+welk	pronoun	which one
+prijs	noun	price tag
+prijs	noun	reward
+prijs	noun	praise
+open huwelijk	noun	open marriage
+om over naar huis te schrijven	adjective	to write home about
+groep	noun	circuit in an electrical installation
+regel	noun	narrow slat
+shit	noun	stuff
+shit	noun	kind of soft drug
+in de zak zetten	verb	to hoodwink
+zak	noun	scrotum
+zak	noun	'tent'
+in de boot nemen	verb	to pull a prank on
+dom	noun	duomo
+dom	noun	dome
+dom	noun	ecclesiastical form of address
+dom	noun	nobleman
+verleden	adjective	gone by
+verleden tijd	noun	past
+deal	noun	bargain
+onder de tafel praten	verb	to outperform verbally
+onder tafel drinken	verb	drink under the table
+tafel	noun	meal
+tafel	noun	writing tablet
+band	noun	belt (conveyor belt)
+band	noun	interval in the light spectrum
+band	noun	bank
+generaal	adjective	general
+generaal	noun	full general
+raad	noun	essential supply
+geraakt voelen	verb	to be hurt
+zwaar water	noun	heavy water
+gast	noun	knave
+eigen rechter	noun	vigilante
+bureau	noun	agency
+bureau	noun	company
+derde	noun	third party
+derde persoon	noun	third person
+spelen	noun	organised series of athletic
+ze zien vliegen	verb	to be delusional
+tuurlijk	adverb	yeah
+koud	adjective	bad
+koud maken	verb	to murder
+bericht	noun	communication
+een vlucht nemen	verb	to take off
+hel	adjective	bright
+dame	noun	noblewoman
+boos oog	noun	evil eye
+met oog op	preposition	in view of
+hard teken	noun	hard sign (Ъ/ъ)
+arm	noun	branch
+sleutel	noun	wrench
+sleutel	noun	clef
+wet	noun	law (rule)
+wet	noun	law of nature
+extra	adjective	on purpose
+uiteindelijk	adjective	eventual
+kerk	noun	confessional religious organization
+kerk	noun	temple
+betrokken	adjective	clouded
+zijn tijd beiden	verb	to bide one's time
+diep	noun	deep
+diep	noun	canal
+liegen	noun	bullshit
+zwanger	adjective	expecting a baby together
+in de steek laten	interjection	abandon
+steek	noun	prick (insect bite)
+steek	noun	hitch (knot)
+steek	noun	bicorne
+missie	noun	mission (proselytisation)
+Amerika	noun	America
+Amerika	noun	hamlet in Noordenveld
+zon	noun	Sun
+kost	noun	cost
+kost	noun	board
+paard	noun	pommel horse
+paard	noun	ugly woman
+maat	noun	bar
+maat	noun	mate
+maat	noun	colleague
+maat	noun	low sailor rank
+maat	noun	partner
+rijk	noun	realm
+rijk	adjective	wealthy
+rijk	noun	state
+rijk	noun	kingdom
+witte nacht	noun	white night
+getuige	preposition	as shown by
+getuige	noun	testimony
+kwalijk	adjective	bad
+kwalijk	adjective	difficult
+bar	adjective	harsh
+bar	adjective	barren
+bar	adjective	crude
+midden	adverb	in the middle
+midden	preposition	amidst
+lijn	noun	rope
+lijn	noun	file
+zuster	noun	sister
+zuster	noun	sister (nun)
+bal	noun	toff
+aanval	noun	sudden convulsion
+aandacht	noun	respect
+aandacht	noun	affection
+voor zijn kiezen krijgen	verb	to undergo
+in zee gaan	verb	to mix
+in zee gaan met	verb	to mix with someone
+Witte Zee	noun	White Sea
+hoog tijd	noun	high time
+volledig	adverb	complete
