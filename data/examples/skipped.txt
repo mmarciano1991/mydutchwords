@@ -2220,3 +2220,96 @@ afkomen op	verb	to go straight in the direction of
 verschuilen	verb	to be hidden
 a.u.b.	adverb	please
 a.u.b.	interjection	please
+bediening	noun	maintenance
+bakkerij	noun	act of baking
+tolk	noun	any content interpreter
+plak	noun	specific coin
+tablet	noun	flat
+mot	noun	slap
+mot	noun	female pig
+mot	noun	lewd woman
+mot	noun	light rain
+Hazel	noun	hazel
+stelling	noun	sentence
+loer	noun	lure
+loer	noun	stupid
+loer	noun	mean
+ondeugend	adjective	ill-natured
+apache	noun	member of the (Parisian) underworld
+een speld tussen krijgen	verb	to be unclear
+lozen	noun	village in Bocholt
+schaak	noun	chess
+ban	noun	legal
+ban	noun	public declaration
+Brussel	noun	bilingual central
+patat oorlog	noun	serving of the above
+afdoen	verb	to suffice
+drop	noun	droplet
+referentie	noun	quoted
+dolfijn	adjective	exceptionally amusing
+warenhuis	noun	warehouse
+linken	verb	to betray
+wis	noun	twig
+wis	noun	bundle
+wis	noun	dishcloth
+sloerie	noun	slut
+Dirk	noun	Derrick
+Dirk	noun	David
+kakkerlak	noun	supporter of Feyenoord
+nr.	noun	No.
+domein	noun	manorial right
+kutwijf	noun	bitch
+piet	noun	louse
+ongesteld	adjective	unasked
+ongesteld	adjective	in poor condition
+een kloot aftrekken	verb	play a dirty trick on somebody
+scheef	noun	shive
+correctie	noun	action
+correctie	noun	penal facility
+koek	noun	roundel
+handelingen	noun	Acts of the Apostles
+dagen	verb	to rise
+dagen	verb	to start
+v.	adjective	womanly
+v.	preposition	of (possession, property)
+allee	noun	landing
+kwellen	verb	to swell up
+scheen	noun	strip of wood
+kruistocht	noun	naval crossing
+opperhoofd	noun	pope
+koopje	noun	sale
+register	noun	lodger
+mannelijkheid	noun	facial hair
+overdoen	verb	to overdo
+overdoen	verb	to dominate
+page	noun	page (sheet of paper)
+piemel	noun	urine
+witwassen	verb	to wash up
+miskraam	noun	miscarriage (miscarried fruit)
+vlakte	noun	flatness
+sultan	noun	certain pastry
+digitaal	adjective	digit
+lolly	noun	penis
+biljoen	noun	billion
+vrucht	noun	fear
+kortsluiting	noun	act of communicating directly
+teer	noun	tenderness
+teer	noun	act of digesting
+teer	noun	tuberculosis
+goal	noun	hit in it
+rukker	noun	yanker
+rukker	noun	wanker
+schorpioen	noun	vicious
+schorpioen	noun	European mole cricket (Gryllotalpa gryllotalpa)
+schorpioen	noun	certain weed
+schorpioen	noun	scourge
+pol	noun	hand
+pension	noun	regularly made payment
+citeren	verb	to summon
+omslag	noun	pro rata tax
+afzien	verb	to cheat
+non plus ultra	noun	small size of type
+smal	adjective	small
+afwerken	verb	to finish work for the day
+kathedraal	adjective	cathedral
+pip	noun	of humans
