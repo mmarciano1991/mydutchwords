@@ -1649,3 +1649,56 @@ schuif	noun	something shoven
 schuif	noun	mouth
 geit	noun	goat (Capra aegagrus)
 verschillend	numeral	various
+hals	noun	front side of the neck
+beet dien	noun	beth din
+drukte	noun	zest
+eren	verb	to adorn
+eren	verb	to honor by marriage
+eren	verb	to plow (land)
+eren	verb	to work with a plough
+zuigen	verb	to be bad
+knippen	verb	to make a pinching movement
+kikker	noun	cleat
+kikker	noun	beatnik from The Hague
+afgaan	verb	to defecate
+afgaan	verb	to base oneself
+bol	adverb	convex
+bol	noun	large
+bol	noun	roundel
+luizen	verb	to pick the lice (from ...)
+luizen	verb	to acquire
+luizen	verb	to fish using a leusnet
+houten	verb	to paint something
+in zijn werking gaan	verb	to work a certain way
+beleven	verb	to profess
+pijl	noun	Sagitta
+gordel	noun	roughly belt-shaped area
+bioscoop	noun	visit to the cinema
+bocht	noun	bight
+bocht	noun	junk
+storten op	verb	to devote into
+geslacht	noun	gender
+geslacht	noun	genus
+vlammen	verb	to catch flames
+feest van de democratie	noun	election
+de handdoek in de ring werpen	interjection	throw in the towel
+boog	noun	arch of a foot
+onderuit	interjection	timber!
+vuurwerk	noun	military ordnance
+poppen	verb	to play (games etc.) in general
+poppen	verb	to show off
+poppen	verb	to make
+poppen	verb	to make the sound of a coot
+poppen	verb	to stammer
+binden	verb	to bind
+stout	adjective	high (expectations)
+staken	verb	to support (a plant) with stakes
+ideaal	adjective	immaterial
+ideaal	noun	utopic
+ideaal	adjective	purely cerebral
+kapsel	noun	capsule (enveloping membrane)
+bunker	noun	cargo hold
+ingaan	verb	to go along with
+ingaan	verb	to contradict
+luizen	verb	to beat (up)
+in zijn werking gaan	verb	to activate
