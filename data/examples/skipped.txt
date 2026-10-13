@@ -2008,3 +2008,40 @@ tegenaan	preposition	against (touching)
 tegenaan	adverb	against
 tegenaan	preposition	into (in collision with)
 stoten	verb	to shock
+gate	noun	scandal
+vroeg Latijn	noun	Old Latin
+management	noun	administration
+goot	noun	Goth
+grote mantel	noun	great scallop
+mantel	noun	hull of an object
+mantel	noun	mantle of a chimney
+mantel	noun	scallop
+Lo	noun	PE
+agressie	noun	hostile
+continent	adjective	continent
+eekhoorn	noun	red squirrel (Sciurus vulgaris)
+platform	noun	plateau
+platform	noun	flat roof
+hoepel	noun	pushrim
+reactor	noun	chemical reactor
+monitor	noun	monitor (low-lying ironclad)
+medeplichtige	noun	accessory (assisting a crime)
+pis	noun	cheap beer
+tussenuit	preposition	out from between
+drang	noun	throng
+klik	noun	click consonant
+Sint	noun	Saint
+knallen	verb	to fuck
+potlood	noun	graphite powder
+kits	noun	ketch (small two-masted vessel)
+kam	noun	cam
+voorste	adjective	first
+voorste	noun	first one
+van hier tot Tokio	preposition	extremely large
+stage	noun	apprenticeship
+onvoldoende	adjective	failing (of marks, grading)
+sekte	noun	sect
+pink	noun	one-year-old calf
+pink	noun	pink
+wijzer	noun	one who points
+viool	noun	any violet
