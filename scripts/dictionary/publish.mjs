@@ -75,10 +75,21 @@ await inChunks(
   2000,
   (rows) => db.from("dict_senses").upsert(rows)
 );
-// Rows from older builds: gone from the sources, or now in doubt.
+// Rows from older builds: gone from the sources, or now in doubt. Found by
+// paging the primary key, not by filtering on build_id: that column has no
+// index, and on a table every publish rewrites the filter hit the statement
+// timeout.
 {
-  const { error } = await db.from("dict_words").delete().neq("build_id", buildId);
-  if (error) throw new Error(error.message);
+  const current = new Set(words.map((w) => w.id));
+  const stale = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db.from("dict_words").select("id").order("id").range(from, from + 999);
+    if (error) throw new Error(error.message);
+    for (const row of data) if (!current.has(row.id)) stale.push(row.id);
+    if (data.length < 1000) break;
+  }
+  console.log(`removing ${stale.length} words no longer published`);
+  await inChunks(stale, 200, (ids) => db.from("dict_words").delete().in("id", ids));
 }
 const registry = JSON.parse(readFileSync(join(OUT_DIR, "registry.json"), "utf8"));
 await inChunks(
