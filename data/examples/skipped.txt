@@ -1957,3 +1957,54 @@ plukken	verb	to deprive (someone, something) of most possessions
 overslaan	verb	to drop
 internationaal	noun	international actor
 overtuiging	noun	persuasion
+lood	noun	lot
+uit het lood geslagen	adjective	defeated
+Saul	noun	Saul
+master	noun	ruler
+streep	noun	hyphen
+verbetering	noun	reparation
+verbetering	noun	act
+medium	noun	medium which a wave
+medium	noun	middle voice
+medium	noun	data medium
+medium	noun	something of medium size
+spoel	noun	inductor
+een jasje uitdoen	verb	to suffer badly
+banaan	noun	black person
+neven	preposition	beside
+neven	preposition	in addition to
+aandoening	noun	emotion
+pompen	verb	to fuck
+braken	verb	to be busy
+achterbank	noun	set of adjacent
+ra	interjection	yard
+toets	noun	fingerboard
+lila	noun	small
+vaderland	noun	Heaven
+verkering	noun	social contact
+uitpakken	verb	to express one's emotions
+fluit	noun	organ pipe
+fluit	noun	penis
+fluit	noun	fluyt
+flik	noun	homosexual
+Japans	adjective	Japonic
+gesticht	noun	large
+gesticht	noun	care home
+gesticht	noun	Christian religious building
+Japanse talen	noun	Japonic languages
+talen naar	verb	to long for
+scheet	noun	windy quantity
+heiligheid	noun	something that is holy
+mede	adverb	with someone
+piek	noun	guilder
+opmaken	verb	to conclude
+baai	noun	baize
+baai	noun	wine
+W	adverb	west
+knaap	noun	servant
+bij de duivel te biecht gaan	interjection	to seek help
+schikking	noun	arrangement
+tegenaan	preposition	against (touching)
+tegenaan	adverb	against
+tegenaan	preposition	into (in collision with)
+stoten	verb	to shock
