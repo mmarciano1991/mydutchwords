@@ -2190,3 +2190,13 @@ kweken	verb	to quack
 lokaliseren	verb	to localize (make local)
 een veer in de reet steken	verb	to heap excessive
 veer	noun	twisted leaf
+uil	noun	male heterosexual
+aanschouw	noun	stature
+ruit	noun	any weed
+tijdmachine	noun	chronometer
+manen	noun	hamlet in Ede
+tree	noun	unit of length of about 2 to 3 feet
+debiel	adjective	weak
+slee	adjective	stiff
+slee	adjective	blunt
+slee	adjective	sour
