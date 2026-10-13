@@ -1464,3 +1464,71 @@ pil	noun	med student
 pil	noun	thick sandwich
 pil	noun	hard kick on a balk
 pil	noun	electric battery
+uitstappen	verb	to die
+noord	adverb	northwards
+de mazzel	interjection	see you later
+blinde	noun	window shutter
+metaal	noun	metal (light tincture)
+tuig	noun	thing
+tuig	noun	physical device
+tuig	noun	rig
+natie	noun	guild
+atmosfeer	noun	one Earth atmosphere (atm)
+aantrekken	verb	draw
+tragedie van de meent	noun	tragedy of the commons
+pat	noun	tie
+appel	noun	hamlet in Nijkerk
+boven Jan zijn	verb	to have overcome hardship
+stam	noun	stem
+stam	noun	phylum
+straal	noun	stinger
+straal	noun	frog
+poten	verb	to release young fish
+kletsen	verb	to smack
+muis	noun	ball of the thumb
+blanken	verb	to glow in a white
+blanken	verb	to blank
+inzien	verb	to glance over
+kap	noun	stroke
+ongeacht	adjective	unconsidered
+g	noun	unit of gravitational acceleration
+krijt	noun	Cretaceous
+oven	noun	Fornax
+roos	noun	used as a heraldic charge
+roos	noun	rash
+air	noun	tune
+heden	adverb	presently
+achterlijk	adjective	backwards
+achterlijk	noun	back leech of a sail
+achterlijk	adjective	distant
+receptie	noun	reception (reaction, response)
+oog	noun	sight
+balans	noun	type of bridge with counterweight
+dekmantel	noun	disguise
+Guy	noun	guy
+boter	noun	butter substitute
+de boter gegeten hebben	verb	be unfairly blamed
+rechterhand	noun	trustworthy friend
+gebieden	verb	to be in command
+stalen	verb	To toughen
+spook	noun	annoying and intolerable woman
+duim	noun	pintle
+politieke economie	noun	political economy
+stoelen	verb	To rest
+stoelen	verb	to form into a stool (stump)
+briljant oranje	adjective	luminous orange
+Oranje	noun	village in Midden-Drenthe
+oranje wijn	noun	orange wine
+tot in der eeuwen eeuwigheid	preposition	for a very long time
+hot	adjective	right
+omkleden	verb	to surround with (something)
+Sire	noun	sire
+haai	adjective	big
+haai	adjective	smart
+haai	noun	greedy person
+haai	adjective	fine
+grijze nacht	noun	night with only twilight
+tot in lengte van dagen	preposition	for a very long time
+betrekken	verb	to live
+een sprong in het duister maken	interjection	to leap in the dark
+expres	noun	express
