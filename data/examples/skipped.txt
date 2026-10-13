@@ -612,3 +612,134 @@ steen	noun	stone (drupe pit)
 steen	noun	tile
 duizend	noun	thousand
 Jezus Christus	noun	Jesus Christ
+grens	noun	physical
+kleur	noun	party obedience
+bron	noun	well
+lid	noun	member
+lid	noun	penis
+lid	noun	lid
+moeder	noun	womb
+signaal	noun	signal (simple interprocess communication)
+carter	noun	sump
+dik	adverb	fatly
+rechtbank	noun	court of first instance
+veld	noun	hamlet in Venlo
+straf	adjective	heavy
+straf	noun	discomfort
+straf	adjective	spicy
+kies	adjective	delicate
+kies	noun	certain resembling objects
+dr.	noun	doctor
+schot	noun	missile
+neuken	verb	to hit
+neuken	verb	to toss
+jagen	verb	to tug (a boat)
+jagen	verb	to move quickly
+taart	noun	hag
+pers	noun	Persian cat (breed)
+pers	noun	Persian carpet
+zwaard	noun	leeboard
+aandoen	verb	to engender
+tuin	noun	enclosure
+opstaan	verb	to be on
+opstaan	verb	to be playing
+Verboden Stad	noun	Forbidden City
+gezelschap	noun	club
+gezelschap	noun	social circle
+eng	adjective	small
+toeval	noun	attack (of epilepsy)
+uit de war	adjective	disentangled
+melk	noun	various 'milky' juices
+genieten	verb	to use
+volle zee	noun	open sea
+lenen tot	verb	to lend itself to for
+toon	noun	front portion of a hoof
+broeder	noun	friar
+broeder	noun	male medical nurse
+broeder	noun	colleague
+broeder	noun	fellow faithful
+broeder	noun	certain bread-like dish
+broeder	noun	brooder
+ruim	noun	wide
+gaaf	adjective	whole
+gaaf	adjective	smooth
+tegenwoordig	adjective	present (in time)
+tegenwoordig	adjective	physically present
+zetten	verb	to typeset
+omgeving	noun	social circle
+kip	noun	Kip
+menselijk	adjective	humane
+majesteit	noun	monarch
+genoegen nemen	verb	to be content
+tot genoegen	interjection	see you!
+vloer	noun	any ground
+vloer	noun	bottom
+borst	noun	breast
+reden	verb	to equip (a ship)
+reden	noun	proportion
+reden	verb	to equip
+bepaald	adjective	definite
+heus	adjective	friendly
+heus	adjective	real
+trut	noun	boring
+trut	noun	pussy
+eenvoudig	adjective	simplex
+tent	noun	pavillion
+tent	noun	building
+bek	noun	any animal's mouth
+talent	noun	talent (gift, quality, capability)
+kanker	adjective	fucking
+kanker	adverb	fucking
+kanker	interjection	expression of anger
+dag des Heren	noun	Lord's Day (Sunday)
+Mexico	noun	Mexico
+Mexico	noun	Mexico City
+station	noun	disk drive
+station	noun	radio station
+vogel	noun	dude
+vogel voor de kat	noun	shark bait
+verantwoordelijkheid	noun	accountability
+besluit	noun	determination
+west	adverb	westwards
+bescherming	noun	shelter
+bak	noun	drinking vessel
+bak	noun	vehicle
+bak	noun	railway carriage
+bak	noun	rubbish bin
+bak	noun	gearbox
+bak	noun	act of baking (food)
+bak	noun	pig
+bak	noun	joke
+bak	noun	slammer
+bak	noun	remote control
+papier	noun	piece of paper
+papier	noun	money
+vormen	verb	to originate
+vormen	verb	to educate
+storm	noun	assault
+hoed	noun	cover
+beslist	adjective	firm
+reet	noun	butt crack
+reet	noun	butt
+reet	noun	nothing
+kluis	noun	cashbox
+kluis	noun	hermit's cell
+kluis	noun	hermitage
+god in het wit	noun	medic
+wit	adverb	white
+wit	noun	)
+wit	noun	ability to think and reason
+wit	noun	knowledge
+wit gat	noun	white hole
+vervelend	adjective	troublesome
+rekenen	verb	to appraise
+aanbieden	verb	to offer oneself
+streek	noun	stroke
+zicht	noun	sickle (short scythe)
+elf	noun	number eleven
+reactie	noun	political reaction (reactionaries collectively)
+blauw	noun	hamlet in Westerkwartier
+blauw	noun	police)
+blauw	adjective	pertaining to aquatic nature
+blauw	adjective	drunk
+blauw betalen aan	verb	to pay through the nose for something
