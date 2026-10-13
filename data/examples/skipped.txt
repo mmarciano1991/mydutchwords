@@ -1313,3 +1313,90 @@ kanaal	noun	duct-shaped tissue
 goedendag	noun	club with a spike on top
 versterking	noun	amplification
 versterking	noun	stronghold
+combinatie	noun	act
+goedmaken	verb	expiate
+stok	noun	deck
+stok	noun	stock
+vermoeden	noun	conjecture
+kern	noun	nucleus
+kern	noun	nuclear -
+kern	noun	kernel (of a function)
+bagage	noun	load
+braaf	adjective	honorable
+borg	noun	surety
+gerucht	noun	sound
+trekker	noun	puller
+trekker	noun	wayfarer
+trekker	noun	migratory bird
+flikker	noun	mender
+flikker	noun	human body
+flikker	noun	homosexual male
+flikker op	interjection	bugger off
+lager	noun	laager
+toestel	noun	apparatus
+bouw	noun	construction of contraptions
+bouw	noun	built
+begaan	verb	to do
+das	noun	Eurasian badger (Meles meles)
+draad	noun	screw thread
+draad	noun	discussion thread
+pikken	verb	to pitch
+ruimen	verb	to make more spacious
+inzet	noun	cue
+zaal	noun	Germanic single-room home
+omdraaien	noun	turnover
+beurs	adjective	bruised
+opblazen	verb	to explode
+algemeen	noun	common
+ongemakkelijk	adjective	inconvenient
+kroon	noun	royal power
+kroon	noun	top of a growth
+kroon	noun	calyx (group of sepals)
+functie	noun	use
+verward	adverb	jumbled up
+sectie	noun	subdivision
+nuchter	adjective	newborn
+accent	noun	notably deviant
+falen	verb	to default (a payment)
+congres	noun	Congress
+congres	noun	formal meeting
+verlof	noun	permission
+afleiding	noun	derivative
+riem	noun	ream (paper measure)
+schoen zetten	verb	to put out one's shoe
+uniek	adverb	uniquely
+bond	noun	society
+bond	noun	union
+bond	noun	coalition
+bond	noun	covenant
+bond	noun	bundle
+te grazen nemen	verb	to get
+ambassade	noun	embassy
+ambassade	noun	ambassadorial mission
+kalmeren	verb	to become calm
+tijger	noun	fast-growing
+tijger	noun	fanatic
+klop	noun	knock
+klop	noun	punch
+klop	noun	physical fight
+klop	noun	sudden reduction in energy
+Stille Zaterdag	noun	Holy Saturday
+Spaans	adverb	callously
+geen hoge pet op hebben van	verb	to have a low opinion of
+pet	adjective	bad
+eerste kwartier	noun	second phase
+kwartier	noun	neighborhood
+kwartier	noun	hamlet in Zevenaar
+kwartier	noun	quarter of an heraldic field
+kwartier	noun	hamlet in Moerdijk
+kwartier	noun	region
+laatste kwartier	noun	fourth phase
+Amerikaans	adjective	pertaining to the Americas
+porno	adjective	hot
+streng	noun	string
+wijf	noun	woman
+wijf	noun	broad
+verhouding	noun	proportion
+geladen	adjective	charged up
+geladen	adjective	electrically charged
+totale oorlog	noun	total war
