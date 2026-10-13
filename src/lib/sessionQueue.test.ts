@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { REVIEW_RETRY_LIMIT } from "./learningConfig";
+import { INTRO_PROGRESS_CREDIT, REVIEW_RETRY_LIMIT } from "./learningConfig";
 import type { ExerciseType, PlannedStep } from "./learningEngine";
 import {
   answer,
@@ -36,6 +36,26 @@ describe("progress", () => {
     expect(pct(q)).toBe("1/2");
     q = next(q, true);
     expect(pct(q)).toBe("1/2");
+  });
+
+  it("credits part of a word once its intro flashcard is behind it — once, and kept through a miss", () => {
+    let q = createQueue([step("flashcard", "a"), step("multiple_choice", "a"), step("multiple_choice", "b")]);
+    expect(progress(q).value).toBe(0);
+    q = next(q, false); // "Still learning" on an intro is exposure, not a miss
+    expect(progress(q)).toEqual({ mastered: 0, total: 2, value: INTRO_PROGRESS_CREDIT });
+    expect(q.items.a).toMatchObject({ status: "awaiting", misses: 0 });
+    q = play(q, "miss");
+    expect(progress(q).value).toBe(INTRO_PROGRESS_CREDIT);
+    q = play(q, "pass");
+    q = play(q, "pass"); // a's review
+    expect(progress(q)).toEqual({ mastered: 2, total: 2, value: 2 });
+    expect(q.current).toBeNull();
+  });
+
+  it("a skip moves the word, not the bar", () => {
+    let q = createQueue([step("listening", "a")]);
+    q = next(skip(q, "a"), true);
+    expect(progress(q).value).toBe(0);
   });
 
   it("does not count a miss, an unanswered item or an intro flashcard", () => {
@@ -204,6 +224,17 @@ describe("skip (I can't listen now)", () => {
     expect(q.items.a.misses).toBe(1);
   });
 
+  it("falls back to a flashcard the step can always show; rating it settles the item", () => {
+    let q = createQueue([step("listening", "a"), step("multiple_choice", "b")]);
+    q = next(skip(q, "a", "flashcard"), true);
+    expect(onScreen(q)).toEqual({ ids: ["a"], kind: "flashcard", review: false });
+    expect(q.current!.graded).toBe(false);
+    expect(isFinalFor(q, "a")).toBe(true);
+    q = next(q, true);
+    expect(pct(q)).toBe("1/2");
+    expect(onScreen(q)?.ids).toEqual(["b"]);
+  });
+
   it("can't be followed by an answer on the same step", () => {
     let q = createQueue([step("listening", "a")]);
     q = answer(skip(q, "a"), "a", "pass");
@@ -236,7 +267,7 @@ describe("section start and transitions", () => {
   it("is done at once when there is nothing to ask", () => {
     const q = createQueue([]);
     expect(q.current).toBeNull();
-    expect(progress(q)).toEqual({ mastered: 0, total: 0 });
+    expect(progress(q)).toEqual({ mastered: 0, total: 0, value: 0 });
     expect(carryOver(q)).toEqual([]);
   });
 

@@ -8,7 +8,8 @@
                the missed items, asked again once the main queue is done.
    Progress is never counted up by hand: it is derived (see `progress`) as
    completed items over all items in the section, so retries can't inflate
-   it and it can't go down.
+   it and it can't go down. An item whose intro flashcard is behind it
+   counts in part (INTRO_PROGRESS_CREDIT), so the bar moves on every step.
 
    An item is a word, keyed by its id. Its status is one of:
      awaiting   not answered yet (or only shown an intro flashcard)
@@ -21,7 +22,7 @@
    `review` and the engine logs them ungraded (learningEngine, rule 2).
 
    Pure and synchronous: no React, no storage, no clock. */
-import { REVIEW_RETRY_LIMIT } from "./learningConfig";
+import { INTRO_PROGRESS_CREDIT, REVIEW_RETRY_LIMIT } from "./learningConfig";
 import type { ExerciseType, PlannedStep } from "./learningEngine";
 
 export type ItemStatus = "awaiting" | "review" | "completed" | "deferred";
@@ -32,6 +33,9 @@ export interface ItemState {
   misses: number;
   /** How the item is asked when it comes back for review. */
   reviewKind: ExerciseType;
+  /** A step in front of its own exercise (the intro flashcard) is behind
+   *  it — partial progress. */
+  introduced?: boolean;
 }
 
 export interface QueueStep extends PlannedStep {
@@ -130,23 +134,31 @@ export function answer(q: SessionQueue, id: string, outcome: Outcome): SessionQu
 }
 
 /** The item can't be answered this way right now (Listening, with no way to
- *  listen). That says nothing about knowing it: it stays pending and is
- *  asked as `alternative` straight away, and if it comes back for review,
- *  as that too. */
+ *  listen; a step whose content can't be built). That says nothing about
+ *  knowing it: it stays pending and is asked as `alternative` straight away,
+ *  and if it comes back for review, as that too. A flashcard alternative is
+ *  exposure, like the engine's flashcard fallback: rating it settles the
+ *  item. */
 export function skip(q: SessionQueue, id: string, alternative: ExerciseType = LISTENING_ALTERNATIVE): SessionQueue {
   if (!answerable(q, id)) return q;
   const items = { ...q.items, [id]: { ...q.items[id], reviewKind: alternative } };
   const answered = [...q.answered, id];
   // A review step stays at the head of the review queue and is re-asked.
   if (q.current!.review) return { ...q, items, answered };
-  return { ...q, items, answered, main: [{ kind: alternative, wordIds: [id], graded: true }, ...q.main] };
+  return { ...q, items, answered, main: [{ kind: alternative, wordIds: [id], graded: alternative !== "flashcard" }, ...q.main] };
 }
 
 /** Moves past the current step. Items it settled with no answer of their
  *  own (a flashcard shown in place of an exercise) take `passed` as theirs. */
 export function next(q: SessionQueue, passed: boolean): SessionQueue {
   let settled = q;
-  for (const id of q.current?.wordIds ?? []) settled = answer(settled, id, passed ? "pass" : "miss");
+  for (const id of q.current?.wordIds ?? []) {
+    // An intro behind it (not a skip, which moves the item, not the learner).
+    if (!isFinalFor(q, id) && !q.answered.includes(id) && settled.items[id]?.status === "awaiting" && !settled.items[id].introduced) {
+      settled = { ...settled, items: { ...settled.items, [id]: { ...settled.items[id], introduced: true } } };
+    }
+    settled = answer(settled, id, passed ? "pass" : "miss");
+  }
   return advance(settled);
 }
 
@@ -162,10 +174,15 @@ function advance(q: SessionQueue): SessionQueue {
   return { ...q, current: null, answered: [] };
 }
 
-/** Mastered unique items over all unique items in the section. */
-export function progress(q: SessionQueue): { mastered: number; total: number } {
+/** Mastered unique items over all unique items in the section. `value` is
+ *  what the bar fills to: the mastered items, plus INTRO_PROGRESS_CREDIT for
+ *  each one whose intro flashcard is behind it — so an intro moves the bar,
+ *  but only a right answer completes an item. */
+export function progress(q: SessionQueue): { mastered: number; total: number; value: number } {
   const all = Object.values(q.items);
-  return { mastered: all.filter((i) => i.status === "completed").length, total: all.length };
+  const mastered = all.filter((i) => i.status === "completed").length;
+  const introduced = all.filter((i) => i.status !== "completed" && i.introduced).length;
+  return { mastered, total: all.length, value: mastered + introduced * INTRO_PROGRESS_CREDIT };
 }
 
 /** Items to hand on to the next session: the deferred ones, and — when a

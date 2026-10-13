@@ -106,3 +106,9 @@ export const TYPO_EDITS_LONG = 2;
  *  on to the next session, so a word the learner can't get today never
  *  traps them in an endless review loop. */
 export const REVIEW_RETRY_LIMIT = 2;
+
+/** Share of a word the progress bar credits once its intro flashcard is
+ *  behind it. The rest comes when the word is answered right, so the bar
+ *  moves on every step — flashcards included — and never counts a word
+ *  twice or reaches the end before every word is done. */
+export const INTRO_PROGRESS_CREDIT = 0.5;

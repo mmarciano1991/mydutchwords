@@ -47,7 +47,7 @@ let finished: boolean;
 let handedOn: string[] | null;
 let closedWith: string[] | null;
 
-function render(steps: PlannedStep[], prior?: PriorItems) {
+function render(steps: PlannedStep[], prior?: PriorItems, pool: DictionaryEntry[] = POOL) {
   answers = [];
   finished = false;
   handedOn = null;
@@ -60,10 +60,10 @@ function render(steps: PlannedStep[], prior?: PriorItems) {
     root.render(
       <Practice
         steps={steps}
-        cards={POOL.filter((e) => ids.has(e.id)).map((e) => ({ entry: e, word: newWord(e.id, new Date()) }))}
+        cards={pool.filter((e) => ids.has(e.id)).map((e) => ({ entry: e, word: newWord(e.id, new Date()) }))}
         prior={prior}
-        pool={POOL}
-        isKnownWord={(w) => POOL.some((e) => e.dutch === w)}
+        pool={pool}
+        isKnownWord={(w) => pool.some((e) => e.dutch === w)}
         onAnswer={(a) => answers.push(a)}
         onFinish={(deferred) => {
           finished = true;
@@ -256,6 +256,52 @@ describe("Listening", () => {
     click("Continue");
     expect(container.querySelector(".exercise__word")?.textContent).toBe("the bike");
   });
+
+  // A gloss too long for an answer button: no Multiple Choice for this word.
+  const gezellig = entry("gezellig", "cosy; pleasant and convivial; sociable company", { example: "Het is hier gezellig.", exampleEn: "It's cosy here." });
+  const WITH_LONG_GLOSS = [...POOL, gezellig];
+
+  it("\"I can’t listen now\" on a word with no Multiple Choice shows its flashcard — never an empty screen", () => {
+    render([step("listening", "gezellig"), step("multiple_choice", "fiets")], undefined, WITH_LONG_GLOSS);
+    click("I can’t listen now");
+    expect(container.querySelector(".exercise--flashcard .flashcard__word")?.textContent).toBe("gezellig");
+    expect(progressNow()).toBe("0/2");
+    click("I knew it");
+    act(() => vi.advanceTimersByTime(ANSWER_MS));
+    expect(answers[1]).toMatchObject({ wordId: "gezellig", exerciseType: "flashcard", result: "exposure", final: true });
+    expect(progressNow()).toBe("1/2");
+    // And on to the next word.
+    expect(container.querySelector(".exercise__word")?.textContent).toBe("fiets");
+  });
+
+  it("\"I can’t listen now\" on the last step still ends the session on the report", () => {
+    render([step("multiple_choice", "fiets"), step("listening", "gezellig")], undefined, WITH_LONG_GLOSS);
+    choose(buttons(".answer-option").find((b) => b.textContent === "bike")!);
+    click("Continue");
+    click("I can’t listen now");
+    expect(finished).toBe(false);
+    click("Still learning");
+    act(() => vi.advanceTimersByTime(ANSWER_MS));
+    // "Still learning" is a miss on its own step: it comes back once, then it's done.
+    expect(container.querySelector(".flashcard__word")?.textContent).toBe("gezellig");
+    click("I knew it");
+    act(() => vi.advanceTimersByTime(ANSWER_MS));
+    expect(finished).toBe(true);
+    expect(handedOn).toEqual([]);
+  });
+
+  it("\"I can’t listen now\" in the review queue asks the word another way, then finishes", () => {
+    render([step("listening", "huis")]);
+    choose(buttons(".answer-option").find((b) => b.textContent !== "huis")!);
+    click("Got it");
+    // The review re-ask is Listening again.
+    click("I can’t listen now");
+    expect(container.querySelector(".exercise__word")?.textContent).toBe("huis");
+    choose(buttons(".answer-option").find((b) => b.textContent === "house")!);
+    expect(answers[answers.length - 1]).toMatchObject({ wordId: "huis", exerciseType: "multiple_choice", review: true });
+    click("Continue");
+    expect(finished).toBe(true);
+  });
 });
 
 describe("Matching", () => {
@@ -434,16 +480,47 @@ describe("review queue", () => {
 });
 
 describe("progress bar", () => {
-  it("counts words mastered, not steps answered — an intro flashcard is no progress", () => {
+  it("moves on an intro flashcard, but only a right answer completes a word", () => {
     render([step("flashcard", "huis"), step("multiple_choice", "huis"), step("active_recall", "fiets")]);
     expect(progressNow()).toBe("0/2");
     click("I knew it");
     act(() => vi.advanceTimersByTime(ANSWER_MS));
-    expect(progressNow()).toBe("0/2");
+    expect(progressNow()).toBe("0.5/2");
+    // The caption counts whole words.
+    expect(container.querySelector('[role="progressbar"]')?.getAttribute("aria-valuetext")).toBe("0 of 2 words done");
     choose(buttons(".answer-option").find((b) => b.textContent === "house")!);
     expect(progressNow()).toBe("1/2");
     click("Continue");
     click("I do not know");
     expect(progressNow()).toBe("1/2");
+  });
+});
+
+describe("progress bar through a flashcard session", () => {
+  it("rises with every step, never resets or counts twice, and is full when the last word is done", () => {
+    render([
+      step("flashcard", "huis"),
+      step("flashcard", "fiets"),
+      step("multiple_choice", "huis"),
+      step("multiple_choice", "fiets"),
+    ]);
+    const seen = [progressNow()];
+    for (let i = 0; i < 2; i++) {
+      click("Still learning"); // an intro's rating is exposure, not a miss
+      act(() => vi.advanceTimersByTime(ANSWER_MS));
+      seen.push(progressNow());
+    }
+    choose(buttons(".answer-option").find((b) => b.textContent === "house")!);
+    seen.push(progressNow());
+    click("Continue");
+    // A miss keeps the intro's share; the right review answer completes it.
+    choose(buttons(".answer-option").find((b) => b.textContent !== "bike")!);
+    seen.push(progressNow());
+    click("Got it");
+    choose(buttons(".answer-option").find((b) => b.textContent === "bike")!);
+    seen.push(progressNow());
+    expect(seen).toEqual(["0/2", "0.5/2", "1/2", "1.5/2", "1.5/2", "2/2"]);
+    click("Continue");
+    expect(finished).toBe(true);
   });
 });

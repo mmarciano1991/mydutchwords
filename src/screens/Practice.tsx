@@ -8,6 +8,7 @@ import {
   comesBackNote,
   createQueue,
   isFinalFor,
+  LISTENING_ALTERNATIVE,
   next,
   progress,
   skip,
@@ -113,6 +114,17 @@ function prepare(step: PlannedStep, entry: DictionaryEntry, pool: DictionaryEntr
       return completion ? { kind: "sentence_completion", completion } : unavailable();
     }
   }
+}
+
+/** What a word is asked as when a step of `kind` can't be shown or answered
+ *  ("I can't listen now", options the deck can't supply): Multiple Choice —
+ *  the same recognition, without audio — when this word supports it, else its
+ *  flashcard, which can always be shown. Never `kind` itself, so a skip can
+ *  never lead back to the step it left (an endless run of empty screens). */
+export function alternativeFor(kind: ExerciseType, entry: DictionaryEntry, pool: DictionaryEntry[], filler: DictionaryEntry[]): ExerciseType {
+  const mc = LISTENING_ALTERNATIVE;
+  if (kind !== mc && kind !== "flashcard" && hasExerciseData(mc, entry) && buildEnglishChoices(entry, pool, Math.random, filler)) return mc;
+  return "flashcard";
 }
 
 /* Practice — one session, played from the learning engine's plan.
@@ -231,7 +243,10 @@ export function Practice({
       review: q.current!.review,
     });
     feedbackSound(prepared!.kind, result);
-    if (result === "skipped") commit(skip(q, wordId));
+    if (result === "skipped") {
+      const skipped = prepared!.kind === "unavailable" ? prepared!.wanted : prepared!.kind;
+      commit(skip(q, wordId, alternativeFor(skipped, byId.get(wordId)!, pool, choiceFiller)));
+    }
     else if (result !== "exposure") commit(answer(q, wordId, PASSED.has(result) ? "pass" : "miss"));
   }
 
@@ -248,7 +263,7 @@ export function Practice({
     setStepNo((n) => n + 1);
   }
 
-  const { mastered, total } = progress(queue);
+  const { mastered, total, value } = progress(queue);
   const callbacks = { onResult: report, onNext: proceed, comesBack: comesBackNote(queue) };
   return (
     <div className="screen">
@@ -256,7 +271,7 @@ export function Practice({
         title={TITLE[prepared.kind]}
         onClose={() => onClose(carryOver(queueRef.current!))}
         closeLabel="Close practice"
-        progress={{ value: mastered, max: total, label: `${mastered} of ${total} words done` }}
+        progress={{ value, max: total, label: `${mastered} of ${total} words done` }}
       />
 
 
