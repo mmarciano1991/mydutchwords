@@ -1702,3 +1702,61 @@ ingaan	verb	to go along with
 ingaan	verb	to contradict
 luizen	verb	to beat (up)
 in zijn werking gaan	verb	to activate
+klim	noun	object
+smeer	noun	smear
+smeer	noun	blow
+business	noun	business
+protest	noun	protest (expression of disagreement)
+onderhouden	verb	to submerge
+griet	noun	euphemism for God
+griet	noun	brill
+nieuwe religieuze beweging	noun	new religious movement
+duik	noun	swimming under water
+in den duik	adverb	secretly
+emmer	noun	emmer (Triticum dicoccon)
+vermaken	verb	to renovate
+recherche	noun	criminal investigation
+althans	adverb	right now
+gepast	adverb	in exact change
+kolonie	noun	such as seagulls
+rooster	noun	lattice
+gele vlek	noun	macula
+des duivels	interjection	evil
+grijze vos	noun	gray fox
+Kleine Vos	noun	small tortoiseshell (Aglais urticae)
+vos	noun	red fox (Vulpes vulpes)
+vos	noun	horse with red
+vos	noun	tortoiseshell
+zoen	noun	chocolate-coated cream
+zoen	noun	reconciliation
+zoen	noun	atonement (act of atoning)
+vleugel	noun	army wing
+vleugel	noun	airforce base
+vleugel	noun	part of the nose
+vleugel	noun	part of a helix
+vleugel	noun	part of a clap door
+vliegende vleugel	noun	flying wing
+stoned als een aap	adjective	very stoned
+do	noun	C
+Otto	noun	wheelie bin
+gerecht	noun	justice
+schuiven	verb	to smoke
+gram	noun	wrath
+automatisch	adverb	automatically
+automatisch	adverb	automatically
+discipline	noun	sanction
+reserve	noun	forced estate
+kaal	noun	kehillah
+kaal	adjective	skinned
+uithalen	verb	to speak
+meten	verb	to measure up
+del	noun	dune valley
+del	noun	dell
+del	noun	trollop
+hit	noun	Shetland pony
+hit	noun	any pony
+competitie	noun	other competitors
+veren	verb	to ferry
+aanzetten	verb	to set
+acteren	verb	to operate
+bevinden	verb	to discover
