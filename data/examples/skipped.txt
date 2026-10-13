@@ -1400,3 +1400,67 @@ verhouding	noun	proportion
 geladen	adjective	charged up
 geladen	adjective	electrically charged
 totale oorlog	noun	total war
+achterhalen	verb	to overtake
+traceren	verb	to trace out
+bewijsmateriaal	noun	(piece of) material evidence
+klappen	verb	to smack
+klappen	verb	to fold
+klappen	verb	to smoke weed
+klappen	verb	to make stoned
+per se	adverb	per se
+blank	adjective	pure
+achteraan	preposition	after
+bestand	noun	archive
+aan bod komen	verb	to come up for auction
+bod	noun	order
+stapel	noun	sound post
+stapel	noun	basis
+stapel	noun	stockpile
+rob	noun	rabbit
+treffen	noun	meeting
+opening	noun	act
+heksen	verb	to employ witchcraft
+korte schaal	noun	short scale
+janet	noun	effeminate homosexual
+zeldzaam	adverb	rarely
+naaien	verb	to screw
+offer	noun	victim
+vers	noun	line
+helm	noun	helmet above a shield
+helm	noun	tiller on a vessel's rudder
+grote jager	noun	great skua
+jager	noun	Orion
+jager	noun	destroyer (type of warship)
+jager	noun	jaeger
+jager	noun	skua
+luid	noun	sound
+verslaafd	adjective	depending on (drugs or medications)
+teruggeven	verb	to reply
+teruggeven	verb	to regurgitate
+schut	noun	dam
+schut	noun	light movable partition
+ai	noun	pale-throated three-toed sloth (Bradypus tridactylus)
+bruine beer	noun	dump
+leed	adjective	angry
+schijn	adverb	appearance
+schijn	noun	cast (visual appearance)
+Duits	adjective	Dutch
+Duits	adjective	Teutonic
+baker	noun	midwife
+uitleg	noun	expansion
+fascinerend	adverb	fascinatingly
+spreuk	noun	sentence
+spreuk	noun	conjuration
+menigte	noun	multitude
+baard	noun	key bit
+baard	noun	awn
+baard	noun	baleen
+beschrijven	verb	to write (a letter) to
+orde van grootte	noun	order of magnitude
+pil	noun	analogous ball-shaped object
+pil	noun	pharmacist
+pil	noun	MD
+pil	noun	med student
+pil	noun	thick sandwich
+pil	noun	hard kick on a balk
+pil	noun	electric battery
