@@ -97,6 +97,17 @@ await inChunks(
   2000,
   (rows) => db.from("dict_sense_registry").upsert(rows)
 );
+// The queue is rebuilt every time: unreviewed rows from earlier builds are
+// replaced by this build's, so publishing again doesn't duplicate them. Rows
+// a reviewer has resolved stay.
+// Deleted in chunks by id, so no single statement runs into the timeout.
+for (;;) {
+  const { data, error } = await db.from("dict_doubt").select("id").eq("status", "open").neq("build_id", buildId).limit(1000);
+  if (error) throw new Error(error.message);
+  if (!data.length) break;
+  const { error: deleteError } = await db.from("dict_doubt").delete().in("id", data.map((r) => r.id));
+  if (deleteError) throw new Error(deleteError.message);
+}
 await inChunks(
   doubts.map((d) => ({ build_id: buildId, word: d.word, scope: d.scope, pos: d.pos ?? null, reason: d.reason, detail: d.detail ?? null })),
   2000,
