@@ -2683,3 +2683,50 @@ aanwerken	verb	to obstruct
 viola da gamba	noun	viola da gamba
 's namiddags	adverb	in the late afternoon
 's namiddags	adverb	in the afternoon
+abolitie	noun	prevention
+achenebbisj	noun	someone
+achtereind	noun	hamlet in Waalre
+Achterhoeks	adjective	of
+achterland	noun	hamlet in Molenlanden
+achterwaren	verb	to keep safe
+achterwaren	verb	to oversee
+achterwaren	verb	to take care of
+achthoekig	adjective	shaped like an octagon
+adat	noun	Malay
+adressenlijst	noun	tape address register
+afb.	noun	picture
+afdrijving	noun	act
+afknijpen	verb	to shake
+Afrikaner	noun	Africanus
+afrissen	verb	stripping
+afromen	verb	to economise
+afslibben	verb	emery washing
+afsnoepen	verb	to be against the will of someone else
+afspanen	verb	skimming
+Aïs grote terts	noun	sharp major
+aïs kleine terts	noun	sharp minor
+Akens	adjective	of
+akkerland	noun	neighbourhood of Diemen
+allo	noun	allochthonous
+amaretto	noun	glass
+ambachtsheer	noun	office
+Amsterdammer	adjective	of
+amsterdammertje	noun	rondo
+aprils	adjective	of
+aquarel	noun	watercolor
+aquarel	noun	watercolor
+arbeidsongeschiktheid	noun	mental
+archiefmedewerker	noun	actuary
+As grote terts	noun	flat major
+as kleine terts	noun	flat minor
+auspiciën	noun	watch
+B grote terts	noun	B major
+b kleine terts	noun	B minor
+b.v.d.	interjection	tia
+baccalaureaat	noun	bachelor student
+Bade	noun	Bade
+accent circonflexe	noun	circumflex accent
+als de katten muizen, mauwen ze niet	interjection	silence catches a mouse
+als de wijn is in de man, dan is de wijsheid in de kan	interjection	when the wine is in
+baarlijk	adjective	evident
+baat het niet, dan schaadt het niet	interjection	it can’t hurt
