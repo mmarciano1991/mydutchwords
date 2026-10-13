@@ -19,6 +19,7 @@
     "dictionary:download": "node scripts/dictionary/download.mjs",
     "dictionary:build": "node --max-old-space-size=8192 scripts/dictionary/build.mjs",
     "dictionary:validate": "node scripts/dictionary/validate.mjs --build",
+    "dictionary:audit": "node scripts/dictionary/audit.mjs",
     "dictionary:fixture": "node scripts/dictionary/fixture.mjs",
     "dictionary:static": "node scripts/dictionary/static.mjs",
     "dictionary:publish": "node scripts/dictionary/publish.mjs",

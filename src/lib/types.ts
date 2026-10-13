@@ -113,6 +113,9 @@ export interface DictionaryEntry {
   /** Saved by the learner with their own translation: the word wasn't in
    *  the dictionary. */
   personal?: boolean;
+  /** When a card saved before the server dictionary was last looked up for
+   *  the example or article it lacks (lib/wordSources fillMissingDetails). */
+  detailsCheckedAt?: number;
 }
 
 /** A word the user has added to their flashcard deck: dictionary entry id +

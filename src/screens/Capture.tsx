@@ -7,6 +7,7 @@
    screen stays put after an add, ready for the next word. */
 import { useMemo, useRef, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
+import type { PersonalWord } from "../lib/dictionary/snapshot";
 import { deckMembership } from "../lib/deckMembership";
 import { useLookup } from "../lib/useLookup";
 import { Appbar } from "../components/Appbar";
@@ -26,7 +27,7 @@ export function Capture({
   onSave: (entries: DictionaryEntry[]) => void;
   /** Saves a word the dictionary doesn't have, with the learner's own
    *  translation. */
-  onSavePersonal: (form: string, translation: string) => void;
+  onSavePersonal: (form: string, word: PersonalWord) => void;
   onBack: () => void;
 }) {
   const [query, setQuery] = useState("");
@@ -119,8 +120,8 @@ export function Capture({
             isInDeck={(i) => membership.has(i.snapshot)}
             onSave={save}
             onPickSuggestion={(form) => pick(form)}
-            onSavePersonal={(form, translation) => {
-              onSavePersonal(form, translation);
+            onSavePersonal={(form, word) => {
+              onSavePersonal(form, word);
               setAddedCount((n) => n + 1);
             }}
           />

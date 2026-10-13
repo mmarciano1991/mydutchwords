@@ -3,6 +3,7 @@ import type { DeckItem, DictionaryEntry, PracticeResult } from "./lib/types";
 import {
   addCustomEntry,
   editEntry,
+  fillMissingDetails,
   fillMissingPos,
   pinLegacyEntries,
   refreshEntries,
@@ -11,7 +12,7 @@ import {
   useCustomEntriesVersion,
 } from "./lib/wordSources";
 import { commonWords } from "./lib/dictionary/service";
-import { entryFromPreview, personalEntry } from "./lib/dictionary/snapshot";
+import { entryFromPreview, personalEntry, type PersonalWord } from "./lib/dictionary/snapshot";
 import { hasExerciseData } from "./lib/exerciseData";
 import { useToday } from "./lib/useToday";
 import {
@@ -282,13 +283,15 @@ export default function App() {
 
   // Cards saved before the server dictionary keep the content they had: the
   // frozen legacy dictionary is loaded once to pin them, then never again.
-  // Their cards had no part of speech: once pinned, it is looked up
-  // (while online) so the card can show it.
+  // Their cards had no part of speech, and some no example or article:
+  // once pinned, those are looked up (while online) and filled in from the
+  // dictionary sense each card unambiguously stands for.
   useEffect(() => {
     const ids = deck.map((d) => d.id);
-    void pinLegacyEntries(ids).then(() => {
+    void pinLegacyEntries(ids).then(async () => {
       if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-      return fillMissingPos(ids).catch((err) => console.info("[woordkast] part-of-speech lookup skipped", err));
+      await fillMissingPos(ids).catch((err) => console.info("[woordkast] part-of-speech lookup skipped", err));
+      await fillMissingDetails(ids).catch((err) => console.info("[woordkast] example/article lookup skipped", err));
     });
   }, [deck]);
 
@@ -367,10 +370,10 @@ export default function App() {
     });
   }
 
-  /** A word the dictionary doesn't have, saved with the learner's own
-   *  translation — marked personal. */
-  function savePersonalWord(form: string, translation: string, sentence?: string) {
-    saveSenses([personalEntry(form, translation, sentence)]);
+  /** A word the dictionary doesn't have, saved as the learner described it
+   *  (translation, word type, example) — marked personal. */
+  function savePersonalWord(form: string, word: PersonalWord, sentence?: string) {
+    saveSenses([personalEntry(form, word, sentence)]);
   }
 
   // Today — kept current while the app stays open (a timer past midnight,

@@ -9,6 +9,7 @@
    sense is addable again in search straight away. */
 import { useMemo, useState } from "react";
 import type { DeckItem, DictionaryEntry } from "../lib/types";
+import type { PersonalWord } from "../lib/dictionary/snapshot";
 import type { Word } from "../lib/learningEngine";
 import { deckMembership } from "../lib/deckMembership";
 import { searchKey } from "../lib/dictionary/normalize";
@@ -43,7 +44,7 @@ export function Browse({
   onRestore: (item: DeckItem) => void;
   onEdit: (entryId: string, edit: Edit) => void;
   onSave: (entries: DictionaryEntry[]) => void;
-  onSavePersonal: (form: string, translation: string) => void;
+  onSavePersonal: (form: string, word: PersonalWord) => void;
 }) {
   const [query, setQuery] = useState("");
   const [openId, setOpenId] = useState<string | null>(null);

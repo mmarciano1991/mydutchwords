@@ -14,6 +14,7 @@
    The pasted text itself is never changed. */
 import { Fragment, useEffect, useMemo, useState } from "react";
 import type { DictionaryEntry } from "../lib/types";
+import type { PersonalWord } from "../lib/dictionary/snapshot";
 import { deckMembership } from "../lib/deckMembership";
 import { senseItems } from "../components/SenseResults";
 import { findTargetSpans } from "../lib/dictionary/checks";
@@ -60,7 +61,7 @@ export function AddFromText({
 }: {
   deckEntries: DictionaryEntry[];
   onSave: (entries: DictionaryEntry[]) => void;
-  onSavePersonal: (form: string, translation: string, sentence: string) => void;
+  onSavePersonal: (form: string, word: PersonalWord, sentence: string) => void;
   onBack: () => void;
 }) {
   const [draft, setDraft] = useState("");
@@ -260,8 +261,9 @@ export function AddFromText({
                 isInDeck={(i) => membership.has(i.snapshot)}
                 onSave={save}
                 preselect={preselect}
-                onSavePersonal={(form, translation) => {
-                  onSavePersonal(form, translation, sentence);
+                sentence={sentence}
+                onSavePersonal={(form, word) => {
+                  onSavePersonal(form, word, sentence);
                   setAddedCount((n) => n + 1);
                 }}
               />

@@ -10,7 +10,7 @@ import { SenseResults, saveLabel, senseItems, type SenseItem } from "./SenseResu
 import type { LookupResult } from "../lib/dictionary/service";
 import { fixtureWord } from "../lib/dictionary/testDictionary";
 import type { DictionaryEntry } from "../lib/types";
-import { button, clickEl, mount, type Mounted } from "../test/dom";
+import { button, clickEl, flush, mount, typeInto, type Mounted } from "../test/dom";
 
 let m: Mounted | null = null;
 afterEach(() => m?.unmount());
@@ -120,3 +120,49 @@ describe("result_card states", () => {
     expect(m!.container.querySelector(".result-card__grammar")).toBeNull();
   });
 });
+
+describe("a word the dictionary doesn't have", () => {
+  const nothing: LookupResult = { query: "dutje", matches: [], compound: null, didYouMean: [] };
+  afterEach(() => vi.unstubAllGlobals());
+
+  async function renderNotFound(sentence?: string) {
+    // The online dictionary has nothing either.
+    vi.stubGlobal("fetch", vi.fn(async () => new Response("", { status: 404 })));
+    const onSavePersonal = vi.fn();
+    m = mount(<SenseResults result={nothing} isInDeck={() => false} onSave={vi.fn()} onSavePersonal={onSavePersonal} sentence={sentence} />);
+    await flush();
+    return onSavePersonal;
+  }
+  const field = (label: string) =>
+    [...m!.container.querySelectorAll("label")].find((l) => l.textContent?.startsWith(label))!.querySelector<HTMLInputElement & HTMLSelectElement>("input, select")!;
+  function choose(select: HTMLSelectElement, value: string) {
+    act(() => {
+      select.value = value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+    });
+  }
+
+  it("is saved only with a translation, a word type and an example", async () => {
+    const onSavePersonal = await renderNotFound();
+    expect(m!.text()).toContain("Word not found");
+    const save = button(m!.container, "Save as a personal word");
+    expect(save.disabled).toBe(true);
+    typeInto(field("Your translation"), "nap");
+    expect(save.disabled).toBe(true);
+    choose(field("Word type"), "noun");
+    expect(save.disabled).toBe(true);
+    // A noun's article is the learner's to state.
+    expect(field("Article").value).toBe("");
+    choose(field("Article"), "het");
+    typeInto(field("Example sentence"), "Ik doe een dutje.");
+    expect(save.disabled).toBe(false);
+    clickEl(save);
+    expect(onSavePersonal).toHaveBeenCalledWith("dutje", { translation: "nap", pos: "noun", article: "het", example: "Ik doe een dutje.", exampleEn: "" });
+  });
+
+  it("offers the sentence it was met in as the example", async () => {
+    await renderNotFound("Na de lunch doe ik een dutje.");
+    expect(field("Example sentence").value).toBe("Na de lunch doe ik een dutje.");
+  });
+});
+

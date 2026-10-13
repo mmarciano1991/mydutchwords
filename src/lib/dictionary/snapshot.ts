@@ -6,8 +6,8 @@
    offline and a dictionary update can be merged in later without touching
    what the learner edited (see lib/wordSources). */
 import type { DictionaryEntry, Gender } from "../types";
-import { isCognate } from "./checks";
-import type { Article, PreviewSense, SenseSnapshot, Sense, Use, WordEntry } from "./model";
+import { findTargetSpans, isCognate } from "./checks";
+import type { Article, Pos, PreviewSense, SenseSnapshot, Sense, Use, WordEntry } from "./model";
 import { searchKey } from "./normalize";
 
 /** The article a sense shows: its own, else its use's. */
@@ -125,18 +125,44 @@ export function entryFromPreview(wordId: string, form: string, p: PreviewSense):
   });
 }
 
-/** A word the dictionary doesn't have, with the learner's own translation:
- *  no part of speech, no article claimed, marked personal. */
-export function personalEntry(form: string, translation: string, sentence?: string): DictionaryEntry {
+/** What a learner supplies for a word the dictionary doesn't have: every
+ *  card needs a translation, a word type and a sentence to show the word in.
+ *  The article is theirs to state for a noun — left out, it is "unknown",
+ *  never guessed. The sentence's translation is optional. */
+export interface PersonalWord {
+  translation: string;
+  pos: Pos;
+  article?: "de" | "het";
+  example: string;
+  exampleEn?: string;
+}
+
+/** The fields a personal word still lacks — empty when it can be saved. */
+export function personalWordGaps(word: Partial<PersonalWord>): ("translation" | "pos" | "example")[] {
+  const gaps: ("translation" | "pos" | "example")[] = [];
+  if (!word.translation?.trim()) gaps.push("translation");
+  if (!word.pos) gaps.push("pos");
+  if (!word.example?.trim()) gaps.push("example");
+  return gaps;
+}
+
+/** A word the dictionary doesn't have, as the learner described it: no
+ *  article claimed beyond theirs, marked personal. */
+export function personalEntry(form: string, word: PersonalWord, sentence?: string): DictionaryEntry {
   const clean = form.trim();
+  const english = word.translation.trim();
+  const example = word.example.trim();
+  const exampleEn = word.exampleEn?.trim() ?? "";
+  const gender: Gender = word.pos === "noun" ? (word.article ?? "unknown") : "none";
   return {
     id: `p_${searchKey(clean)}`,
     dutch: clean,
-    english: translation,
-    gender: "none",
-    example: "",
-    exampleEn: "",
-    senses: [{ english: translation, example: "", exampleEn: "", gender: "none" }],
+    english,
+    gender,
+    example,
+    exampleEn,
+    senses: [{ english, example, exampleEn, gender, label: word.pos }],
+    pos: word.pos,
     metIn: sentence,
     personal: true,
     userEdited: ["english"],
@@ -145,26 +171,37 @@ export function personalEntry(form: string, translation: string, sentence?: stri
 
 /** A sense from the online dictionary (Wiktionary, fetched live) — shown
  *  only when the word isn't in ours, always with its source, and never
- *  claiming more than it has: no article unless the page states one. */
-export function onlineEntry(form: string, index: number, gloss: string, label: string | undefined, gender: DictionaryEntry["gender"]): DictionaryEntry {
-  const pos = (label ?? "").toLowerCase();
-  const known = ["noun", "verb", "adjective", "adverb", "preposition", "pronoun", "conjunction", "numeral", "interjection", "article"];
+ *  claiming more than it has: no article unless the page states one, no part
+ *  of speech it doesn't name (an unfamiliar label — "phrase", "proverb" — is
+ *  shown as the page writes it, never turned into "noun"), and the page's own
+ *  example for this sense, kept rather than dropped. */
+export function onlineEntry(
+  form: string,
+  index: number,
+  sense: { english: string; label?: string; gender: DictionaryEntry["gender"]; example?: string; exampleEn?: string }
+): DictionaryEntry {
+  const label = (sense.label ?? "").toLowerCase().trim();
+  const nl = sense.example?.trim() ?? "";
+  const en = sense.exampleEn?.trim() ?? "";
   const entry = entryOf({
     senseId: `o_${searchKey(form)}_${index}`,
     wordId: form,
     form,
     kind: "word",
-    pos: (known.includes(pos) ? pos : "noun") as SenseSnapshot["pos"],
-    useId: pos || "online",
-    article: gender === "de" || gender === "het" ? gender : undefined,
+    // The page's own label: PosPill shows any label, and every reader treats
+    // one outside POS_LABELS as an unknown kind ("other"), never as a noun.
+    pos: (label || "unknown") as SenseSnapshot["pos"],
+    useId: label || "online",
+    article: label === "noun" && (sense.gender === "de" || sense.gender === "het") ? sense.gender : undefined,
     articleUnverified: true,
-    gloss,
+    gloss: sense.english,
     variety: "NL",
     synonyms: [],
     antonyms: [],
-    examples: [],
+    // Only a sentence with its translation: a card never shows half an example.
+    examples: nl && en ? [{ nl, en, targetSpans: findTargetSpans(nl, [form]) ?? [], source: "corpus", origin: "wiktionary" }] : [],
     forms: [],
-    cognate: isCognate(form, gloss),
+    cognate: isCognate(form, sense.english),
   });
-  return { ...entry, gender: known.includes(pos) && pos !== "noun" ? "none" : entry.gender, senses: entry.senses.map((s) => ({ ...s, source: "online" })) };
+  return { ...entry, senses: entry.senses.map((s) => ({ ...s, source: "online" })) };
 }

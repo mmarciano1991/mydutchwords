@@ -70,16 +70,31 @@ jobs:
         if: env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != ''
         run: mkdir -p .cache/dictionary-build && npm run dictionary:publish -- --pull-registry
 
+      # Without the model step, a sense gets an example only from Wiktionary
+      # or Tatoeba — most don't (the first build: 57,183 of 73,926 senses
+      # without one), and they ship as "Example coming soon". Never silent.
       - name: Build
         run: |
           if [ -n "$ANTHROPIC_API_KEY" ] && [ "${{ github.event_name == 'schedule' || inputs.model }}" = "true" ]; then
             npm run dictionary:build -- --llm
           else
+            if [ -z "$ANTHROPIC_API_KEY" ]; then why="the ANTHROPIC_API_KEY secret is not set"; else why="the model input was off"; fi
+            echo "::warning title=Dictionary model step skipped::Senses with no corpus example ship without one, because $why. Set the secret and run this workflow with 'model' on to write and check the missing examples."
             npm run dictionary:build
           fi
 
       - name: Validate
         run: npm run dictionary:validate
+
+      # What the build still lacks (examples, translations, articles…), the
+      # most frequent words first — the list to work down.
+      - name: Audit completeness
+        if: always()
+        run: |
+          {
+            echo "## Dictionary completeness"
+            npm run -s dictionary:audit -- --build --markdown
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Report
         if: always()
@@ -99,6 +114,7 @@ jobs:
           path: |
             .cache/dictionary-build/doubt.jsonl
             .cache/dictionary-build/report.json
+            .cache/dictionary-build/audit.json
 
       - name: Publish to Supabase
         if: env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' && (github.event_name == 'schedule' || inputs.publish)

@@ -18,10 +18,10 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { compoundParts, mainParts } from "../lib/dictionary/compound";
 import { grammarNote } from "../lib/dictionary/grammar";
-import type { CompoundNode, SenseSnapshot, WordEntry } from "../lib/dictionary/model";
+import { POS_LABEL, POS_ORDER, type CompoundNode, type Pos, type SenseSnapshot, type WordEntry } from "../lib/dictionary/model";
 import type { LookupResult, WordMatch } from "../lib/dictionary/service";
 import { dictionarySource } from "../lib/dictionary/service";
-import { entryOf, onlineEntry, snapshotOf } from "../lib/dictionary/snapshot";
+import { entryOf, onlineEntry, personalWordGaps, snapshotOf, type PersonalWord } from "../lib/dictionary/snapshot";
 import { lookupWiktionary } from "../lib/wiktionary";
 import type { DictionaryEntry } from "../lib/types";
 import { Notice } from "./Notice";
@@ -68,6 +68,7 @@ export function SenseResults({
   preselect,
   onPickSuggestion,
   onSavePersonal,
+  sentence,
 }: {
   result: LookupResult;
   /** True when this sense is in the deck (by id, or a legacy card of the
@@ -79,8 +80,11 @@ export function SenseResults({
   preselect?: string[];
   /** A "Did you mean…?" suggestion was picked. */
   onPickSuggestion?: (form: string) => void;
-  /** Saves the query as a personal word with the learner's translation. */
-  onSavePersonal?: (form: string, translation: string) => void;
+  /** Saves the query as a personal word, as the learner described it. */
+  onSavePersonal?: (form: string, word: PersonalWord) => void;
+  /** The sentence the word was met in (Add from text) — offered as the
+   *  personal word's example. */
+  sentence?: string;
 }) {
   const items = useMemo(() => senseItems(result), [result]);
   const addable = items.filter((i) => !isInDeck(i));
@@ -171,7 +175,7 @@ export function SenseResults({
       )}
 
       {nothing && result.didYouMean.length === 0 && (
-        <OnlineResult form={result.query} isInDeck={isInDeck} onSave={onSave} fallback={<NotFound form={result.query} onSavePersonal={onSavePersonal} />} />
+        <OnlineResult form={result.query} isInDeck={isInDeck} onSave={onSave} fallback={<NotFound form={result.query} sentence={sentence} onSavePersonal={onSavePersonal} />} />
       )}
     </div>
   );
@@ -199,7 +203,7 @@ function OnlineResult({
         if (controller.signal.aborted) return;
         if (!entry) return setState({ status: "none" });
         const items = entry.senses.map((s, i) => {
-          const e = onlineEntry(entry.dutch, i, s.english, s.label, s.gender);
+          const e = onlineEntry(entry.dutch, i, s);
           return { snapshot: e.snapshot!, entry: e };
         });
         setState(items.length ? { status: "found", items } : { status: "none" });
@@ -225,10 +229,19 @@ function OnlineResult({
   );
 }
 
-/** "Word not found" + saving it with the learner's own translation. */
-function NotFound({ form, onSavePersonal }: { form: string; onSavePersonal?: (form: string, translation: string) => void }) {
+/** "Word not found" + saving it as a personal word. Every card needs a
+ *  translation, a word type and a sentence, so all three are asked for (the
+ *  sentence the word was met in is offered first); a noun's article is the
+ *  learner's to state, or "Not sure" — never guessed. */
+function NotFound({ form, sentence, onSavePersonal }: { form: string; sentence?: string; onSavePersonal?: (form: string, word: PersonalWord) => void }) {
   const [translation, setTranslation] = useState("");
+  const [pos, setPos] = useState<Pos | "">("");
+  const [article, setArticle] = useState<"de" | "het" | "">("");
+  const [example, setExample] = useState(sentence ?? "");
+  const [exampleEn, setExampleEn] = useState("");
   const [saved, setSaved] = useState(false);
+  const word = { translation, pos: pos || undefined, article: article || undefined, example, exampleEn };
+  const missing = personalWordGaps(word);
   return (
     <div className="addword__block">
       <Notice type="caution">
@@ -237,18 +250,48 @@ function NotFound({ form, onSavePersonal }: { form: string; onSavePersonal?: (fo
       {onSavePersonal && !saved && (
         <form
           className="personal-word"
+          aria-label="Save as a personal word"
           onSubmit={(e) => {
             e.preventDefault();
-            if (!translation.trim()) return;
+            if (missing.length || !word.pos) return;
             setSaved(true);
-            onSavePersonal(form, translation.trim());
+            onSavePersonal(form, { ...word, pos: word.pos });
           }}
         >
           <label className="auth-field">
             <span className="auth-field__label">Your translation</span>
-            <input className="text-input" value={translation} onChange={(e) => setTranslation(e.target.value)} lang="en" autoComplete="off" />
+            <input className="text-input" value={translation} onChange={(e) => setTranslation(e.target.value)} lang="en" autoComplete="off" required />
           </label>
-          <button className="btn btn--secondary" disabled={!translation.trim()}>
+          <label className="auth-field">
+            <span className="auth-field__label">Word type</span>
+            <select className="text-input" value={pos} onChange={(e) => setPos(e.target.value as Pos | "")} required>
+              <option value="">Choose…</option>
+              {POS_ORDER.map((p) => (
+                <option key={p} value={p}>
+                  {POS_LABEL[p]}
+                </option>
+              ))}
+            </select>
+          </label>
+          {pos === "noun" && (
+            <label className="auth-field">
+              <span className="auth-field__label">Article</span>
+              <select className="text-input" value={article} onChange={(e) => setArticle(e.target.value as "de" | "het" | "")}>
+                <option value="">Not sure</option>
+                <option value="de">de</option>
+                <option value="het">het</option>
+              </select>
+            </label>
+          )}
+          <label className="auth-field">
+            <span className="auth-field__label">Example sentence</span>
+            <input className="text-input" value={example} onChange={(e) => setExample(e.target.value)} lang="nl" autoComplete="off" placeholder={`A Dutch sentence with “${form}”`} required />
+          </label>
+          <label className="auth-field">
+            <span className="auth-field__label">Its translation (optional)</span>
+            <input className="text-input" value={exampleEn} onChange={(e) => setExampleEn(e.target.value)} lang="en" autoComplete="off" />
+          </label>
+          <button className="btn btn--secondary" disabled={missing.length > 0}>
             Save as a personal word
           </button>
         </form>

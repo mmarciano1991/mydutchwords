@@ -15,8 +15,8 @@
    The store is synced to the learner's account (lib/cloudState). */
 import { useSyncExternalStore } from "react";
 import { dictionarySource, lookup, type WordMatch } from "./dictionary/service";
-import { entryOf, snapshotOf } from "./dictionary/snapshot";
-import type { Pos, WordEntry } from "./dictionary/model";
+import { articleOf, articleUnverified, entryOf, snapshotOf } from "./dictionary/snapshot";
+import type { Pos, Sense, Use, WordEntry } from "./dictionary/model";
 import type { DictionaryEntry } from "./types";
 
 const STORE_KEY = "woordkast.customWords";
@@ -229,6 +229,92 @@ export async function fillMissingPos(ids: string[], signal?: AbortSignal): Promi
       const current = store.get(e.id);
       if (pos === undefined || !current) return;
       store.set(e.id, { ...current, pos });
+      changed++;
+    });
+    if (signal?.aborted) break;
+  }
+  if (changed) persist();
+  return changed;
+}
+
+/** How long before a card the dictionary couldn't complete is tried again —
+ *  a rebuilt dictionary may have its example by then. */
+export const DETAILS_RETRY_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** The one dictionary sense a card with no snapshot stands for: a sense of
+ *  the word itself (not of an inflected form) whose gloss matches the card's.
+ *  Null when none or several do — the card is then left as it is, never
+ *  completed from a guess. */
+export function matchingSense(entry: Pick<DictionaryEntry, "english">, matches: WordMatch[]): { use: Use; sense: Sense } | null {
+  const parts = new Set(entry.english.split(/[,;/]/).map(glossCore).filter(Boolean));
+  const hits = new Map<string, { use: Use; sense: Sense }>();
+  for (const m of matches) {
+    if (m.via !== "lemma" && m.via !== "variant") continue;
+    for (const use of m.word.uses) {
+      if (m.useIds && !m.useIds.includes(use.id)) continue;
+      for (const sense of use.senses) {
+        if (sense.gloss.split(/[,;/]/).some((g) => parts.has(glossCore(g)))) hits.set(sense.id, { use, sense });
+      }
+    }
+  }
+  return hits.size === 1 ? [...hits.values()][0] : null;
+}
+
+/** `entry` with what it lacks taken from its dictionary sense: an example
+ *  (with its translation) when it has none, a noun's article when it is
+ *  unknown and the dictionary's is verified, the part of speech when it was
+ *  never looked up. Nothing it has, and nothing the learner edited, is
+ *  replaced. Null when there is nothing to add. */
+export function completedEntry(entry: DictionaryEntry, { use, sense }: { use: Use; sense: Sense }): DictionaryEntry | null {
+  const edited = new Set(entry.userEdited ?? []);
+  let next = entry;
+  const example = sense.examples.find((e) => e.nl.trim() && e.en.trim());
+  if (example && !entry.example.trim() && !edited.has("example") && !edited.has("exampleEn")) {
+    next = {
+      ...next,
+      example: example.nl,
+      exampleEn: example.en,
+      senses: next.senses.map((s, i) => (i === 0 ? { ...s, example: example.nl, exampleEn: example.en, provisional: undefined } : s)),
+    };
+  }
+  const article = use.pos === "noun" && !articleUnverified(use) ? articleOf(use, sense) : undefined;
+  if (entry.gender === "unknown" && (article === "de" || article === "het")) {
+    next = { ...next, gender: article, senses: next.senses.map((s, i) => (i === 0 ? { ...s, gender: article } : s)) };
+  }
+  if (entry.pos === undefined) next = { ...next, pos: use.pos };
+  return next === entry ? null : next;
+}
+
+/** Completes every card among `ids` saved before the server dictionary (no
+ *  snapshot, so refreshEntries never reaches it) that lacks an example or a
+ *  noun's article, from the dictionary sense it unambiguously stands for.
+ *  A card that can't be completed is tried again after DETAILS_RETRY_MS, and
+ *  keeps showing its honest gap meanwhile ("Example coming soon"). */
+export async function fillMissingDetails(ids: string[], signal?: AbortSignal, now = Date.now()): Promise<number> {
+  const todo = ids
+    .map((id) => store.get(id))
+    .filter(
+      (e): e is DictionaryEntry =>
+        !!e && !e.snapshot && !e.personal && (!e.example.trim() || e.gender === "unknown") && now - (e.detailsCheckedAt ?? 0) >= DETAILS_RETRY_MS
+    );
+  let changed = 0;
+  for (let i = 0; i < todo.length; i += 8) {
+    const batch = todo.slice(i, i + 8);
+    const found = await Promise.all(
+      batch.map((e) =>
+        lookup(e.dutch, { signal }).then(
+          (r) => matchingSense(e, r.matches),
+          () => undefined
+        )
+      )
+    );
+    batch.forEach((e, j) => {
+      const hit = found[j];
+      const current = store.get(e.id);
+      // A failed lookup is tried again next launch.
+      if (hit === undefined || !current) return;
+      const completed = hit ? completedEntry(current, hit) : null;
+      store.set(e.id, { ...(completed ?? current), detailsCheckedAt: now });
       changed++;
     });
     if (signal?.aborted) break;

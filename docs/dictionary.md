@@ -89,7 +89,16 @@ Supabase project, the deploy workflow downloads the static shards from the
   the dictionary, and fields the learner edited (`userEdited`) are never
   overwritten. Deck ids saved before the server dictionary (`aanslag#1`) keep
   their stored content: the frozen legacy dictionary (`src/data/legacy/`)
-  is loaded once, only for such ids, to pin them.
+  is loaded once, only for such ids, to pin them. Those cards never get a
+  snapshot, so a launch also fills in what they **lack** (an example, a
+  noun's article) from the one dictionary sense their gloss names
+  (`fillMissingDetails`): never a guess, never over a field that is already
+  there or that the learner edited, and retried weekly when nothing matched.
+- A word the dictionary doesn't have can be saved as a **personal word**,
+  only with a translation, a word type and an example sentence (the sentence
+  it was met in is offered); a noun's article is the learner's to state, or
+  "Not sure" (`unknown`). A sense from the online dictionary keeps the
+  page's own example and part-of-speech label.
 
 ## The doubt queue: who reviews it
 
@@ -112,6 +121,25 @@ queue. The 1,915 frequent items are a few days' work for a Dutch-speaking
 reviewer, less after a model-step build. The pipeline doesn't read resolutions back yet:
 applying them to the next build (as an overrides layer between steps 3 and
 5) is the next piece of work.
+
+## Completeness audit
+
+`npm run dictionary:audit` (`-- --build` for a full build, `--markdown` for
+a table) counts what is **missing** rather than wrong: senses without an
+example, examples without a translation, nouns without an article or with an
+unverified one, uses without a part of speech. It lists the most frequent
+incomplete words first, which is where to start. The Dictionary workflow puts
+it in the run summary and keeps `audit.json` with the doubt queue. A build
+without the model step now raises a warning annotation instead of passing
+silently.
+
+The first production build (12 Oct 2026) ran **without** the model step
+(`ANTHROPIC_API_KEY` unset). Of 73,926 published senses, 18,246 have an
+example: 6,605 from Wiktionary and 11,641 from Tatoeba. **57,183 have
+none.** The fix is operational: set the secret and run the workflow with
+`model` on. The model writes an example for each sense that has none, and
+each one passes the same checks as a corpus sentence plus a second model's
+same-sense check. Anything that fails three times goes to the doubt queue.
 
 ## Known data gaps (first build, without the model step)
 
