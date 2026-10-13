@@ -485,3 +485,130 @@ schoon	conjunction	although
 schoon schip maken	verb	to come clean
 de kop is eraf	interjection	ice is broken
 eikel	noun	glans penis
+passen	verb	to give
+code	noun	book
+homo	noun	Used as a general slur
+gat	noun	port
+zwart gat	noun	temporary loss of memory
+Parijs	adjective	Parisian
+heilige	noun	Christian believer
+vakantie	noun	easy
+video	noun	videotape
+video	noun	video signal
+video	noun	video recorder
+ms	noun	multiple sclerosis
+opdracht	noun	transfer (of possessions, etc.)
+opdracht	noun	swelling
+klote	interjection	balls
+bruiloft	noun	wedding anniversary
+vorm	noun	format
+hoewel	conjunction	however
+majoor	noun	in compounds
+maan	noun	mane
+in vrijheid stellen	verb	release
+beweging	noun	group
+gemeen	adverb	in common
+gemeen	noun	common people
+gemeen	adjective	intense
+gemeen	adjective	common
+de geest is uit de fles	interjection	genie's out of the bottle
+dol	noun	thole(-pin)
+dol	adjective	mindless
+dol	noun	rowlock
+dol	adjective	stripped
+grote hersenen	noun	cerebrum
+kleine hersenen	noun	cerebellum
+voorkomen	verb	to appear
+voorkomen	verb	to get ahead
+doos	noun	vagina
+doos	noun	stupid female
+doos	noun	prison
+zwarte doos	noun	black box
+terecht	adverb	in judgment
+in het geweer komen tegen	verb	to come into action against
+bezit	noun	belonging
+top	noun	apex
+top	noun	top
+vergeven	adjective	overrun
+ophalen	verb	to haul up
+aan de wind	interjection	hauled
+wind	noun	flatulence
+met de voeten stemmen	verb	vote with one's feet
+voedsel	noun	nutrient
+geweld	noun	strong
+tonen	verb	to sound
+hopen	verb	to heap
+over de brug komen met	verb	to pay up
+jas	noun	jack
+grote trap	noun	great bustard (Otis tarda)
+kleine trap	noun	little bustard (Tetrax tetrax)
+trap	noun	ladder
+trap	noun	degree
+trap	noun	bustard
+huid	noun	hide
+huid	noun	hull of a ship
+hoer	noun	slut
+bedenken	verb	to bethink
+tegenhouden	verb	to arrest
+knul	noun	crude boor
+burgemeester	noun	synonym of kleine burgemeester (“Larus glaucoides”)
+burgemeester	noun	synonym of grote burgemeester (“Larus hyperboreus”)
+grote burgemeester	noun	glaucous gull
+kleine burgemeester	noun	Iceland gull
+officier van dienst	noun	member of an emergency service
+ster	noun	concave polygon with regular
+ster	noun	short advertisement
+ster	noun	celebrity
+ster	noun	any luminous astronomical
+roep	noun	reputation
+roep	noun	demand
+kus	noun	kiss of peace (Christian greeting)
+kus	noun	socialist fraternal kiss
+vrije tijd	interjection	free time
+beest	noun	animal kept as livestock
+halve rust	noun	half rest
+kamp	noun	political
+kamp	noun	field
+kamp	noun	battle
+kamp	noun	tournament
+steun	noun	backup
+steun	noun	dole
+afdeling	noun	regiment
+honderd	noun	hamlet in Eemsdelta
+nummer honderd	noun	toilet
+boel	noun	quarrel
+boel	noun	lover
+boel	noun	adulterer
+boel maken	verb	create a ruckus
+magie	noun	magical
+magie	noun	art of illusionism
+voeren	verb	to line
+bad	noun	act
+bad	noun	immersion
+bad gaan op	verb	to not be able to stand
+overkomen	verb	to come by
+pond	noun	pound (453.6 grams)
+pond	noun	Egyptian pound
+pond	noun	pound
+pond	noun	kilogram
+pond	noun	Flemish pound
+ballen	noun	as plurale tantum: gutts
+ballen	verb	to form into a ball
+ballen	verb	to fuck
+blik	noun	manner of looking
+blik	noun	sheet metal
+een post pakken	verb	fall
+een post pakken	verb	receive a poor response
+post	noun	mail office
+post	noun	location
+post	noun	post
+springen	verb	to explode
+zwak	adjective	shabby
+vuile ziekte	noun	sexually transmitted disease
+trekken	verb	to manage
+trekken	verb	to photograph
+toilet	noun	personal grooming
+steen	noun	stone (drupe pit)
+steen	noun	tile
+duizend	noun	thousand
+Jezus Christus	noun	Jesus Christ
