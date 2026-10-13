@@ -1218,3 +1218,98 @@ klasse	noun	classification
 klasse	noun	class
 sociale klasse	noun	social class
 humor	noun	humour (bodily fluid)
+Engelse ziekte	noun	rachitis
+arrestatie	noun	(temporary) confiscation of possessions
+geen kut	adverb	not at all
+geen kut	pronoun	nothing
+kut	noun	vulva
+kut	interjection	fuck!
+creëren	verb	to appoint
+beslag	noun	cover
+beslag	noun	horseshoe
+doodsbang	adjective	fearing death
+afschuwelijk	adverb	heinously
+zoenen	verb	to reconcile
+toren	noun	fin
+smeerlap	noun	dirtbag
+smeerlap	noun	gross person
+voorzien	verb	to facilitate
+voorzien	verb	to envision
+verzekering	noun	assurance
+koelkast	noun	unfashionable
+pest	noun	specific bovine plague
+doorzoeken	verb	to continue searching
+waarheid als een koe	noun	obvious truth
+jong	adjective	new
+hol	adverb	hollowly
+hol	noun	cargo hold
+hol	noun	run
+hol	noun	hill
+hol	noun	sloping road (as in Rotterdam)
+angel	noun	hook
+angel	noun	tang
+Angel	noun	Angle
+lust	noun	object of desire
+plat	adjective	of soft consistency
+plat	adjective	flat surface
+plat	adjective	common
+karakter	noun	role
+boy	noun	male domestic servant
+paspoort	noun	dismissal from military service
+link	noun	physical connection
+link	adjective	sly
+link	adjective	jolly
+nazi	noun	member of similar movements
+nazi	noun	authoritarian
+bekentenis	noun	acknowledgement
+uitslag	noun	act of bringing into circulation
+afval	noun	act of dropping out
+afval	noun	apostasy
+overste	noun	senior (boss)
+wennen	verb	to become familiar
+commando	noun	unit
+gemak	noun	toilet
+tweeling	noun	vegetal
+blauwe draak	noun	blue dragon
+draak	noun	Something formidable and very dangerous
+schakel	noun	shackle (chain shackle)
+favoriet	adjective	tipped to win
+heten	verb	to heat
+heten	verb	to heat up
+heten	verb	to stir
+heten	verb	to mean
+gewone raket	noun	hedge mustard (Sisymbrium officinale)
+straffen	verb	to sentence
+waanzin	noun	delusion
+wreed	adjective	wicked
+rotzak	noun	Eurasian jay (Garrulus glandarius)
+symbool	noun	(notably Chistian) creed
+waag	noun	wave
+waag	noun	water flow
+verkeer	noun	intercourse
+verkeer	noun	verquere
+knie	noun	kneeing
+glazen	verb	to glaze
+glazen	verb	to polish
+wade	noun	popliteus
+wade	noun	shroud
+wade	noun	type of trawl
+ton	noun	100
+scherm	noun	umbel
+inpakken	verb	to leave
+inpakken	verb	to fascinate
+maal	noun	stain
+maal	noun	mark
+laden	verb	to convocate
+laden	verb	to invite
+schoft	noun	withers
+attentie	noun	courteousness
+plant	noun	cabbage
+jongen	verb	to multiply
+wetenschapper	noun	scholar
+zwarte weduwe	noun	southern black widow (Latrodectus mactans)
+kanaal	noun	television
+kanaal	noun	duct-shaped tissue
+goedendag	noun	club with a spike on top
+versterking	noun	amplification
+versterking	noun	stronghold
