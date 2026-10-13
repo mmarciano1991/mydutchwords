@@ -743,3 +743,151 @@ blauw	noun	police)
 blauw	adjective	pertaining to aquatic nature
 blauw	adjective	drunk
 blauw betalen aan	verb	to pay through the nose for something
+aankomen	verb	to be acquired
+kust	noun	shoreline
+kust	noun	coastal region
+bleek	noun	bleach
+bleek	adjective	bleak
+bleek	noun	act of bleaching
+bleek	noun	bleachfield
+dier	pronoun	her
+wed	noun	ford
+wed	noun	drinking place for animals
+lossen	verb	to dump
+amper	adjective	sour
+stal	noun	pigsty
+stal	noun	pool of horses
+stal	noun	stall
+stal	noun	marked period of time
+stal	noun	thin pole
+stal	noun	leg of a piece of furniture
+stroom	noun	major river
+stroom	noun	smaller stream
+stroom	noun	electrical current
+wetenschap	noun	any academic discipline
+vals	adjective	incorrect
+blind	noun	window shutter
+voordeel	noun	front part
+ei	noun	female gamete
+Raad van Europa	noun	Council of Europe
+brak	noun	hound
+brak	adjective	bad
+natuur	noun	character
+wijs	adjective	nice
+buik	noun	paunch
+twee handen op één buik	interjection	(like) two peas in a pod
+lange vinger	noun	ladyfinger
+plus	noun	plus sign
+groene	noun	ecologist
+groene jongen	noun	ecologist
+groene jongen	noun	adherent of a green party
+groene pad	noun	European green toad
+groene pad	noun	natterjack
+groene tafel	noun	bench
+bomen	verb	to pole
+bomen	verb	to land on a tree (of a pheasant)
+bomen	verb	to chat
+personeel	adjective	personnel-related
+kort van stof	adjective	curt
+stof	noun	substance in general
+stof	noun	subject
+leraar	noun	Protestant clergyman
+IT	noun	information technology
+met de Franse slag	preposition	shoddily
+bergen	verb	to salvage (a vessel)
+woede	noun	frenzy
+heks	noun	witch
+gas	noun	liquefied petroleum gas
+gas	noun	unpaved street
+voorlopig	adjective	current
+verdacht	noun	suspicion
+naakt	adjective	nude
+naakt	noun	nude
+naakt	adjective	bare
+excuus	noun	pretext
+ongelofelijk	adjective	unbelievable
+opgewonden	adjective	agitated
+rijke	noun	rich one
+rijke	noun	wealthy person
+bord	noun	plank
+een bord voor zijn kop hebben	verb	to be blissfully ignorant
+behandeling	noun	medical
+kim	noun	horizon
+kim	interjection	horizon
+marine	noun	navy
+champagne	noun	Champagne
+champagne	noun	brand
+champagne	noun	color champagne
+terrein	noun	speciality
+terrein verliezen aan	verb	to lose ground to
+terrein winnen aan	verb	to gain ground at
+staat	noun	table
+pot	noun	kitty
+pot	noun	loo
+pot	noun	dyke (lesbian)
+pot	noun	cooking pot
+donkere energie	noun	dark energy
+poort	noun	nutmeg
+brood	noun	similar bakery product
+brood	noun	someone's livelihood
+partij	noun	village in Gulpen-Wittem
+partij	noun	festivity
+verdieping	noun	deepening
+voorbeeld	noun	preview
+vliegveld	noun	airfield
+markt	noun	whole of trade
+markt	noun	single
+zwarte markt	interjection	black market
+centrum	noun	centre (UK)
+centrum	noun	centralised facility
+ontzettend	adjective	offputting
+ontzettend	adverb	offputtingly
+Amerikaanse zwarte beer	noun	American Black Bear
+beer	noun	buttress
+beer	noun	male badger
+Kleine Beer	noun	Ursa Minor
+Kleine Beer	noun	procyonid
+zwarte beer	noun	American black bear (Ursus americanus)
+zwarte beer	noun	Asian black bear (Ursus thibetanus)
+naar de wijze der vrouwen gaan	verb	to menstruate
+wijze	noun	melody
+wijze	noun	mood of speech
+huur	noun	renting
+omgaan	verb	to go around
+omgaan	verb	to go around completely
+omgaan	verb	to pass
+hartelijk	adjective	cordial
+hartelijk	adjective	hearty
+hartelijk	adjective	hospitable
+hartelijk	adjective	outgoing
+online	adjective	online
+meent	noun	communal pasture
+meent	noun	community
+zelfde	pronoun	like
+proost	noun	provost
+proost	interjection	bless you (response to sneezing)
+code kloppen	verb	to write code
+kloppen	verb	to defeat
+kloppen	verb	to pulsate
+kloppen	verb	to lead the devoutly professed
+vierde	noun	fourth in ranking
+vierde	noun	one in four parts
+opzoeken	verb	to seek
+schrikken	verb	to quench
+optreden	noun	behaviour
+optreden	noun	action (een militair optreden)
+jacht	noun	chase
+jeugd	noun	state
+toestand	noun	situation
+toestand	noun	unpleasant situation
+mars	interjection	march! (military command)
+mars	noun	basket
+bewaren	verb	to guard
+teleurgesteld	adverb	disappointed
+ramp	noun	accident
+ramp	noun	ramp
+ramp	noun	driveway
+verzet	noun	diversion
+steunen	verb	to rest
+steunen	verb	to moan
+rode wolf	noun	Red Wolf
