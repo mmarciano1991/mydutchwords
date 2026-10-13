@@ -138,3 +138,106 @@ zeer	noun	sore spot
 zeer	noun	cause of physical pain
 iemand liggen hebben	verb	take advantage of
 vaak	noun	sleepiness
+vol	adjective	complete
+uit de buurt	preposition	inaccurate
+drinken	verb	to be an alcoholic
+dicht	noun	poem
+dicht	noun	poetry
+wapen	noun	branch
+kop	noun	pegbox
+hele rust	noun	whole rest
+recht	noun	formal fee
+recht zo die gaat	interjection	straight ahead
+kantoor	noun	cabinet
+hard	adjective	rich in calcium
+vanaf	preposition	away from
+klootzak	noun	ball sack
+stuk	noun	hottie
+zin	noun	comprehension
+zus	adverb	so
+pap	noun	mush
+pap	noun	pa
+erin gaan	verb	to be desirable
+kerel	noun	long overgarment
+van gisteren zijn	verb	to be born yesterday
+film	noun	film production
+bellen	verb	(intransitive) to bark
+bellen	verb	(transitive) to bark
+kapitein	noun	captain (military officer)
+enkel	pronoun	some
+het licht zien	verb	to gain understanding
+het licht zien	verb	to undergo a conversion
+licht	noun	light source
+licht	noun	inspiration
+eerste persoon	interjection	first person
+natuurlijk persoon	noun	natural person
+persoon	noun	character
+persoon	noun	hypostasis
+in slechte handen	preposition	not in good hands
+ziekenhuis	noun	infirmary
+hond	noun	derogatory term for a human
+wilde hond	noun	African Hunting Dog
+aarde	noun	personification of humanity's homeworld
+normaal	noun	normal
+normaal	adjective	perpendicular
+lopen	noun	dry measure of content
+vechten	noun	hamlet in Bunnik
+op het punt staan	verb	to be about (to)
+contact	noun	physical contact
+contact	noun	contact (communication, exchange)
+contact	noun	contact
+verkeerd	adjective	distorted
+ziek	noun	hamlet in Oude IJsselstreek
+ziek	adjective	excellent
+heer	noun	cleric
+heer	noun	army
+in de Heer zijn	verb	to be devout
+Jezus	noun	Jesus
+spel	noun	playing
+te boek stellen	verb	to book (write down)
+zeker stellen	verb	secure
+koning	noun	top-dog
+koning auto	noun	predominance of car transport
+met de grond gelijk maken	verb	to demolish
+van de grond gaan	verb	to have sex
+waard	noun	innkeeper
+waard	noun	landlord
+waard	noun	holm
+waard	noun	type of foreland
+waard	noun	dwelling mound
+winnen	verb	to acquire
+winnen	verb	to extract
+acht	noun	attention
+verlaten	verb	to belate
+leger	noun	form
+leger	noun	mass
+leger	noun	bed
+trots	preposition	despite
+trots dat	adverb	anyhow
+weinig	noun	little
+makkelijk	adjective	complacent
+als en slechts als	conjunction	if and only if
+dan en slechts dan als	conjunction	if and only if
+lief	adverb	dear
+voor lief nemen	verb	to take for granted
+lijken	verb	to please
+weer om geen hond door te sturen	noun	extremely bad weather
+slachtoffer	noun	sacrificial victim
+van dienst zijn	interjection	be on duty
+van dienst zijn	interjection	take on a certain role
+feest	noun	feast
+jawel	adverb	yessir
+raar	noun	hamlet in Meerssen
+absoluut	adjective	absolutist
+schuldig	adverb	guilty
+sterk	noun	distilled beverage
+sterk	adjective	pertaining to strong verbs
+sterk	adjective	pertaining to strong nouns
+omhoog	adverb	on high
+hemel	noun	canopy
+in ene	adverb	suddenly
+fantastisch	adjective	imaginative
+bank	noun	bank
+bank	noun	banknote
+vol	adjective	complete
+zin	noun	sense
