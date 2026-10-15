@@ -17,6 +17,7 @@ import { useSyncExternalStore } from "react";
 import { dictionarySource, lookup, type WordMatch } from "./dictionary/service";
 import { articleOf, articleUnverified, entryOf, snapshotOf } from "./dictionary/snapshot";
 import type { Pos, Sense, Use, WordEntry } from "./dictionary/model";
+import { requestExample } from "./exampleService";
 import type { DictionaryEntry } from "./types";
 
 const STORE_KEY = "woordkast.customWords";
@@ -165,7 +166,12 @@ export async function refreshEntries(ids: string[], signal?: AbortSignal): Promi
       for (const sense of use.senses) {
         const old = store.get(sense.id);
         if (!old) continue;
-        const fresh = { ...entryOf(snapshotOf(word, use, sense)), metIn: old.metIn };
+        let snapshot = snapshotOf(word, use, sense);
+        // An example written on demand (fillMissingExamples) stays until the
+        // dictionary ships one of its own.
+        const generated = old.snapshot?.examples[0];
+        if (!snapshot.examples.length && generated?.source === "generated") snapshot = { ...snapshot, examples: [generated] };
+        const fresh = { ...entryOf(snapshot), metIn: old.metIn, exampleRequestedAt: old.exampleRequestedAt };
         const merged = old.userEdited?.length ? mergeKeepingEdits(fresh, old) : fresh;
         if (JSON.stringify(merged) !== JSON.stringify(old)) {
           store.set(sense.id, merged);
@@ -318,6 +324,49 @@ export async function fillMissingDetails(ids: string[], signal?: AbortSignal, no
       changed++;
     });
     if (signal?.aborted) break;
+  }
+  if (changed) persist();
+  return changed;
+}
+
+/** At most this many examples are asked for per call — the first cards of a
+ *  big import fill now, the rest on later launches. */
+export const EXAMPLES_PER_RUN = 12;
+
+/** Gives every dictionary sense among `ids` that has no example one, from
+ *  the "example" function (lib/exampleService): written once per sense on
+ *  the server and shared by every learner. Personal words, cards whose
+ *  example the learner edited, and cards from before the server dictionary
+ *  are left alone. A sense the server has no example for is asked again
+ *  after DETAILS_RETRY_MS; one that couldn't be reached, next time. */
+export async function fillMissingExamples(ids: string[], signal?: AbortSignal, now = Date.now()): Promise<number> {
+  const todo = ids
+    .map((id) => store.get(id))
+    .filter(
+      (e): e is DictionaryEntry =>
+        !!e?.snapshot &&
+        !e.personal &&
+        !e.example.trim() &&
+        !e.userEdited?.some((f) => f !== "english") &&
+        now - (e.exampleRequestedAt ?? 0) >= DETAILS_RETRY_MS
+    )
+    .slice(0, EXAMPLES_PER_RUN);
+  let changed = 0;
+  for (let i = 0; i < todo.length && !signal?.aborted; i += 3) {
+    const batch = todo.slice(i, i + 3);
+    const results = await Promise.all(batch.map((e) => requestExample(e.snapshot!.senseId, signal)));
+    batch.forEach((e, j) => {
+      const result = results[j];
+      const current = store.get(e.id);
+      if (result.kind === "offline" || !current?.snapshot) return;
+      if (result.kind === "none" || current.example.trim()) {
+        store.set(e.id, { ...current, exampleRequestedAt: now });
+      } else {
+        const fresh = { ...entryOf({ ...current.snapshot, examples: [result.example] }), metIn: current.metIn, exampleRequestedAt: now };
+        store.set(e.id, current.userEdited?.length ? mergeKeepingEdits(fresh, current) : fresh);
+      }
+      changed++;
+    });
   }
   if (changed) persist();
   return changed;

@@ -32,7 +32,7 @@ import { loadFrequency, UNRANKED } from "./sources/frequency.mjs";
 import { loadTatoeba } from "./sources/tatoeba.mjs";
 import { assembleWord, glossFailures } from "./assemble.mjs";
 import { assignExamples, exampleIssues, indexTatoeba, targetForms } from "./examples.mjs";
-import { loadStoredExamples, storedKey } from "./stored.mjs";
+import { GENERATED_FILE, loadStoredExamples, storedKey } from "./stored.mjs";
 import { assignSenseIds, loadRegistry, saveRegistry } from "./ids.mjs";
 import { buildCompound, morphemesOf, stressOf } from "./morphology.mjs";
 
@@ -374,7 +374,7 @@ for (const word of words.values()) {
 // Stored examples (data/examples): written once for senses no corpus covers,
 // checked here exactly like a corpus sentence, and only for a sense still
 // without one.
-const stored = loadStoredExamples();
+const stored = loadStoredExamples(undefined, join(OUT_DIR, GENERATED_FILE));
 for (const word of words.values()) {
   for (const use of word.uses) {
     for (const sense of use.senses) {

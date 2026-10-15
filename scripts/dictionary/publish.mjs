@@ -14,6 +14,7 @@ import { createClient } from "@supabase/supabase-js";
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { OUT_DIR } from "./paths.mjs";
+import { GENERATED_FILE } from "./stored.mjs";
 import { confusionKey } from "../../src/lib/dictionary/normalize.ts";
 import { previewOf } from "../../src/lib/dictionary/model.ts";
 
@@ -42,6 +43,22 @@ if (process.argv.includes("--pull-registry")) {
   }
   writeFileSync(join(OUT_DIR, "registry.json"), JSON.stringify(entries));
   console.log(`registry: ${entries.length} entries pulled`);
+
+  // Examples the "example" function wrote on demand: the build folds them in
+  // like stored examples (stored.mjs), after the same checks.
+  const generated = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await db.from("dict_generated_examples").select("form, pos, gloss, nl, en").order("sense_id").range(from, from + 999);
+    if (error) {
+      // Before the migration is applied there is simply nothing to pull.
+      console.log(`generated examples: none pulled (${error.message})`);
+      break;
+    }
+    generated.push(...data);
+    if (data.length < 1000) break;
+  }
+  writeFileSync(join(OUT_DIR, GENERATED_FILE), generated.map((r) => [r.form, r.pos, r.gloss, r.nl, r.en].map((v) => v.replace(/[\t\n]/g, " ")).join("\t")).join("\n"));
+  console.log(`generated examples: ${generated.length} pulled`);
   process.exit(0);
 }
 

@@ -151,9 +151,36 @@ same-sense check. Anything that fails three times goes to the doubt queue.
   one.
 - **beschikking**: the administrative sense ("decision, ruling") sits in the
   second half of a long Wiktionary gloss. Only the model step can select it.
-- About 60k of 75k senses have no example yet ("Example coming soon").
-  Wiktionary gives 6.6k examples and Tatoeba 9.4k; the model step writes
-  the rest.
+- Examples: Wiktionary gives 6.6k and Tatoeba 9.4k. A further ~19.6k were
+  written once and stored in `data/examples/` (see `stored.mjs`), which
+  covers every sense of the 30,000 most frequent words. The remaining
+  senses, all of rare words, get one **on demand** (below) rather than all
+  up front.
+
+## Examples on demand
+
+A sense that still has no example gets one the moment a learner saves it:
+the app calls the `example` Edge Function (`supabase/functions/example`),
+which
+
+1. returns the sentence already written for that sense, if any
+   (`dict_generated_examples`);
+2. otherwise asks a small model (`claude-haiku-5-5`) for one sentence and
+   translation, runs the mechanical checks (`check.ts`: the word is in it,
+   it's card-sized, the translation is real), and stores it — so a sense is
+   paid for once and shared by everyone;
+3. gives up on a sense after three failed requests (`dict_example_attempts`).
+
+The next build pulls those sentences (`publish.mjs --pull-registry` writes
+`generated-examples.tsv`) and folds them in like stored examples, after the
+full checks (OpenTaal spelling, de/het); one that fails goes to the doubt
+queue. In the app, `lib/wordSources fillMissingExamples` asks for at most
+12 per launch, keeps the sentence through deck refreshes until the
+dictionary ships its own, and never touches a learner's own example.
+
+Cost: one short request per sense, about a hundredth of a cent with Haiku —
+only for senses learners actually save. Setup is in
+[`example-setup.md`](example-setup.md).
 
 The acceptance tests that depend on the model step
 (`src/lib/dictionary/acceptance.test.ts`) run when the fixture comes from a

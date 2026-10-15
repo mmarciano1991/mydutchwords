@@ -24,3 +24,9 @@ secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
 # works signed out — so no JWT check; the function only speaks short words.
 [functions.tts]
 verify_jwt = false
+
+# Example sentences on demand, for dictionary senses that shipped without
+# one. Callable without an account like tts; it only accepts dictionary
+# sense ids and writes each sense's sentence once, which bounds the spend.
+[functions.example]
+verify_jwt = false

@@ -71,6 +71,7 @@ vi.mock("./lib/wordSources", () => ({
   pinLegacyEntries: () => Promise.resolve(),
   fillMissingPos: () => Promise.resolve(0),
   fillMissingDetails: () => Promise.resolve(0),
+  fillMissingExamples: () => Promise.resolve(0),
   refreshEntries: () => Promise.resolve(0),
 }));
 

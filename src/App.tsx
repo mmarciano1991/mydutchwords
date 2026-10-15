@@ -4,6 +4,7 @@ import {
   addCustomEntry,
   editEntry,
   fillMissingDetails,
+  fillMissingExamples,
   fillMissingPos,
   pinLegacyEntries,
   refreshEntries,
@@ -292,6 +293,9 @@ export default function App() {
       if (typeof navigator !== "undefined" && navigator.onLine === false) return;
       await fillMissingPos(ids).catch((err) => console.info("[woordkast] part-of-speech lookup skipped", err));
       await fillMissingDetails(ids).catch((err) => console.info("[woordkast] example/article lookup skipped", err));
+      // A dictionary sense that shipped without an example gets one written
+      // on demand — the first learner to save it pays, everyone after reads.
+      await fillMissingExamples(ids).catch((err) => console.info("[woordkast] example request skipped", err));
     });
   }, [deck]);
 

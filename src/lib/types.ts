@@ -116,6 +116,9 @@ export interface DictionaryEntry {
   /** When a card saved before the server dictionary was last looked up for
    *  the example or article it lacks (lib/wordSources fillMissingDetails). */
   detailsCheckedAt?: number;
+  /** When an example was last asked for, for a dictionary sense that
+   *  shipped without one (lib/wordSources fillMissingExamples). */
+  exampleRequestedAt?: number;
 }
 
 /** A word the user has added to their flashcard deck: dictionary entry id +
