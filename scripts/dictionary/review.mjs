@@ -9,7 +9,7 @@
 
    Tier 1  claude-haiku-5-5 reads 25 senses per request (gloss, the word's
            other meanings, the example) and only says ok or what is wrong.
-   Tier 2  claude-haiku-5-5 (or --fix-model=claude-sonnet-5-5), for flagged senses only, confirms the problem
+   Tier 2  claude-sonnet-5-5 (or --fix-model=claude-haiku-5-5), for flagged senses only, confirms the problem
            and proposes the smallest fix: a gloss, an example, or dropping
            the sense.
    Check   a new gloss must pass the gloss rule, a new example the cheap
@@ -36,8 +36,10 @@ import { ROOT } from "./paths.mjs";
 import { storedKey } from "./stored.mjs";
 
 export const TRIAGE_MODEL = "claude-haiku-5-5";
-/** Tier 2 model; --fix-model=claude-sonnet-5-5 for the larger one. */
-export const FIX_MODEL = "claude-haiku-5-5";
+/** Tier 2 model. Haiku alone (--fix-model=claude-haiku-5-5) costs a tenth,
+ *  but in the pilot it dropped core meanings ("ik hou van jou", "door:
+ *  through") and wrote wrong Dutch ("Het licht is nu af"). */
+export const FIX_MODEL = "claude-sonnet-5-5";
 export const CHECK_MODEL = "claude-haiku-5-5";
 const GROUP = 25;
 const FIX_GROUP = 5;

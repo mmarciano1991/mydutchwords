@@ -170,9 +170,9 @@ counts ("corrections: …").
 **Tiers 1–2 — the review** (`scripts/dictionary/review.mjs`, workflow
 *Dictionary review*). `claude-haiku-5-5` reads 25 senses per request and only
 says what is wrong (wrong meaning, unnatural or ungrammatical Dutch, bad
-translation, bad gloss, place name, slur, duplicate). `claude-haiku-5-5`
-again (or `claude-sonnet-5-5`, the workflow's `fix_model`) looks at the
-flagged ones alone and proposes the smallest fix: a gloss, an
+translation, bad gloss, place name, slur, duplicate). `claude-sonnet-5-5`
+(the workflow's `fix_model`; Haiku alone costs a tenth but dropped core
+meanings in the pilot) looks at the flagged ones alone and proposes the smallest fix: a gloss, an
 example, or dropping the sense. A new gloss must pass the gloss rule, a new
 example the mechanical checks and a second model's same-meaning check. All
 through the Batches API, at half price.
