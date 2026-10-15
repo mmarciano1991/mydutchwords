@@ -100,6 +100,15 @@ describe("fix validation", () => {
     });
   });
 
+  it("keeps a gloss fix when its example fails, and ignores an unchanged example", () => {
+    expect(correctionsOf(bank, { action: "fix", gloss: "park bench", nl: "Ik zit op een stoel.", en: "I sit on a chair.", reason: "r" })).toMatchObject({
+      action: "fix",
+      gloss: "park bench",
+      exampleRejected: expect.stringContaining("word not found"),
+    });
+    expect(correctionsOf(bank, { action: "fix", gloss: null, nl: "Ik zit op de bank.", en: "I sit on the bench.", reason: "r" })).toEqual({ action: "keep" });
+  });
+
   it("rejects a gloss that breaks the gloss rule, or an example without the word", () => {
     expect(correctionsOf(bank, { action: "fix", gloss: "bench, seat, couch", nl: null, en: null, reason: "" }).action).toBe("rejected");
     expect(correctionsOf(bank, { action: "fix", gloss: null, nl: "Ik zit op een stoel.", en: "I sit on a chair.", reason: "" })).toMatchObject({ action: "rejected", why: expect.stringContaining("word not found") });

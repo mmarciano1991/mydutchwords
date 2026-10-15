@@ -39,6 +39,7 @@ export const TRIAGE_MODEL = "claude-haiku-5-5";
 export const FIX_MODEL = "claude-sonnet-5-5";
 export const CHECK_MODEL = "claude-haiku-5-5";
 const GROUP = 25;
+const FIX_GROUP = 5;
 /** $ per million tokens, input / output, before the 50% batch discount. */
 export const PRICES = { "claude-haiku-5-5": [0.1, 0.5], "claude-sonnet-5-5": [2, 10] };
 
@@ -154,31 +155,39 @@ const TRIAGE_SCHEMA = {
   additionalProperties: false,
 };
 
-export const FIX_SYSTEM = `You correct entries of a Dutch-to-English dictionary for language learners. A first reviewer flagged possible problems with ONE meaning of a Dutch word. Decide whether each problem is real, then propose the smallest fix:
+export const FIX_SYSTEM = `You correct entries of a Dutch-to-English dictionary for language learners. A first reviewer flagged possible problems with each numbered item, ONE meaning of a Dutch word. For every item, decide whether the problems are real, then propose the smallest fix:
 - "keep": nothing is actually wrong.
 - "fix": give a corrected gloss and/or a new example; use null for what stays as it is.
   - gloss: the English translation of this meaning, at most 3 content words, plus at most one short parenthetical; verbs start with "to"; no articles.
   - example: one short, natural, everyday Dutch sentence (5-12 words) using the word in exactly this meaning, standard Netherlands spelling, correct de/het, the word itself or an inflected form, a separable verb not split; and its natural English translation. No names of people, no quotation marks.
-- "drop": this meaning does not exist for this word, is a place name, duplicates one of the other meanings, or is a slur.
-Give a one-sentence reason.`;
+- "drop": this meaning does not exist for this word, is a place name, duplicates one of the other meanings, is a slur, or is so obscure or archaic that it only confuses a learner.
+Answer every item, with its number and a one-sentence reason.`;
 
-export function fixText(it, problems) {
-  return [
-    triageItemText(it, 1).replace(/^1\. /, "Word: "),
-    `Flagged problems: ${problems.join(", ")}`,
-  ].join("\n");
+export function fixText(it, problems, n = 1) {
+  return [triageItemText(it, n), `   flagged problems: ${problems.join(", ")}`].join("\n");
 }
 
 const FIX_SCHEMA = {
   type: "object",
   properties: {
-    action: { type: "string", enum: ["keep", "fix", "drop"] },
-    gloss: { anyOf: [{ type: "string" }, { type: "null" }] },
-    nl: { anyOf: [{ type: "string" }, { type: "null" }] },
-    en: { anyOf: [{ type: "string" }, { type: "null" }] },
-    reason: { type: "string" },
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          n: { type: "integer" },
+          action: { type: "string", enum: ["keep", "fix", "drop"] },
+          gloss: { anyOf: [{ type: "string" }, { type: "null" }] },
+          nl: { anyOf: [{ type: "string" }, { type: "null" }] },
+          en: { anyOf: [{ type: "string" }, { type: "null" }] },
+          reason: { type: "string" },
+        },
+        required: ["n", "action", "gloss", "nl", "en", "reason"],
+        additionalProperties: false,
+      },
+    },
   },
-  required: ["action", "gloss", "nl", "en", "reason"],
+  required: ["items"],
   additionalProperties: false,
 };
 
@@ -202,15 +211,17 @@ export function correctionsOf(it, answer) {
   const out = { action: "fix", reason: answer.reason };
   if (answer.gloss && answer.gloss.trim() !== it.gloss) {
     const gloss = answer.gloss.normalize("NFC").trim();
+    // An example written for a gloss that can't be used can't be used either.
     if (glossIssues(gloss).length) return { action: "rejected", why: `gloss: ${glossIssues(gloss).join(", ")}` };
     out.gloss = gloss;
   }
-  if (answer.nl || answer.en) {
+  if ((answer.nl || answer.en) && answer.nl?.trim() !== it.example?.nl) {
     const { issues, nl, en } = issuesOf({ nl: answer.nl, en: answer.en }, it.forms);
-    if (issues.length) return { action: "rejected", why: `example: ${issues.join(", ")}` };
-    out.example = { nl, en };
+    // A failed example doesn't cost the gloss fix that came with it.
+    if (issues.length) out.exampleRejected = `example: ${issues.join(", ")}`;
+    else out.example = { nl, en };
   }
-  if (!out.gloss && !out.example) return { action: "keep" };
+  if (!out.gloss && !out.example) return out.exampleRejected ? { action: "rejected", why: out.exampleRejected } : { action: "keep" };
   return out;
 }
 
@@ -320,24 +331,33 @@ async function main() {
   });
   log(`tier 1: ${flagged.length} of ${batch.length} flagged`);
 
-  // Tier 2: confirm and fix.
-  log(`tier 2: ${flagged.length} requests to ${FIX_MODEL}`);
+  // Tier 2: confirm and fix, a few senses per request — the instructions
+  // are most of a request's tokens.
+  const fixGroups = [];
+  for (let i = 0; i < flagged.length; i += FIX_GROUP) fixGroups.push(flagged.slice(i, i + FIX_GROUP));
+  log(`tier 2: ${flagged.length} senses in ${fixGroups.length} requests to ${FIX_MODEL}`);
   const fixes = await runBatch(
     api,
-    flagged.map((f, i) => ({
-      custom_id: `f${i}`,
+    fixGroups.map((g, gi) => ({
+      custom_id: `f${gi}`,
       params: {
         model: FIX_MODEL,
-        max_tokens: 4000,
+        max_tokens: 8000,
         output_config: { effort: "medium", ...jsonFormat(FIX_SCHEMA) },
         system: FIX_SYSTEM,
-        messages: [{ role: "user", content: fixText(f.it, f.problems) }],
+        messages: [{ role: "user", content: g.map((f, i) => fixText(f.it, f.problems, i + 1)).join("\n\n") }],
       },
     })),
     usage,
     log
   );
-  const proposals = flagged.map((f, i) => ({ ...f, answer: fixes.get(`f${i}`), result: correctionsOf(f.it, fixes.get(`f${i}`)) }));
+  const proposals = fixGroups.flatMap((g, gi) => {
+    const answers = new Map((fixes.get(`f${gi}`)?.items ?? []).map((a) => [a.n, a]));
+    return g.map((f, i) => {
+      const answer = answers.get(i + 1);
+      return { ...f, answer, result: correctionsOf(f.it, answer) };
+    });
+  });
 
   // Check: a second model reads every new example.
   const toCheck = proposals.filter((p) => p.result.example);
@@ -364,7 +384,10 @@ async function main() {
   );
   toCheck.forEach((p, i) => {
     const c = checks.get(`c${i}`);
-    if (!c?.sameSense || !c?.naturalDutch || !c?.translationMatches) p.result = { action: "rejected", why: "example: second model disagreed" };
+    if (c?.sameSense && c?.naturalDutch && c?.translationMatches) return;
+    // The gloss fix stands on its own; only the example goes.
+    if (p.result.gloss) p.result = { ...p.result, example: undefined, exampleRejected: "example: second model disagreed" };
+    else p.result = { action: "rejected", why: "example: second model disagreed" };
   });
 
   // Write corrections and the review log.
