@@ -1,0 +1,253 @@
+# drop: round 1 of the review (5,000 most frequent senses), after the guards and a hand review — see corrections.mjs
+geen	adjective	yonder	'Geen' does not mean 'yonder'; that sense comes only from the fixed phrase 'gene zijde' (from archaic 'gene'), so it is wrong and confusing.
+nu	noun	the present (moment)	'nu' as a noun is het, not de, and this meaning duplicates the 'het nu' entry.
+even	adverb	shortly	'Shortly' is a poor sense of 'even' and duplicates the 'for a moment/short period' meanings.
+weer	noun	resistance	'Weer' as resistance or defense is archaic (in 'te weer staan', 'zich te weer stellen') and duplicates the 'defense' meaning already listed.
+doen	noun	routine	'Uit zijn doen' is an archaic fixed phrase, and 'het doen' as a noun meaning routine only confuses learners.
+keer	noun	reversion	The sense "reversion/turn" is rare and the example is unnatural; it confuses learners compared with the main meaning "time".
+vinden	verb	to find	This meaning duplicates the other listed meaning 'to find (after searching)'.
+sorry	interjection	sorry	It duplicates the other 'sorry' entry, which is the more specific one for expressing regret.
+beetje	pronoun	bit of	The meaning 'a little' is already listed for beetje, so this 'bit of' sense duplicates it.
+open	adjective	open	The plain 'open' sense duplicates the other listed open meanings and is the basic sense, but this entry adds nothing distinct from the other open senses.
+blij	noun	colour of lead	This archaic noun sense (colour of lead) is obscure and only confuses a learner.
+blij	noun	lead (metal)	The archaic noun "blij" for lead is obscure; the modern word is lood, so it would only confuse a learner.
+pas op de plaats maken	verb	to pause	"To pause" is essentially the same as the idiom's other meaning 'to mark time' (halt in place), so it duplicates it and is misleading.
+pijn	noun	hurt	"Hurt" duplicates the meaning 'pain', which is already listed and matches the example.
+kamer	noun	board	The meaning 'board' (as in room and board) is not a real standalone sense of kamer, so it is confusing.
+kamer	noun	special	An archaic sense glossed 'special' does not exist for the noun kamer and would only confuse learners.
+agent	noun	middleman	Middleman is essentially the same as the broker/agent meaning already listed, so it duplicates it.
+eerder	noun	plower	"eerder" as a noun meaning plower is not a real Dutch word (the word would be 'ploeger'), so the entry is spurious.
+groot	adverb	largely	"groot" is an adjective and "grotendeels" or "in grote mate" covers the adverbial sense, so a separate adverb entry glossed "largely" is not a real standalone meaning.
+hoeven	verb	to be necessary	"to be necessary" duplicates the existing "to need to" / "to need" meanings of hoeven.
+bloed	noun	grave consequence	'Grave consequence' is not a real standalone meaning of 'bloed' and is obscure or idiomatic at best.
+bloed	noun	whole body	'Whole body' is not a real meaning of 'bloed'; it is only found in rare figurative uses and would confuse a learner.
+voorbij	adjective	past	"voorbij" as 'past' is already covered by the adverb/preposition entries, and the adjective use is marginal, so this duplicates other meanings.
+rond	adverb	around (implying motion)	The motion sense of 'around' duplicates the other 'around' meaning for the adverb.
+rond	noun	sphere	'Sphere' duplicates the other meanings of 'het rond' such as circle and sphericity, and is rare.
+baas	noun	employer	"Employer" duplicates the existing "boss" meaning, which already covers this sense.
+lichaam	noun	corpse	'Corpse' is not the usual meaning of lichaam (that would be 'lijk'), though 'body' covers it, so this meaning duplicates 'body' and is wrong.
+lichaam	noun	division ring	"Division ring" is not a meaning of lichaam; it is a bizarre, wrong sense.
+lichaam	noun	field	"Field" is not a normal meaning of lichaam (only in physics jargon, e.g. a heavenly body), and would confuse learners.
+gezicht	noun	figurehead	"Figurehead" is not a meaning of gezicht; that would be a different word (boegbeeld).
+van God los	preposition	having loose morals	'Van God los' is an idiom, not a preposition, and 'having loose morals' is a figurative sense that is obscure; the 'without God' entry covers the idiom.
+zeer	adjective	hurtful	'Hurtful' is an obscure sense that is already covered by 'sore' and 'painful' in this entry.
+zeer	noun	cause of physical pain	This archaic sense duplicates 'physical pain' and only confuses learners.
+zeer	noun	sore spot	This archaic 'sore spot' sense duplicates the other noun meanings and is of little use to learners.
+dicht	noun	poetry	This archaic noun is obscure and duplicates the meaning 'poem/poetry' already covered by other entries.
+wapen	noun	branch	'Branch' is not a standard meaning of 'wapen' (the weapon meaning is already listed, and 'branch of the military' is a stretch), so it would only confuse learners.
+ontmoeten	verb	to encounter	"to encounter" in this sense duplicates the main meaning "to meet", and the example sounds unnatural.
+film	noun	film production	'Film production' duplicates the existing 'film' meaning and is not a distinct sense.
+licht	noun	inspiration	"Inspiration" is not a standard meaning of "het licht" and is a figurative stretch that only confuses learners.
+eerste persoon	interjection	first person	"Eerste persoon" is a noun phrase, not an interjection, and it is already listed correctly as a noun in item 4.
+hond	noun	derogatory term for a human	Derogatory use for a person is an offensive insult and adds little for a learner beyond the main dog meaning.
+aarde	noun	personification of humanity's homeworld	Personification of Earth duplicates the main meaning of the planet Earth.
+voelen	verb	to experience a feeling	Duplicates the other meaning 'to feel'; the example fits that sense.
+lopen	noun	dry measure of content	'Lopen' as a noun dry measure is obscure/archaic and confusing for learners.
+contact	noun	contact	The generic "contact" gloss duplicates the more specific contact meanings already listed.
+verkeerd	adjective	distorted	"Distorted" is not a normal meaning of verkeerd, which means wrong, and that meaning is already listed.
+koffie	noun	coffee	It duplicates the other meaning "coffee (beverage)" of the same word.
+ziek	adverb	very	Informal 'ziek' as an intensifier ('very') is slang, and the example uses it in its ordinary meaning 'ill', so this adverb meaning only confuses learners.
+heer	noun	army	'heer' is a de-word meaning lord or gentleman, and 'het heer' for army is an archaic form (modern 'leger'), which only confuses a learner.
+verlaten	verb	to belate	"to belate" is not a meaning of verlaten; it is an archaic, confusing mistranslation.
+leger	noun	form	'Form' is not a real meaning of het leger (army, bed/lair), so this sense does not exist.
+leger	noun	mass	'Mass' is not an actual meaning of het leger; it is a spurious sense (the real ones are army and bed/lair).
+weinig	adverb	little	The 'not often' sense duplicates the 'little' meaning of the adverb, since 'sleeps little' already covers it.
+weinig	noun	little	"weinig" is not normally a noun; "het weinige" is the nominalised form, and this meaning is already covered under the pronoun/numeral entries.
+weinig	pronoun	little	"weinig" as 'little' is already listed in the other entry with a near-identical meaning, so this one duplicates it.
+lijken	verb	to please	The archaic meaning 'to please' is obscure and only confuses learners; the common meanings are already listed.
+van dienst zijn	interjection	take on a certain role	'Van dienst zijn' does not mean taking on a certain role (that would be 'dienst doen als'), so this meaning does not exist.
+jawel	adverb	yessir	'Yessir' is not a distinct sense of jawel and duplicates the emphatic 'yes indeed' meaning.
+absoluut	adjective	absolutist	The archaic sense 'absolutist' is obscure and would only confuse a learner; the main meaning 'absolute' is already listed.
+verkopen	verb	to be sold	'To be sold' is the passive use of 'to sell' and the idiom example belongs under the main meaning, so this duplicates it.
+straat	noun	straight	The noun straat does not mean 'straight'; that meaning does not exist for this noun.
+in de gaten houden	verb	to remember	hand review: the meaning repeats another one
+welk	pronoun	which one	"Which one" duplicates the meaning "which" in item 3 and has no example.
+vliegtuig	noun	any aircraft	This meaning duplicates 'aeroplane' and 'vliegtuig' is not archaic, so the entry is redundant.
+verleden tijd	noun	past	The gloss 'past' duplicates the other meaning 'past tense' for this phrase, and the phrase specifically means the grammatical past tense.
+deal	noun	bargain	"Bargain" is essentially the same sense as the other listed meaning "deal" (an agreement or good arrangement), so it duplicates it.
+tafel	noun	writing tablet	"Writing tablet" is an archaic sense (e.g. stone tablets of the law), too obscure for learners.
+vliegen	verb	to soar	Soaring is just a use of 'to fly' and duplicates the main meaning, so it adds nothing for a learner.
+koud	adjective	bad	The gloss 'bad' is not a real meaning of koud and the genuine senses (cold, unfriendly) are already listed.
+extra	adjective	on purpose	'On purpose' is not a meaning of extra (that is 'expres' or 'opzettelijk'); in the sense of 'specially' it is an adverb use already covered by the extra sense.
+kerk	noun	temple	"Temple" is not a meaning of kerk (that is tempel), and the real meanings church and religious organization are already listed.
+operatie	noun	procedure	"Procedure" duplicates the existing operation meaning, and the example is a surgical operation, so this is redundant.
+zwanger	adjective	expecting a baby together	'Expecting a baby together' is not a distinct meaning and duplicates 'pregnant'.
+steek	noun	bicorne	'Bicorne' (steek as a two-cornered hat) is obscure and confusing for learners, while the common meanings remain listed.
+Amerika	noun	hamlet in Noordenveld	This is a small place name (a hamlet) that is of no use to a learner.
+getuige	noun	testimony	The noun is 'de getuige' (witness), which is probably listed separately, and 'het getuige' does not exist as a noun meaning testimony.
+kwalijk	adjective	difficult	Kwalijk does not mean difficult; that sense does not exist.
+bar	adjective	crude	Bar does not really mean crude in the sense of vulgar, and the sense of extreme is covered by harsh.
+bar	noun	bar	The meaning 'bar' (pub serving alcohol) is already covered by the other meaning listed, so this entry duplicates it.
+zuster	noun	sister	The plain 'sister' meaning duplicates the existing 'sister (female sibling)' entry.
+bal	noun	toff	'Toff' is an obscure slang sense of bal (and not vulgar), which would only confuse a learner.
+aandacht	noun	affection	Aandacht does not mean 'affection'; this meaning does not exist.
+aandacht	noun	respect	Aandacht does not mean 'respect'; this meaning does not exist.
+volledig	adverb	complete	The meaning 'completely' is already listed as the adverb sense, and the gloss 'complete' is the adjective; the adjective sense belongs under the adjective entry.
+slag	noun	parcel	'Parcel' is not a meaning of 'slag', and the entry has no example.
+zelfmoord	noun	self-destruction	'Self-destruction' is a poor gloss and the meaning duplicates the existing 'suicide' meaning.
+winkel	noun	service point	'Service point' is not a real meaning of 'winkel' and 'shop' is already listed.
+wagen	noun	sled	"Sled" is not a standard meaning of de wagen; the real meanings (wagon, cart, car) are already listed.
+wagen	verb	to be moved	"To be moved" is not a meaning of the verb wagen (to dare); it comes from a confusion with the archaic wegen/bewegen.
+wagen	verb	to move	"To move" is not a real meaning of wagen; the verb means to dare or risk, which is already listed.
+warm	adjective	20 °C	The gloss '20 °C' is not a translation, and the plain meaning 'warm' is already listed as another meaning.
+rennen	noun	run	'rennen' is a verb and 'de rennen' is not a real noun, so this noun meaning does not exist.
+meester	noun	manager	'Manager' is not a standard meaning of meester and would only confuse a learner.
+meester	noun	slave's	'Slave's' is not a real separate meaning; it is a fragment of the 'master' sense (slave owner) and duplicates it.
+neus	noun	Jew	This is an offensive slur that does not belong in a learner's dictionary.
+getuigen	verb	to prove	"to prove" duplicates the "to indicate" meaning (getuigen van), and it overstates it.
+overleven	verb	to survive (to remain alive)	It duplicates the meaning of item 4.
+rekening	noun	Reckoning	Duplicates the 'taking into account' idiom in the other rekening entry, and 'Reckoning' is a vague gloss.
+trein	noun	train	Archaic sense of 'train' duplicates the existing meaning of the railway vehicle.}
+monster	noun	extremely antisocial person	'Monster' does not mean an antisocial person in standard Dutch; this is not a real separate meaning beyond 'monster'.
+kat	noun	cat	Flagged as archaic and duplicates the main 'cat' meaning (domestic cat).
+kat	noun	cavalier	'Cavalier' is an obscure, archaic sense of 'kat' that would only confuse learners.
+kat	noun	feline	'Feline' duplicates the domestic cat meaning.
+kat	noun	female cat	"Female cat" is just a narrower sense of the already-listed domestic cat and duplicates it (kat is generic, poes is the female).
+afstand	noun	offset	"Offset" is not a real meaning of afstand a learner needs, and it is obscure compared with the main meaning "distance".
+afstand	noun	offstand	"Offstand" is not an English word and is a bogus gloss; it is not a meaning of afstand.
+stoel	noun	any seat	"Any seat" duplicates the main meaning "chair" and is vague.
+stoel	noun	base on which something rests	This vague 'base on which something rests' sense is not a distinct everyday meaning of stoel and is covered by the seat meanings, so it only confuses learners.
+stoel	noun	place of residence	'Place of residence' applies to the archaic 'Heilige Stoel' (Holy See) sense, which is too obscure for learners.
+stoel	noun	receptacle	'Receptacle' is not a real meaning of stoel as used today and is not helpful to learners.
+homo	noun	Used as a general slur	This is a slur use of the word and duplicates the neutral meaning 'gay' already listed.
+blauwe	noun	Indo	This is an offensive ethnic slur, and the example uses the ordinary adjective 'blauw' rather than this meaning.
+vakantie	noun	easy	hand review: the meaning repeats another one
+opdracht	noun	swelling	The meaning 'swelling' for opdracht is archaic and obscure and would only confuse a learner.
+opdracht	noun	transfer (of possessions, etc.)	The archaic meaning 'transfer of possessions' is obscure and not useful for a learner.
+dol	adjective	mindless	"mindless" is not a real meaning of dol; the sense of mad/wild is already covered by "crazy".
+dol	noun	thole(-pin)	Thole pin and rowlock are the same thing, so this duplicates the other meaning of dol; also the article is het/de ambiguity is unneeded.
+doos	noun	stupid female	This is a vulgar, offensive sense that is better left out, and the main meaning 'box' is already listed.
+top	noun	apex	'Apex' duplicates the 'top (uppermost part)' and 'summit' meanings already listed.
+top	noun	top	The gloss 'top' duplicates the existing meanings 'top (uppermost part)' and 'summit' of the same noun.
+voedsel	noun	nutrient	The 'nutrient' meaning is not what voedsel means; it duplicates the other meaning 'food'.
+geweld	noun	strong	hand review: the meaning repeats another one
+jas	noun	jack	The 'jack' sense is archaic and obscure, and 'coat' is already listed as the main meaning.
+hoer	noun	slut	"Slut" duplicates the other meaning "whore" for hoer; the article de is correct, so the flag is not the issue, but the sense is redundant.
+bedoeling	noun	eggcorn of bedoening	This is a dubious eggcorn/misuse of bedoening, not a genuine meaning of bedoeling, and would confuse learners.
+tegenhouden	verb	to arrest	"To arrest" is not a real meaning of tegenhouden (it means to stop or hold back), so this sense is wrong and overlaps the existing ones.
+kamp	noun	battle	'de kamp' as battle is archaic or obscure (the old word 'kamp' for combat survives only in fixed phrases), so it only confuses a learner.
+kamp	noun	field	'kamp' as field is an obscure archaic or dialect meaning (de kamp, an enclosed field) that does not help a learner.
+kamp	noun	tournament	'de kamp' as tournament is not a standard meaning of the word; 'kamp' only means contest in archaic usage, so it only confuses a learner.
+boel	noun	adulterer	Archaic meaning (adulterer) of boel that only confuses learners; also near-duplicate of the archaic lover sense.
+boel	noun	lover	Archaic 'lover' sense of boel is obscure and not useful for learners.
+boel	noun	quarrel	Quarrel is not a standard meaning of de boel; the word means stuff/mess, so this sense is wrong or obscure.
+magie	noun	magical	'Magical' is an adjective sense, not a noun meaning of magie, and the noun is already covered by the 'magic' meaning.
+wellicht	adverb	probably	Wellicht means 'perhaps/possibly' and 'probably' is not a distinct meaning, so this duplicates the first entry.
+bad	noun	immersion	"Immersion" is a near-duplicate of the act-of-bathing sense and is unnatural for a learner.
+pond	noun	pound	The archaic 'pound' entry duplicates the other pound meanings already listed.
+ballen	verb	to fuck	The vulgar sense of ballen is a different meaning from ball-play and is not a duplicate, but it is vulgar and mostly confusing for learners, so it is dropped.
+signaal	noun	signal (simple interprocess communication)	This is a technical computing sense that duplicates the general meaning 'signal' and would confuse learners.
+straf	adjective	spicy	'Spicy' is not a standard meaning of 'straf' in the sense of strong drink or food, and it duplicates the 'strong' meaning.
+straf	noun	discomfort	"Discomfort" is not a real meaning of straf; the only real sense, punishment, is already listed.
+pers	noun	media	The meaning 'media' duplicates the 'press' meaning already listed, and the example fits that one.
+opstaan	verb	to be on	'To be on' (e.g. a light or device being on, as in 'staan op') is not a real meaning of opstaan and is vague and confusing.
+opstaan	verb	to be playing	'To be playing' is not a real meaning of opstaan and is not a standard sense.
+gezelschap	noun	social circle	"Social circle" is too close to the existing meanings "company" and "club", so it duplicates them.
+eng	adjective	small	"Small" is not a real meaning of "eng"; it is covered by "narrow" and "scary".
+toon	noun	front portion of a hoof	The archaic hoof-front sense is obscure and only confuses a learner, while the common sense 'tone' is already listed.
+broeder	noun	brooder	'Brooder' (a device for hatching chicks) is not an ordinary Dutch meaning of 'broeder' and is obscure and misleading, whereas 'brother' is already listed.
+kip	noun	Kip	The gloss 'Kip' is not English and this sense duplicates the other listed meanings 'chicken' and 'female chicken'.
+sms	noun	SMS	'SMS' and 'text message' are the same meaning of 'sms', so this duplicates the other entry.
+vloer	noun	any ground	"Any ground" is not a real meaning of vloer; it is covered by the floor meaning.
+vloer	noun	bottom	"Bottom" is not a distinct meaning of vloer and is covered by the floor meaning.
+reden	verb	to equip	Reden as a verb (to equip a ship, from archaic 'redden' sense) is obscure/archaic and duplicates item 2.
+reden	verb	to equip (a ship)	Obscure nautical verb sense that only confuses learners and duplicates item 1; the common verb 'reden' is not this.
+trut	noun	pussy	The vulgar 'pussy' sense is not the usual meaning of trut (a dull, silly woman) and is offensive and misleading, and 'bitch' and 'boring' already cover the derogatory sense.
+eenvoudig	adjective	simplex	'Simplex' is a technical term that confuses learners, and the meanings 'plain' and 'easy' already cover the word.
+tent	noun	pavillion	'Pavillion' is misspelled and is a rare sense of tent, a marquee or party tent being already covered by 'tent'.
+talent	noun	talent	Marked archaic but it duplicates the common meaning of talent (gift, capability), and het is already the correct article.
+station	noun	disk drive	Het station does not mean disk drive; Dutch uses schijfstation or diskdrive, so this meaning is wrong.
+west	adverb	westwards	'Westwards' is not a distinct meaning of the adverb 'west' here and duplicates the other 'west' sense.
+bak	noun	joke	'Joke' is not a normal meaning of bak, so this sense does not exist for a learner.
+bak	noun	pig	'Bak' meaning pig is obscure, regional or dated and would only confuse a learner.
+wit	adverb	white	Wit is an adjective, not an adverb, and the meaning 'white' is already listed under the right part of speech (white (color) as a noun and adjective).
+wit	noun	)	The gloss is just a stray parenthesis and this archaic meaning is unclear and only confusing for a learner.
+wit	noun	ability to think and reason	Wit meaning wit/intellect is archaic and obscure, and learners would be confused by it.
+wit	noun	knowledge	Archaic meaning of 'wit' (knowledge/wit) that only confuses learners and overlaps with the listed 'ability to think and reason'.
+reactie	noun	political reaction (reactionaries collectively)	The collective-reactionaries sense is obscure and overlaps with the general meaning of reaction, so it only confuses learners.
+ho	noun	homosexual	'ho' as a noun meaning homosexual is a slur or at best a confusing sense, and the example uses 'ho' as an interjection, which does not match.
+aankomen	verb	to be acquired	'to be acquired' is not a real or current meaning of aankomen and only confuses learners.
+kust	noun	shoreline	'Shoreline' duplicates the 'coast' meaning already listed.
+bleek	noun	act of bleaching	The 'act of bleaching' sense of 'bleek' is obscure and archaic, so it only confuses a learner, and it overlaps with the bleachfield sense.
+bleek	noun	bleach	'Bleach' as a noun is not a normal meaning of 'bleek' (the modern word is 'bleekmiddel'); 'bleek' is mainly an adjective meaning 'pale'.
+dier	pronoun	her	'Dier' as a pronoun meaning 'her' is a dialectal or archaic form of 'haar' that only confuses learners, and the standard word 'dier' is a noun meaning 'animal'.
+wed	noun	drinking place for animals	The 'drinking place for animals' sense is just the 'wed' (ford/watering place) meaning, so it duplicates the 'ford' sense and is archaic.
+amper	adjective	sour	Amper is an adverb meaning 'barely/almost' and the adjective sense 'sour' is archaic and wrong, so it only confuses learners.  ('amper' as sour is an obsolete dialect form of 'amer'.)
+stal	noun	leg of a piece of furniture	'Leg of a piece of furniture' is not a real meaning of 'stal' and is rare and confusing.
+stal	noun	marked period of time	'Marked period of time' is not a meaning of the noun 'stal' in current Dutch.
+stal	noun	thin pole	'Thin pole' is not a meaning of 'stal' in current Dutch and would only confuse learners.
+stroom	noun	electrical current	"Electrical current" duplicates the existing "electricity" meaning of stroom.
+ei	noun	digraph ei	The digraph meaning is a metalinguistic sense of the word, not a real learner meaning, and the example wrongly uses 'de' (the letter combination is 'het ei' anyway).
+wijs	adjective	nice	'Nice' is not a meaning of 'wijs'; the real meaning 'wise' is listed separately.
+personeel	adjective	personnel-related	Personeel is a noun (staff), and the adjective form is personeels or personeelsgebonden, not this word, so it is already covered under the noun.
+zuiden	noun	southern	"southern" is not an adjective sense of the noun; the meaning duplicates "south" in item 1 and the example is covered by it.
+smaak	noun	decorum	"Decorum" is not a real meaning of smaak, and the example matches the basic sense "taste" already listed.
+heks	noun	witch	This duplicates the other 'witch' meaning listed for the same word.
+gas	noun	liquefied petroleum gas	Liquefied petroleum gas is just a specialized sense of gas (het gas), which is already covered by the general 'gas' meaning.
+gas	noun	unpaved street	The meaning 'unpaved street' is a dialect/obscure sense (really 'gasse' or Flemish 'gas' as lane), too obscure and not standard de gas in Netherlands Dutch.
+verdacht	noun	suspicion	The noun 'het verdacht' is archaic and not a real modern noun; the standard word is 'verdenking', so it only confuses learners.
+naakt	adjective	nude	Nude duplicates the main sense naked, which is better kept as a separate entry, so this is redundant.
+wc	noun	water closet	"water closet" is just the expansion of the same meaning as the toilet entry and duplicates it.
+handel	noun	goods	'Goods' overlaps with the colloquial 'whole lot/stuff' sense in item 1 and the example shows that same sense, so it is a duplicate.
+poort	noun	nutmeg	'Nutmeg' is not a meaning of 'poort'; the meaning does not exist.
+brood	noun	similar bakery product	The vague gloss 'similar bakery product' is not a distinct meaning and is already covered by 'bread' and 'loaf of bread'.
+voorbeeld	noun	preview	'Voorbeeld' does not mean 'preview'; that is 'voorproefje' or 'voorvertoning'.
+markt	noun	single	The gloss 'single' is not a meaning of 'markt' and looks like a mis-extracted entry.
+centrum	noun	centre (UK)	'centre (UK)' only duplicates the existing 'centre' meaning as a spelling variant.
+ramp	noun	driveway	'Ramp' does not mean driveway in Dutch (that is 'oprit'), so this meaning does not exist.
+groen lachen	interjection	sour laughter	It is not an interjection and duplicates the verb entry for 'groen lachen' (to laugh sourly).
+donder	noun	head	'Donder' meaning 'head' only exists in idioms like 'op zijn donder geven' (a beating), not as a standalone meaning, so it is misleading for learners.
+fuck	noun	fuck	A noun 'de fuck' is not a standard Dutch noun and the meaning is already covered by the interjection.
+allerlei	pronoun	all kinds of	Duplicates the other 'allerlei' entry, which has the same meaning of 'all kinds of'/'various'.
+model	noun	shape	"shape" is not a real meaning of model here and the other listed meanings already cover model, design, miniature and prototype.
+lijf	noun	division ring	"Division ring" is an obscure mathematical/heraldic sense that does not belong to het lijf and would only confuse a learner.
+lijf	noun	field	"Field" (as in heraldic field) is not a real everyday meaning of lijf and is obscure.
+verpesten	verb	to infect	'To infect' is an obscure sense of verpesten (from pest) that is not the common meaning; 'to spoil' and 'to screw up' already cover it.
+fort	noun	castle	Fort means a fortification, not a castle (kasteel), and it duplicates the other fort entry.
+seizoen	noun	term	'term' is not a meaning of seizoen, and the real meaning 'season' is already listed.
+spannend	adjective	tensive	'tensive' is not a real English gloss, and the meanings 'exciting' and 'stressful' already cover spannend.
+mensheid	noun	human nature	'human nature' is wrong for mensheid, which means humankind, and the correct meaning 'humanity' is already listed.
+pop	noun	As a term for a girl	"As a term for a girl" is a description rather than a gloss and duplicates the other "girl" meaning.
+pop	noun	girl	The "girl" sense duplicates the other girl meanings, and the vulgar tag makes it confusing for learners.
+hal	noun	frozen ground	'Hal' as 'frozen ground' is not a real meaning; the only sense is 'hall', which is already listed, and it is 'de hal'.
+lef	noun	temerity	Temerity duplicates the courage/nerve meaning of lef (as in het gore lef), so it is redundant; the article is het.
+verplaatsen	verb	to remove	"To remove" is not a real meaning of verplaatsen and overlaps with "to move".
+op touw zetten	verb	to engineer	'To engineer' duplicates the sense 'to initiate' (to set up, organize) listed under the same expression.
+nep	adjective	artificial	"artificial" duplicates the other meaning "fake" for nep.
+stijl	noun	vertical part of the metal	The gloss is a vague fragment and it duplicates the 'bar on a metal fence' meaning.
+cheque	noun	voucher	Cheque means a bank check; 'voucher' is not a real meaning (that would be bon/waardebon) and the sense is already covered by 'check'.
+fiets	noun	motorbike	A fiets is a bicycle, not a motorbike, and the correct meaning is already listed.
+dek	noun	surface	'surface' is not a distinct meaning of 'dek' and overlaps with the deck and cover senses.
+namelijk	adverb	especially	The 'especially' sense is archaic and confusing, and the real meaning 'namely' is already listed.
+merk	noun	Marck	"Marck" is a place name, not a meaning of "merk"; the real meaning (brand) is presumably listed separately.
+concentreren	verb	to concentrate	It duplicates the other meaning 'to concentrate (the mind)', which is the same sense.
+café	noun	snackbar	A café is not a snackbar; this meaning does not exist and is confusing.
+organisatie	noun	organization (institution)	It is the same meaning as item 1, differing only in British versus American spelling.
+zegen	noun	fishing and catching crustaceans	Zegen as a fishing seine net is a rare technical sense and the gloss describes an activity rather than a meaning, so it only confuses learners.
+zegen	noun	hunting fowl	Zegen has no 'hunting fowl' meaning; this is a garbled or obscure sense that would mislead learners.
+mijl	noun	mijl	The gloss 'mijl' just repeats the headword and is an archaic sense (old Dutch mile) that duplicates the main meaning.
+mijl	noun	nautical	The nautical mile is zeemijl; this archaic entry with a label as gloss duplicates the mile meaning and is confusing.
+bodem	noun	ship	'Bodem' as 'ship' is an archaic or obscure sense (a hull or vessel) that would only confuse learners.
+opname	noun	department	'Department' is not a real meaning of opname; it seems to be a mistaken variant of the hospital admission sense, which is covered by 'intake'.
+hartslag	noun	moving force	'Moving force' is a rare figurative sense that confuses learners and has no example.
+centrale	noun	hub	'Hub' is not a standard meaning of centrale and it overlaps with the exchange sense, so it only confuses learners.
+rat	noun	watch	The meaning 'watch' for rat is obscure and archaic slang that only confuses a learner.
+uitdaging	noun	challenge (something challenging)	It duplicates item 1, with the same meaning and no example.
+droog	adjective	dry	The plain 'dry' gloss duplicates the existing 'dry (not wet)' meaning.
+studie	noun	research	De studie is correct, and this 'research' sense duplicates the other listed meanings and is better covered under the general 'study' entry.
+schedel	noun	death's-head	"death's-head" is an obscure figurative use of schedel that duplicates the skull meaning and only confuses learners.
+schedel	noun	mound's crest	"mound's crest" is not a real modern meaning of schedel and is obscure or archaic.
+teef	noun	despicable woman	The derogatory 'despicable woman' sense is essentially covered by the 'bitch' meaning, so it duplicates it.
+bot	noun	boot	'Boot' is not a meaning of 'bot' in Dutch (that is 'laars'); bot means bone (het bot), flounder, or bud, so this is wrong.
+maagd	noun	maiden	"Maiden" is an archaic sense that overlaps with the "young girl" and "virgin" meanings, so it only duplicates them.
+bekennen	verb	to have sex	"Bekennen" does not mean to have sex (that is "bekennen" in the Biblical archaic sense only), and the example actually shows the admit meaning, which duplicates meaning 2.
+bekennen	verb	to see	"To see" is not a real modern meaning of bekennen; it is archaic or confusing, and has no example.
+patroon	noun	patron	The sense 'patron' (customer/sponsor) is not standard for Dutch 'patroon' and is mostly covered by 'boss' and 'patron saint', so it is confusing.
+patroon	noun	patron saint	The patron saint is called 'de patroonheilige' or 'patroon' only in a narrow sense; here the entry is a rare use and confusing, but also de patroon (patron saint) is attested; dropping as it overlaps with boss/patron meanings.
+kut	noun	cunt	This meaning is a vulgar slur-like insult in dialect spelling, unsuitable for learners and duplicates the vulgar sense already listed.
+creëren	verb	to appoint	"to appoint" is not a real meaning of creëren; the other listed senses (create, establish, cause) already cover it.
+toren	noun	fin	'Fin' is not a meaning of toren (the word for fin is vin), and tower and rook are already listed.
+smeerlap	noun	dirtbag	'Dirtbag' is the same sense as the 'asshole' meaning (a despicable man), so it duplicates item 2.
+smeerlap	noun	gross person	'Gross person' is essentially the same sense as the 'asshole' meaning (a creep or lecher), so it duplicates item 2.
+voorzien	verb	to envision	"to envision" is essentially the same as "to foresee", which is already listed, so this duplicates another meaning and is not a distinct sense of voorzien.
+voorzien	verb	to facilitate	"to facilitate" is not a real meaning of voorzien; the sense of supplying is already covered by "to provide".

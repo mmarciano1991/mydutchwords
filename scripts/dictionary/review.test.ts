@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadCorrections, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
-import { BatchState, correctionsOf, costOf, hashOf, itemsOf, reportOf, select } from "./review.mjs";
+import { BatchState, correctionsOf, costOf, glossCore, keepWholeWords, hashOf, itemsOf, reportOf, select } from "./review.mjs";
 
 const sense = (gloss: string, over: Record<string, unknown> = {}) => ({ id: `s_${gloss.replace(/\W/g, "")}`, gloss, examples: [] as unknown[], ...over });
 
@@ -125,6 +125,29 @@ describe("fix validation", () => {
   it("removes an example that no longer fits when no new one passes", () => {
     const answer = { action: "fix", gloss: "park bench", nl: null, en: null, keepExample: false, article: null, reason: "r" };
     expect(correctionsOf(bank, answer)).toMatchObject({ gloss: "park bench", removeExample: true });
+  });
+
+  it("never drops a word's only meaning, unless it is a place name or a slur", () => {
+    const [, , amsterdammer] = itemsOf(words);
+    const drop = { action: "drop", gloss: null, nl: null, en: null, reason: "obscure" };
+    expect(amsterdammer).toMatchObject({ others: [], otherUses: 0 });
+    expect(correctionsOf(amsterdammer, drop, ["bad-gloss"])).toEqual({ action: "rejected", why: "drop: the word's only meaning" });
+    expect(correctionsOf(amsterdammer, drop, ["place-name"])).toMatchObject({ action: "drop" });
+    expect(correctionsOf({ ...amsterdammer, otherUses: 2 }, drop, ["wrong-type"])).toMatchObject({ action: "drop" });
+  });
+
+  it("never drops every meaning of a word in one round", () => {
+    const [bench, money] = itemsOf(words);
+    const drop = (it: typeof bench, problems: string[]) => ({ it, problems, result: { action: "drop", reason: "r" } });
+    const both = keepWholeWords([drop(bench, ["duplicate"]), drop(money, ["duplicate"])]);
+    expect(both.map((p) => p.result.action)).toEqual(["rejected", "rejected"]);
+    expect(keepWholeWords([drop(bench, ["duplicate"])])[0].result.action).toBe("drop");
+  });
+
+  it("rejects a gloss fix that repeats another meaning", () => {
+    expect(glossCore("to take (for)")).toBe("take");
+    expect(correctionsOf(bank, { action: "fix", gloss: "Bank", nl: null, en: null, reason: "" })).toEqual({ action: "rejected", why: "gloss: repeats another meaning" });
+    expect(correctionsOf({ ...bank, others: ["to come"] }, { action: "fix", gloss: "come (arrive)", nl: null, en: null, reason: "" }).action).toBe("rejected");
   });
 
   it("rejects a gloss that breaks the gloss rule, or an example without the word", () => {

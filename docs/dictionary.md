@@ -174,8 +174,16 @@ translation, bad gloss, place name, slur, duplicate). `claude-sonnet-5-5`
 (the workflow's `fix_model`; Haiku alone costs a tenth but dropped core
 meanings in the pilot) looks at the flagged ones alone and proposes the smallest fix: a gloss, an
 example, or dropping the sense. A new gloss must pass the gloss rule, a new
-example the mechanical checks and a second model's same-meaning check. All
-through the Batches API, at half price.
+example the mechanical checks and a second model's check (`claude-sonnet-5-5`:
+Haiku let wrong Dutch through in round 1). All through the Batches API, at
+half price.
+
+Guards learned from round 1, where Sonnet dropped idioms, names and phrases
+it didn't know ("een hekel hebben", "Parijs", "ik ben ziek") and rewrote
+real meanings into copies of others ("komen: to become" → "to come"): a drop
+that would leave a word with no meaning at all is rejected (unless it's a
+place name or a slur), and so is a gloss whose core repeats another meaning
+of the same word.
 
 The same pass checks the article of every noun whose article only one
 source gives (marked "[article unverified]"; two sources, or a source and
@@ -204,7 +212,9 @@ All rounds continue one branch, `dictionary-review-rounds`:
 - `data/review/report.md` — counts, cost, and 50 changes picked across the
   round; `recall.md` for a recall check.
 
-Read the report, delete any line you disagree with, and merge. The next
+Read the report, then copy the round's corrections to main under their own
+name (`*-round1.tsv`, …) after deleting any line you disagree with, together
+with the review log; reset the branch to main for the next round. The next
 Dictionary run applies the corrections — an example only if it passes the
 build's checks (spelling, de/het), otherwise it goes to the doubt queue — and
 learners' decks pick them up on their next refresh, keeping their own edits.

@@ -40,7 +40,9 @@ export const TRIAGE_MODEL = "claude-haiku-5-5";
  *  but in the pilot it dropped core meanings ("ik hou van jou", "door:
  *  through") and wrote wrong Dutch ("Het licht is nu af"). */
 export const FIX_MODEL = "claude-sonnet-5-5";
-export const CHECK_MODEL = "claude-haiku-5-5";
+/** Reads every new example. Haiku passed wrong Dutch in round 1 ("Ik heb me
+ *  vertelt"); Sonnet costs about $0.15 more per round of 5,000. */
+export const CHECK_MODEL = "claude-sonnet-5-5";
 const GROUP = 25;
 const FIX_GROUP = 5;
 /** $ per million tokens, input / output, before the 50% batch discount. */
@@ -79,6 +81,10 @@ export function itemsOf(words) {
           gloss: s.gloss,
           register: s.register,
           others,
+          // Meanings the word keeps under its other parts of speech — not in
+          // the hash, so it doesn't send reviewed senses back to review.
+          senses: u.senses.length,
+          otherUses: w.uses.filter((o) => o !== u).reduce((n, o) => n + o.senses.length, 0),
           example: ex ? { nl: ex.nl, en: ex.en, origin: ex.origin ?? ex.source } : undefined,
           forms: [w.form, ...(u.forms ?? []).map((f) => f.form).filter((f) => f && f !== "-")],
           frequency: w.frequency,
@@ -173,7 +179,11 @@ export const FIX_SYSTEM = `You correct entries of a Dutch-to-English dictionary 
   - keepExample: false when the current example does not fit the (corrected) meaning and you give no new one; true otherwise.
   - article: "de" or "het" only when the noun's article is wrong or missing; null otherwise.
   - wrong part of speech: "drop" when this meaning is already listed under the right part of speech; otherwise "keep" and say so in the reason.
-- "drop": this meaning does not exist for this word, is a place name, duplicates one of the other meanings, is a slur, or is so obscure or archaic that it only confuses a learner.
+- "drop": this meaning does not exist for this word, is a place name on a common word, duplicates one of the other meanings, or is so obscure or archaic that it only confuses a learner.
+  - NEVER drop an idiom, fixed expression, phrase, proverb, proper name (a person, city, country, religious figure) or informal/slang meaning that Dutch speakers really use: these are what a learner looks up. Fix its gloss instead, or "keep".
+  - NEVER drop a word's only meaning ("other meanings: none"): fix it instead.
+  - An offensive meaning that exists is kept and stays marked as such; drop only a slur with no other use.
+- A gloss fix must not repeat one of the other meanings; when the meaning is only a repeat of another one, "drop" it.
 Answer every item, with its number and a one-sentence reason.`;
 
 export function fixText(it, problems, n = 1) {
@@ -219,10 +229,20 @@ const jsonFormat = (schema) => ({ format: { type: "json_schema", schema } });
 
 // ── Fix validation (no network) ──
 
+/** "to take (for)" → "take": what two glosses are compared by. */
+export const glossCore = (g) =>
+  (g ?? "").toLowerCase().replace(/\([^)]*\)/g, " ").replace(/^\s*to\s+/, "").replace(/\s+/g, " ").trim();
+
 /** A tier-2 answer turned into corrections, or why it can't be used. */
 export function correctionsOf(it, answer, problems = []) {
   if (!answer || answer.action === "keep") return { action: "keep" };
-  if (answer.action === "drop") return { action: "drop", reason: answer.reason };
+  if (answer.action === "drop") {
+    // The word's last meaning goes only when it's a place name or a slur —
+    // otherwise it was an idiom, a name or a phrase the model didn't know.
+    const last = !it.others.length && !it.otherUses;
+    if (last && !problems.some((p) => p === "place-name" || p === "offensive")) return { action: "rejected", why: "drop: the word's only meaning" };
+    return { action: "drop", reason: answer.reason };
+  }
   const out = { action: "fix", reason: answer.reason };
   // An article is changed only when both models say so, and never one two
   // sources already agree on.
@@ -233,6 +253,9 @@ export function correctionsOf(it, answer, problems = []) {
     const gloss = answer.gloss.normalize("NFC").trim();
     // An example written for a gloss that can't be used can't be used either.
     if (glossIssues(gloss).length) return { action: "rejected", why: `gloss: ${glossIssues(gloss).join(", ")}` };
+    // Rewriting one meaning into another erases it ("komen: to become" →
+    // "to come"); the build would then merge the two.
+    if (it.others.some((o) => glossCore(o) === glossCore(gloss))) return { action: "rejected", why: "gloss: repeats another meaning" };
     out.gloss = gloss;
   }
   if ((answer.nl || answer.en) && answer.nl?.trim() !== it.example?.nl) {
@@ -244,6 +267,19 @@ export function correctionsOf(it, answer, problems = []) {
   if (!out.example && it.example && answer.keepExample === false) out.removeExample = true;
   if (!out.gloss && !out.example && !out.article && !out.removeExample) return out.exampleRejected ? { action: "rejected", why: out.exampleRejected } : { action: "keep" };
   return out;
+}
+
+/** Drops in one round that together would leave a word with no meaning at
+ *  all become rejections — the per-sense guard sees one drop at a time. */
+export function keepWholeWords(proposals) {
+  const drops = new Map();
+  for (const p of proposals) if (p.result.action === "drop") drops.set(p.it.form, [...(drops.get(p.it.form) ?? []), p]);
+  for (const ps of drops.values()) {
+    const it = ps[0].it;
+    if (ps.length < it.senses + it.otherUses) continue;
+    for (const p of ps) if (!p.problems.some((x) => x === "place-name" || x === "offensive")) p.result = { action: "rejected", why: "drop: the word's only meaning" };
+  }
+  return proposals;
 }
 
 // ── Running ──
@@ -416,6 +452,8 @@ async function main() {
       return { ...f, answer, result: correctionsOf(f.it, answer, f.problems) };
     });
   });
+
+  keepWholeWords(proposals);
 
   // Check: a second model reads every new example.
   const toCheck = proposals.filter((p) => p.result.example);
