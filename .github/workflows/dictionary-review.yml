@@ -6,7 +6,7 @@
 #   2. review the next `limit` senses, most frequent first (or a pilot
 #      sample of every kind): Haiku triage → Sonnet fixes for flagged
 #      senses → checks. `recall` instead measures what triage misses.
-#   3. push the results to the branch `dictionary-review`
+#   3. push the results to the branch `dictionary-review-rounds`
 #
 # Every round continues the same branch: its review log (data/review) is
 # what lets a round skip every sense an earlier round already paid for. A
@@ -56,7 +56,7 @@ jobs:
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       GH_TOKEN: ${{ github.token }}
-      BRANCH: dictionary-review
+      BRANCH: dictionary-review-rounds
     steps:
       - uses: actions/checkout@v4
         with:

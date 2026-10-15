@@ -191,7 +191,7 @@ with `pilot` on to sample every kind and measure the flag rate and cost, and
 with `recall` to have Sonnet re-read senses Haiku passed — what triage
 misses.
 
-All rounds continue one branch, `dictionary-review`:
+All rounds continue one branch, `dictionary-review-rounds`:
 
 - `data/review/tier1.jsonl`, `tier2.jsonl` — every verdict, with a hash of
   what was reviewed; a round skips senses already reviewed in their current
