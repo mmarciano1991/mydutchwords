@@ -23,6 +23,11 @@ on:
         description: "Sample every kind of sense (to measure) instead of the highest-priority ones"
         type: boolean
         default: true
+      fix_model:
+        description: "Model that proposes the fixes"
+        type: choice
+        options: [claude-haiku-5-5, claude-sonnet-5-5]
+        default: claude-haiku-5-5
 
 permissions:
   contents: write
@@ -57,7 +62,7 @@ jobs:
             echo "::error title=No API key::Add ANTHROPIC_API_KEY under Settings → Secrets and variables → Actions."
             exit 1
           fi
-          node scripts/dictionary/review.mjs --static=/tmp/dict/dictionary --limit=${{ inputs.limit }} ${{ inputs.pilot && '--pilot' || '' }}
+          node scripts/dictionary/review.mjs --static=/tmp/dict/dictionary --limit=${{ inputs.limit }} --fix-model=${{ inputs.fix_model }} ${{ inputs.pilot && '--pilot' || '' }}
 
       - name: Report
         if: always()

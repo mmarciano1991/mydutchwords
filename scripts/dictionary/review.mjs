@@ -9,7 +9,7 @@
 
    Tier 1  claude-haiku-5-5 reads 25 senses per request (gloss, the word's
            other meanings, the example) and only says ok or what is wrong.
-   Tier 2  claude-sonnet-5-5, for flagged senses only, confirms the problem
+   Tier 2  claude-haiku-5-5 (or --fix-model=claude-sonnet-5-5), for flagged senses only, confirms the problem
            and proposes the smallest fix: a gloss, an example, or dropping
            the sense.
    Check   a new gloss must pass the gloss rule, a new example the cheap
@@ -36,7 +36,8 @@ import { ROOT } from "./paths.mjs";
 import { storedKey } from "./stored.mjs";
 
 export const TRIAGE_MODEL = "claude-haiku-5-5";
-export const FIX_MODEL = "claude-sonnet-5-5";
+/** Tier 2 model; --fix-model=claude-sonnet-5-5 for the larger one. */
+export const FIX_MODEL = "claude-haiku-5-5";
 export const CHECK_MODEL = "claude-haiku-5-5";
 const GROUP = 25;
 const FIX_GROUP = 5;
@@ -273,6 +274,7 @@ async function main() {
   const limit = Number(args.get("limit") ?? 500);
   const pilot = args.has("pilot");
   const dry = args.has("dry");
+  const fixModel = String(args.get("fix-model") ?? FIX_MODEL);
   const t0 = Date.now();
   const log = (msg) => console.log(`[${((Date.now() - t0) / 1000).toFixed(0)}s] ${msg}`);
 
@@ -335,13 +337,13 @@ async function main() {
   // are most of a request's tokens.
   const fixGroups = [];
   for (let i = 0; i < flagged.length; i += FIX_GROUP) fixGroups.push(flagged.slice(i, i + FIX_GROUP));
-  log(`tier 2: ${flagged.length} senses in ${fixGroups.length} requests to ${FIX_MODEL}`);
+  log(`tier 2: ${flagged.length} senses in ${fixGroups.length} requests to ${fixModel}`);
   const fixes = await runBatch(
     api,
     fixGroups.map((g, gi) => ({
       custom_id: `f${gi}`,
       params: {
-        model: FIX_MODEL,
+        model: fixModel,
         max_tokens: 8000,
         output_config: { effort: "medium", ...jsonFormat(FIX_SCHEMA) },
         system: FIX_SYSTEM,
@@ -395,7 +397,7 @@ async function main() {
   const lines = { glosses: [], examples: [], drop: [] };
   for (const p of proposals) {
     const [form, pos, gloss] = p.it.key.split("\t");
-    appendFileSync(fixPath, JSON.stringify({ hash: p.it.hash, key: p.it.key, problems: p.problems, answer: p.answer ?? null, result: p.result, model: FIX_MODEL, at }) + "\n");
+    appendFileSync(fixPath, JSON.stringify({ hash: p.it.hash, key: p.it.key, problems: p.problems, answer: p.answer ?? null, result: p.result, model: fixModel, at }) + "\n");
     if (p.result.action === "drop") lines.drop.push([form, pos, gloss, tsvCell(p.result.reason)]);
     if (p.result.gloss) lines.glosses.push([form, pos, gloss, p.result.gloss]);
     if (p.result.example) lines.examples.push([form, pos, gloss, tsvCell(p.result.example.nl), tsvCell(p.result.example.en)]);
