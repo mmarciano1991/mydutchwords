@@ -12,6 +12,9 @@
      glosses-*.tsv    form  pos  gloss  new gloss
      examples-*.tsv   form  pos  gloss  nl  en      replaces the example
      drop-*.tsv       form  pos  gloss  reason
+     articles-*.tsv   form  pos  gloss  de|het      both review models agreed
+     noexample-*.tsv  form  pos  gloss              the example no longer fits
+                                                    the corrected gloss
    A line names the sense the way the learner sees it (form, part of speech,
    gloss), like stored examples (stored.mjs); one whose sense no longer
    exists is unused. Nothing is trusted: a replaced example passes the same
@@ -72,5 +75,7 @@ export function loadCorrections(dir = CORRECTIONS_DIR) {
     glosses: new Map([...readTsv(dir, "glosses", 4)].map(([k, v]) => [k, { gloss: v.cells[0], file: v.file }])),
     examples: new Map([...readTsv(dir, "examples", 5)].map(([k, v]) => [k, { nl: v.cells[0], en: v.cells[1], file: v.file }])),
     drops: new Map([...readTsv(dir, "drop", 3)].map(([k, v]) => [k, { reason: v.cells[0] ?? "reviewed", file: v.file }])),
+    articles: new Map([...readTsv(dir, "articles", 4)].filter(([, v]) => v.cells[0] === "de" || v.cells[0] === "het").map(([k, v]) => [k, { article: v.cells[0], file: v.file }])),
+    noExamples: new Set(readTsv(dir, "noexample", 3).keys()),
   };
 }

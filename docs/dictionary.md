@@ -177,19 +177,32 @@ example, or dropping the sense. A new gloss must pass the gloss rule, a new
 example the mechanical checks and a second model's same-meaning check. All
 through the Batches API, at half price.
 
-Order: suspicious glosses ("of", "someone"), Tatoeba examples on words with
-several meanings, stored examples, the rest — each by frequency. Run it with
-`pilot` on first: it samples every kind and reports the flag rate and the
-cost per 1,000 senses.
+The same pass checks the article of every noun whose article only one
+source gives (marked "[article unverified]"; two sources, or a source and
+the noun's ending — -heid, -ing, -teit, -tie, -isme, -ment, diminutives —
+count as verified and aren't asked about) and the part of speech. An
+article is changed only when both models say so. A meaning under the wrong
+part of speech is dropped when it is listed under the right one, otherwise
+left for a person.
 
-Results go to a branch `dictionary-review/<run>`:
+Order: garbled glosses ("of", "someone"), then every sense by word
+frequency; `max_rank` stops at a frequency rank (30,000 by default). Run it
+with `pilot` on to sample every kind and measure the flag rate and cost, and
+with `recall` to have Sonnet re-read senses Haiku passed — what triage
+misses.
+
+All rounds continue one branch, `dictionary-review`:
 
 - `data/review/tier1.jsonl`, `tier2.jsonl` — every verdict, with a hash of
-  what was reviewed; a later run skips senses already reviewed in their
-  current form, so nothing is paid for twice;
-- `data/corrections/{glosses,examples,drop}-review.tsv` — the proposed
-  fixes, one line per sense (`form`, `pos`, `gloss`, …);
-- `data/review/report.md` — counts, cost, and the first 50 changes.
+  what was reviewed; a round skips senses already reviewed in their current
+  form, so nothing is paid for twice;
+- `data/review/batches.json` — the batches of a round that was cut off
+  (the CI time limit): the next round collects their results instead of
+  paying again, as long as the dictionary wasn't republished in between;
+- `data/corrections/{glosses,examples,drop,articles,noexample}-review.tsv` —
+  the proposed fixes, one line per sense (`form`, `pos`, `gloss`, …);
+- `data/review/report.md` — counts, cost, and 50 changes picked across the
+  round; `recall.md` for a recall check.
 
 Read the report, delete any line you disagree with, and merge. The next
 Dictionary run applies the corrections — an example only if it passes the

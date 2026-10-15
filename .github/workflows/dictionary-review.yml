@@ -1,15 +1,20 @@
-# Reviews the published dictionary's glosses and examples with a model and
-# proposes corrections — never publishes them. See
-# scripts/dictionary/review.mjs and docs/dictionary.md ("Quality review").
+# Reviews the published dictionary's glosses, articles, parts of speech and
+# examples with a model and proposes corrections — never publishes them.
+# See scripts/dictionary/review.mjs and docs/dictionary.md ("Quality review").
 #
 #   1. take the latest published dictionary (the dictionary-latest release)
-#   2. review the next `limit` senses (or a pilot sample of every kind):
-#      Haiku triage → Sonnet fixes for flagged senses → checks
-#   3. push the results to a branch, dictionary-review/<run>, with the
-#      report as the run summary
+#   2. review the next `limit` senses, most frequent first (or a pilot
+#      sample of every kind): Haiku triage → Sonnet fixes for flagged
+#      senses → checks. `recall` instead measures what triage misses.
+#   3. push the results to the branch `dictionary-review`
 #
-# A person reads the report and merges the branch; the next Dictionary run
-# applies the corrections, after the build's own checks.
+# Every round continues the same branch: its review log (data/review) is
+# what lets a round skip every sense an earlier round already paid for. A
+# round cut off while waiting for a batch is pushed too, and the next round
+# collects that batch's results instead of paying for it again.
+#
+# A person reads data/review/report.md and merges the branch into main; the
+# next Dictionary run applies the corrections, after the build's own checks.
 name: Dictionary review
 
 on:
@@ -18,11 +23,19 @@ on:
       limit:
         description: "How many senses to review"
         type: number
-        default: 500
+        default: 5000
+      max_rank:
+        description: "Only words up to this frequency rank (0 = all)"
+        type: number
+        default: 30000
       pilot:
-        description: "Sample every kind of sense (to measure) instead of the highest-priority ones"
+        description: "Sample every kind of sense (to measure) instead of the most frequent ones"
         type: boolean
-        default: true
+        default: false
+      recall:
+        description: "Instead of reviewing: re-check this many senses triage called ok, to measure what it misses (0 = off)"
+        type: number
+        default: 0
       fix_model:
         description: "Model that proposes the fixes"
         type: choice
@@ -32,15 +45,35 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: dictionary-review
+  cancel-in-progress: false
+
 jobs:
   review:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 350
     env:
       ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
       GH_TOKEN: ${{ github.token }}
+      BRANCH: dictionary-review
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Continue the review branch when there is one, with main's latest
+      # code merged in; start it from main otherwise.
+      - name: Review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git ls-remote --exit-code --heads origin "$BRANCH" >/dev/null; then
+            git checkout -B "$BRANCH" "origin/$BRANCH"
+            git merge --no-edit origin/main
+          else
+            git checkout -B "$BRANCH"
+          fi
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -56,27 +89,32 @@ jobs:
           gh release download dictionary-latest --pattern dictionary.tar.gz --dir /tmp
           mkdir -p /tmp/dict && tar -xzf /tmp/dictionary.tar.gz -C /tmp/dict
 
+      # Stops itself before the job's time limit, so the push below still
+      # runs and the next round resumes the batches already paid for.
       - name: Review
         run: |
           if [ -z "$ANTHROPIC_API_KEY" ]; then
             echo "::error title=No API key::Add ANTHROPIC_API_KEY under Settings → Secrets and variables → Actions."
             exit 1
           fi
-          node scripts/dictionary/review.mjs --static=/tmp/dict/dictionary --limit=${{ inputs.limit }} --fix-model=${{ inputs.fix_model }} ${{ inputs.pilot && '--pilot' || '' }}
+          rank=${{ inputs.max_rank }}; [ "$rank" = "0" ] && rank=""
+          timeout 320m node scripts/dictionary/review.mjs --static=/tmp/dict/dictionary \
+            --limit=${{ inputs.limit }} --fix-model=${{ inputs.fix_model }} \
+            ${rank:+--max-rank=$rank} \
+            ${{ inputs.pilot && '--pilot' || '' }} \
+            ${{ inputs.recall != 0 && format('--recall={0}', inputs.recall) || '' }}
 
       - name: Report
         if: always()
-        run: cat data/review/report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
-
-      # Results (the review log, so no sense is paid for twice, and the
-      # proposed corrections) go to their own branch for a person to merge.
-      - name: Push to a review branch
         run: |
-          branch="dictionary-review/${{ github.run_id }}"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$branch"
+          cat data/review/recall.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+          cat data/review/report.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      - name: Push to the review branch
+        if: always()
+        run: |
           git add data/review data/corrections
-          git commit -m "Dictionary review: ${{ inputs.limit }} senses${{ inputs.pilot && ' (pilot)' || '' }}"
-          git push origin "$branch"
-          echo "Results on branch $branch" >> "$GITHUB_STEP_SUMMARY"
+          git diff --cached --quiet && { echo "Nothing to push"; exit 0; }
+          git commit -m "Dictionary review: ${{ inputs.recall != 0 && format('recall check of {0}', inputs.recall) || format('{0} senses', inputs.limit) }}"
+          git push origin "$BRANCH"
+          echo "Results on branch $BRANCH" >> "$GITHUB_STEP_SUMMARY"

@@ -55,7 +55,7 @@ const [en, nl, opentaal, frequency, tatoebaPairs] = await Promise.all([
 log(`en: ${en.entries.size} words · nl: ${nl.entries.size} words · OpenTaal: ${opentaal.size} · Tatoeba: ${tatoebaPairs?.length ?? 0}`);
 
 const doubts = [];
-const report = { startedAt: new Date().toISOString(), counts: {}, doubtReasons: {}, corrections: { placeDropped: 0, merged: 0, glossFixed: 0, glossRejected: 0, dropped: 0, exampleReplaced: 0, exampleRejected: 0 }, examples: { wiktionary: 0, tatoeba: 0, stored: 0, storedRejected: 0, rejected: 0, none: 0, sampleRejections: [] } };
+const report = { startedAt: new Date().toISOString(), counts: {}, doubtReasons: {}, corrections: { placeDropped: 0, merged: 0, glossFixed: 0, glossRejected: 0, dropped: 0, articleFixed: 0, exampleReplaced: 0, exampleRejected: 0, exampleRemoved: 0, unused: 0 }, examples: { wiktionary: 0, tatoeba: 0, stored: 0, storedRejected: 0, rejected: 0, none: 0, sampleRejections: [] } };
 
 // ── 1. Official spelling ──
 // A record's word must be in OpenTaal — exactly, or in another
@@ -289,6 +289,32 @@ for (const word of words.values()) {
   }
 }
 
+// ── Articles confirmed by rule ──
+// A single-source article ("checked") that the noun's ending fixes by Dutch
+// grammar is as good as a second source: -heid, -ing, -teit, -tie, -logie,
+// -itis, -erij take de; -isme, -ment and diminutives take het. One the rule
+// contradicts stays unverified and is queued — the review looks at it.
+const RULE_DE = /(heid|ing|teit|tie|logie|itis|erij)$/;
+const RULE_HET = /(isme|ment|tje|pje|kje)$/;
+report.articles = { confirmedByRule: 0, contradictedByRule: 0 };
+for (const word of words.values()) {
+  if (word.form.length < 6 || word.form.includes(" ")) continue;
+  const byRule = RULE_DE.test(word.form) ? "de" : RULE_HET.test(word.form) ? "het" : null;
+  if (!byRule) continue;
+  for (const use of word.uses) {
+    const meta = use.fieldMeta?.article;
+    if (use.pos !== "noun" || !use.article || meta?.confidence === "verified" || meta?.sources?.includes("pipeline")) continue;
+    if (use.article === byRule) {
+      use.fieldMeta.article = { ...meta, sources: [...(meta?.sources ?? []), "rule"], confidence: "verified", rule: `ending takes ${byRule}` };
+      report.articles.confirmedByRule++;
+    } else if (use.article === "de" || use.article === "het") {
+      report.articles.contradictedByRule++;
+      if (frequencyRankOk(word.form)) doubts.push({ word: word.form, scope: "use", pos: use.pos, reason: "article: contradicts its ending", detail: { article: use.article, byRule } });
+    }
+  }
+}
+log(`articles: ${report.articles.confirmedByRule} confirmed by their ending, ${report.articles.contradictedByRule} contradict it`);
+
 // ── Gloss rule ──
 const needsCondensing = [];
 for (const word of words.values()) {
@@ -321,6 +347,8 @@ for (const { word, use, sense, issues } of needsCondensing) {
 
 // ── Corrections (corrections.mjs): Tier 0 rules, then reviewed fixes ──
 const corrections = loadCorrections();
+/** Correction lines that found their sense — the rest are reported. */
+const usedCorrections = new Set();
 for (const word of words.values()) {
   for (const use of word.uses) {
     for (const sense of use.senses) {
@@ -332,12 +360,23 @@ for (const word of words.values()) {
       }
       const key = storedKey(word.form, use.pos, sense.gloss);
       if (corrections.drops.has(key)) {
+        usedCorrections.add(`drop ${key}`);
         sense._doubt = true;
         report.corrections.dropped++;
         continue;
       }
+      const art = corrections.articles.get(key);
+      if (art && use.pos === "noun") {
+        usedCorrections.add(`article ${key}`);
+        // Per sense when the use's senses differ; the use's own otherwise.
+        if (sense.article || use.senses.length > 1) sense.article = art.article;
+        else use.article = art.article;
+        use.fieldMeta.article = { sources: ["review"], confidence: "verified" };
+        report.corrections.articleFixed++;
+      }
       const fix = corrections.glosses.get(key);
       if (!fix) continue;
+      usedCorrections.add(`gloss ${key}`);
       if (glossIssues(fix.gloss).length) {
         report.corrections.glossRejected++;
         doubts.push({ word: word.form, scope: "sense", pos: use.pos, reason: "gloss: reviewed correction failed the gloss rule", detail: { gloss: sense.gloss, proposed: fix.gloss, file: fix.file } });
@@ -435,6 +474,23 @@ for (const word of words.values()) {
     }
   }
 }
+// An example a reviewed gloss correction left behind goes; the on-demand
+// function writes one that fits.
+for (const word of words.values()) {
+  for (const use of word.uses) {
+    for (const sense of use.senses) {
+      if (!sense.examples.length || bySense(corrections.examples, word, use, sense)) continue;
+      const k = storedKey(word.form, use.pos, sense.gloss ?? "");
+      const old = sense._oldGloss ? storedKey(word.form, use.pos, sense._oldGloss) : null;
+      if (!corrections.noExamples.has(k) && !(old && corrections.noExamples.has(old))) continue;
+      usedCorrections.add(`noexample ${corrections.noExamples.has(k) ? k : old}`);
+      sense.examples = [];
+      report.examples.none++;
+      report.corrections.exampleRemoved++;
+    }
+  }
+}
+
 // Reviewed example corrections replace whatever example a sense has — after
 // the same checks; one that fails keeps the old example and is queued.
 for (const word of words.values()) {
@@ -442,6 +498,7 @@ for (const word of words.values()) {
     for (const sense of use.senses) {
       const fix = bySense(corrections.examples, word, use, sense);
       if (!fix) continue;
+      usedCorrections.add(`example ${fix.nl}`);
       const { issues, spans } = exampleIssues({ nl: fix.nl, en: fix.en }, targetForms(word, use), checkCtx);
       if (issues.length) {
         report.corrections.exampleRejected++;
@@ -454,7 +511,9 @@ for (const word of words.values()) {
     }
   }
 }
-log(`corrections: ${report.corrections.exampleReplaced} examples replaced (${report.corrections.exampleRejected} rejected)`);
+report.corrections.unused =
+  corrections.drops.size + corrections.articles.size + corrections.glosses.size + corrections.noExamples.size + corrections.examples.size - usedCorrections.size;
+log(`corrections: ${report.corrections.exampleReplaced} examples replaced (${report.corrections.exampleRejected} rejected), ${report.corrections.exampleRemoved} removed, ${report.corrections.articleFixed} articles corrected; ${report.corrections.unused} correction lines found no sense`);
 
 log(`examples: ${report.examples.wiktionary} Wiktionary, ${report.examples.tatoeba} Tatoeba, ${report.examples.stored} stored (${report.examples.storedRejected} failed checks), ${report.examples.rejected} rejected by checks, ${report.examples.none} senses without`);
 

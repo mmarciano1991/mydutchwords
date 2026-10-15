@@ -27,7 +27,7 @@
    --pilot takes a sample of every kind instead, to measure before a full
    run. */
 import { createHash } from "node:crypto";
-import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { glossIssues } from "../../src/lib/dictionary/checks.ts";
 import { issuesOf } from "../../supabase/functions/example/check.ts";
@@ -47,7 +47,7 @@ const FIX_GROUP = 5;
 export const PRICES = { "claude-haiku-5-5": [0.1, 0.5], "claude-sonnet-5-5": [2, 10] };
 
 const REVIEW_DIR = join(ROOT, "data", "review");
-export const PROBLEMS = ["bad-gloss", "place-name", "offensive", "duplicate", "wrong-meaning", "ungrammatical", "unnatural", "bad-translation"];
+export const PROBLEMS = ["bad-gloss", "wrong-article", "wrong-type", "place-name", "offensive", "duplicate", "wrong-meaning", "ungrammatical", "unnatural", "bad-translation"];
 
 /** Glosses that are a fragment of a definition, not a translation ("of",
  *  "act", "someone") — for parts of speech where they can't be the meaning. */
@@ -73,6 +73,9 @@ export function itemsOf(words) {
           form: w.form,
           pos: u.pos,
           article: u.pos === "noun" ? (s.article ?? u.article) : undefined,
+          // Confirmed by two sources (or a source and the noun's ending):
+          // the review isn't asked about it.
+          articleVerified: u.pos !== "noun" || u.fieldMeta?.article?.confidence === "verified",
           gloss: s.gloss,
           register: s.register,
           others,
@@ -99,13 +102,15 @@ const ORDER = ["gloss", "tatoeba", "stored", "other", "wiktionary", "no-example"
 /** Share of a pilot per category. */
 const PILOT = { gloss: 0.2, tatoeba: 0.3, stored: 0.25, other: 0.05, wiktionary: 0.1, "no-example": 0.1 };
 
-/** The next `limit` items to review, skipping those already reviewed. */
-export function select(items, done, { limit, pilot }) {
-  const todo = items.filter((it) => !done.has(it.hash));
+/** The next `limit` items to review, skipping those already reviewed and
+ *  words ranked below `maxRank`: garbled glosses first, then by frequency. */
+export function select(items, done, { limit, pilot, maxRank = Infinity }) {
+  const todo = items.filter((it) => !done.has(it.hash) && it.frequency <= maxRank);
+  const byFrequency = (a, b) => a.frequency - b.frequency || a.key.localeCompare(b.key);
+  if (!pilot) return todo.sort((a, b) => Number(b.category === "gloss") - Number(a.category === "gloss") || byFrequency(a, b)).slice(0, limit);
   const byCat = new Map(ORDER.map((c) => [c, []]));
   for (const it of todo) byCat.get(it.category).push(it);
-  for (const list of byCat.values()) list.sort((a, b) => a.frequency - b.frequency || a.key.localeCompare(b.key));
-  if (!pilot) return ORDER.flatMap((c) => byCat.get(c)).slice(0, limit);
+  for (const list of byCat.values()) list.sort(byFrequency);
   const out = [];
   for (const c of ORDER) out.push(...byCat.get(c).slice(0, Math.round(limit * PILOT[c])));
   for (const c of ORDER) for (const it of byCat.get(c)) if (out.length < limit && !out.includes(it)) out.push(it);
@@ -118,6 +123,8 @@ export const TRIAGE_SYSTEM = `You review entries of a Dutch-to-English dictionar
 
 Flag only real errors, never style preferences:
 - bad-gloss: the gloss is not a correct English translation of this meaning, or is garbled or truncated (e.g. just "of", "act", "someone").
+- wrong-article: only for items marked [article unverified]: the noun takes the other article (de/het), or none is given.
+- wrong-type: the word is not this part of speech in this meaning (e.g. a noun listed as an adjective).
 - place-name: the gloss describes a place (hamlet, village, neighbourhood) rather than a meaning of the word.
 - offensive: the meaning is an ethnic or other slur.
 - duplicate: this meaning is the same as one of the other meanings listed.
@@ -129,7 +136,7 @@ Answer "ok" with no problems when the entry is correct.`;
 
 export function triageItemText(it, n) {
   return [
-    `${n}. ${it.article ? `${it.article} ${it.form}` : it.form} (${it.pos})${it.register ? ` [${it.register}]` : ""}`,
+    `${n}. ${it.article ? `${it.article} ${it.form}` : it.form} (${it.pos})${it.register ? ` [${it.register}]` : ""}${it.articleVerified ? "" : " [article unverified]"}`,
     `   gloss: ${it.gloss}`,
     `   other meanings: ${it.others.join("; ") || "none"}`,
     it.example ? `   example: ${it.example.nl}\n   translation: ${it.example.en}` : "   example: none",
@@ -163,6 +170,9 @@ export const FIX_SYSTEM = `You correct entries of a Dutch-to-English dictionary 
 - "fix": give a corrected gloss and/or a new example; use null for what stays as it is.
   - gloss: the English translation of this meaning, at most 3 content words, plus at most one short parenthetical; verbs start with "to"; no articles.
   - example: one short, natural, everyday Dutch sentence (5-12 words) using the word in exactly this meaning, standard Netherlands spelling, correct de/het, the word itself or an inflected form, a separable verb not split; and its natural English translation. No names of people, no quotation marks.
+  - keepExample: false when the current example does not fit the (corrected) meaning and you give no new one; true otherwise.
+  - article: "de" or "het" only when the noun's article is wrong or missing; null otherwise.
+  - wrong part of speech: "drop" when this meaning is already listed under the right part of speech; otherwise "keep" and say so in the reason.
 - "drop": this meaning does not exist for this word, is a place name, duplicates one of the other meanings, is a slur, or is so obscure or archaic that it only confuses a learner.
 Answer every item, with its number and a one-sentence reason.`;
 
@@ -183,9 +193,11 @@ const FIX_SCHEMA = {
           gloss: { anyOf: [{ type: "string" }, { type: "null" }] },
           nl: { anyOf: [{ type: "string" }, { type: "null" }] },
           en: { anyOf: [{ type: "string" }, { type: "null" }] },
+          keepExample: { type: "boolean" },
+          article: { anyOf: [{ type: "string", enum: ["de", "het"] }, { type: "null" }] },
           reason: { type: "string" },
         },
-        required: ["n", "action", "gloss", "nl", "en", "reason"],
+        required: ["n", "action", "gloss", "nl", "en", "keepExample", "article", "reason"],
         additionalProperties: false,
       },
     },
@@ -208,10 +220,15 @@ const jsonFormat = (schema) => ({ format: { type: "json_schema", schema } });
 // ── Fix validation (no network) ──
 
 /** A tier-2 answer turned into corrections, or why it can't be used. */
-export function correctionsOf(it, answer) {
+export function correctionsOf(it, answer, problems = []) {
   if (!answer || answer.action === "keep") return { action: "keep" };
   if (answer.action === "drop") return { action: "drop", reason: answer.reason };
   const out = { action: "fix", reason: answer.reason };
+  // An article is changed only when both models say so, and never one two
+  // sources already agree on.
+  if (problems.includes("wrong-article") && !it.articleVerified && it.pos === "noun" && (answer.article === "de" || answer.article === "het") && answer.article !== it.article) {
+    out.article = answer.article;
+  }
   if (answer.gloss && answer.gloss.trim() !== it.gloss) {
     const gloss = answer.gloss.normalize("NFC").trim();
     // An example written for a gloss that can't be used can't be used either.
@@ -224,17 +241,42 @@ export function correctionsOf(it, answer) {
     if (issues.length) out.exampleRejected = `example: ${issues.join(", ")}`;
     else out.example = { nl, en };
   }
-  if (!out.gloss && !out.example) return out.exampleRejected ? { action: "rejected", why: out.exampleRejected } : { action: "keep" };
+  if (!out.example && it.example && answer.keepExample === false) out.removeExample = true;
+  if (!out.gloss && !out.example && !out.article && !out.removeExample) return out.exampleRejected ? { action: "rejected", why: out.exampleRejected } : { action: "keep" };
   return out;
 }
 
 // ── Running ──
 
-async function runBatch(api, requests, usage, log) {
+/** Batches of an unfinished run, so a run cut off while waiting (a CI time
+ *  limit) collects the results it already paid for instead of resubmitting.
+ *  `key` names the run: the same senses, models and stage. */
+export class BatchState {
+  constructor(path, key) {
+    this.path = path;
+    this.key = key;
+    const saved = existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null;
+    this.batches = saved?.key === key ? saved.batches : {};
+  }
+  get(stage) {
+    return this.batches[stage];
+  }
+  set(stage, id) {
+    this.batches[stage] = id;
+    writeFileSync(this.path, JSON.stringify({ key: this.key, batches: this.batches }, null, 1));
+  }
+  done() {
+    if (existsSync(this.path)) rmSync(this.path);
+  }
+}
+
+async function runBatch(api, requests, usage, log, state, stage) {
   const out = new Map();
   if (!requests.length) return out;
-  const batch = await api.messages.batches.create({ requests });
-  log(`  batch ${batch.id}: ${requests.length} requests`);
+  const saved = state?.get(stage);
+  const batch = saved ? await api.messages.batches.retrieve(saved) : await api.messages.batches.create({ requests });
+  if (!saved) state?.set(stage, batch.id);
+  log(`  batch ${batch.id}${saved ? " (resumed)" : ""}: ${requests.length} requests`);
   let status = batch;
   while (status.processing_status !== "ended") {
     await new Promise((r) => setTimeout(r, 20_000));
@@ -277,6 +319,8 @@ async function main() {
   const pilot = args.has("pilot");
   const dry = args.has("dry");
   const fixModel = String(args.get("fix-model") ?? FIX_MODEL);
+  const maxRank = args.has("max-rank") ? Number(args.get("max-rank")) : Infinity;
+  const recall = args.has("recall") ? Number(args.get("recall")) : 0;
   const t0 = Date.now();
   const log = (msg) => console.log(`[${((Date.now() - t0) / 1000).toFixed(0)}s] ${msg}`);
 
@@ -285,8 +329,10 @@ async function main() {
   mkdirSync(REVIEW_DIR, { recursive: true });
   const triagePath = join(REVIEW_DIR, "tier1.jsonl");
   const fixPath = join(REVIEW_DIR, "tier2.jsonl");
-  const done = new Set(readJsonl(triagePath).map((r) => r.hash));
-  const batch = select(items, done, { limit, pilot });
+  const reviewed = readJsonl(triagePath);
+  const done = new Set(reviewed.map((r) => r.hash));
+  if (recall) return recallCheck({ items, reviewed, n: recall, fixModel, log });
+  const batch = select(items, done, { limit, pilot, maxRank });
   const byCat = Object.fromEntries(ORDER.map((c) => [c, batch.filter((i) => i.category === c).length]));
   log(`${items.length} senses, ${done.size} already reviewed; this run: ${batch.length} ${JSON.stringify(byCat)}`);
 
@@ -300,6 +346,7 @@ async function main() {
   const { default: Anthropic } = await import("@anthropic-ai/sdk");
   const api = new Anthropic();
   const usage = {};
+  const state = new BatchState(join(REVIEW_DIR, "batches.json"), createHash("sha1").update(JSON.stringify([batch.map((it) => it.hash), fixModel])).digest("hex"));
 
   // Tier 1: triage.
   const groups = [];
@@ -318,9 +365,14 @@ async function main() {
       },
     })),
     usage,
-    log
+    log,
+    state,
+    "triage"
   );
   const flagged = [];
+  // Written at the end, with everything else: a run cut off before then
+  // selects the same senses again and resumes its batches.
+  const triageLines = [];
   const at = new Date().toISOString();
   groups.forEach((g, gi) => {
     const answers = new Map((triage.get(`t${gi}`)?.items ?? []).map((a) => [a.n, a]));
@@ -329,7 +381,7 @@ async function main() {
       if (!a) return; // unanswered: tried again next run
       const problems = (a.problems ?? []).filter((p) => PROBLEMS.includes(p));
       const verdict = a.verdict === "problem" && problems.length ? "problem" : "ok";
-      appendFileSync(triagePath, JSON.stringify({ hash: it.hash, key: it.key, category: it.category, verdict, problems, confidence: a.confidence, model: TRIAGE_MODEL, at }) + "\n");
+      triageLines.push(JSON.stringify({ hash: it.hash, key: it.key, category: it.category, verdict, problems, confidence: a.confidence, model: TRIAGE_MODEL, at }));
       if (verdict === "problem") flagged.push({ it, problems, confidence: a.confidence });
     });
   });
@@ -353,13 +405,15 @@ async function main() {
       },
     })),
     usage,
-    log
+    log,
+    state,
+    "fix"
   );
   const proposals = fixGroups.flatMap((g, gi) => {
     const answers = new Map((fixes.get(`f${gi}`)?.items ?? []).map((a) => [a.n, a]));
     return g.map((f, i) => {
       const answer = answers.get(i + 1);
-      return { ...f, answer, result: correctionsOf(f.it, answer) };
+      return { ...f, answer, result: correctionsOf(f.it, answer, f.problems) };
     });
   });
 
@@ -384,7 +438,9 @@ async function main() {
       },
     })),
     usage,
-    log
+    log,
+    state,
+    "check"
   );
   toCheck.forEach((p, i) => {
     const c = checks.get(`c${i}`);
@@ -395,14 +451,17 @@ async function main() {
   });
 
   // Write corrections and the review log.
+  if (triageLines.length) appendFileSync(triagePath, triageLines.join("\n") + "\n");
   mkdirSync(CORRECTIONS_DIR, { recursive: true });
-  const lines = { glosses: [], examples: [], drop: [] };
+  const lines = { glosses: [], examples: [], drop: [], articles: [], noexample: [] };
   for (const p of proposals) {
     const [form, pos, gloss] = p.it.key.split("\t");
     appendFileSync(fixPath, JSON.stringify({ hash: p.it.hash, key: p.it.key, problems: p.problems, answer: p.answer ?? null, result: p.result, model: fixModel, at }) + "\n");
     if (p.result.action === "drop") lines.drop.push([form, pos, gloss, tsvCell(p.result.reason)]);
     if (p.result.gloss) lines.glosses.push([form, pos, gloss, p.result.gloss]);
     if (p.result.example) lines.examples.push([form, pos, gloss, tsvCell(p.result.example.nl), tsvCell(p.result.example.en)]);
+    if (p.result.article) lines.articles.push([form, pos, gloss, p.result.article]);
+    if (p.result.removeExample) lines.noexample.push([form, pos, gloss]);
   }
   for (const [kind, rows] of Object.entries(lines)) {
     if (!rows.length) continue;
@@ -413,7 +472,59 @@ async function main() {
 
   const report = reportOf({ batch, flagged, proposals, usage, pilot, byCat });
   writeFileSync(join(REVIEW_DIR, "report.md"), report);
+  state.done();
   console.log(report);
+}
+
+/** How many errors tier 1 lets through: the larger model triages a sample
+ *  of senses tier 1 called ok. Writes data/review/recall.md only. */
+async function recallCheck({ items, reviewed, n, fixModel, log }) {
+  const ok = new Set(reviewed.filter((r) => r.verdict === "ok").map((r) => r.hash));
+  // An even spread: every k-th ok sense, in hash order.
+  const pool = items.filter((it) => ok.has(it.hash)).sort((a, b) => a.hash.localeCompare(b.hash));
+  const step = Math.max(1, Math.floor(pool.length / n));
+  const sample = pool.filter((_, i) => i % step === 0).slice(0, n);
+  log(`recall: ${sample.length} of ${pool.length} senses tier 1 called ok, to ${fixModel}`);
+  if (!process.env.ANTHROPIC_API_KEY) throw new Error("ANTHROPIC_API_KEY is required");
+  const { default: Anthropic } = await import("@anthropic-ai/sdk");
+  const api = new Anthropic();
+  const usage = {};
+  const groups = [];
+  for (let i = 0; i < sample.length; i += GROUP) groups.push(sample.slice(i, i + GROUP));
+  const answers = await runBatch(
+    api,
+    groups.map((g, gi) => ({
+      custom_id: `r${gi}`,
+      params: {
+        model: fixModel,
+        max_tokens: 8000,
+        output_config: { effort: "medium", ...jsonFormat(TRIAGE_SCHEMA) },
+        system: TRIAGE_SYSTEM,
+        messages: [{ role: "user", content: g.map((it, i) => triageItemText(it, i + 1)).join("\n\n") }],
+      },
+    })),
+    usage,
+    log
+  );
+  const missed = [];
+  groups.forEach((g, gi) => {
+    for (const a of answers.get(`r${gi}`)?.items ?? []) {
+      const it = g[a.n - 1];
+      if (it && a.verdict === "problem" && a.problems?.length && a.confidence !== "low") missed.push({ it, problems: a.problems });
+    }
+  });
+  const md = [
+    "# Review recall check",
+    "",
+    `${fixModel} re-read **${sample.length}** senses that tier 1 (${TRIAGE_MODEL}) called ok, and flagged **${missed.length}** (${sample.length ? Math.round((100 * missed.length) / sample.length) : 0}%) with medium or high confidence.`,
+    "",
+    `Cost: $${costOf(usage).toFixed(3)}`,
+    "",
+    ...missed.map(({ it, problems }) => `- **${it.form}** (${it.pos}) “${it.gloss}”${it.example ? ` — ${it.example.nl}` : ""} — ${problems.join(", ")}`),
+    "",
+  ].join("\n");
+  writeFileSync(join(REVIEW_DIR, "recall.md"), md);
+  console.log(md);
 }
 
 /** The run's report, for the person who merges it. */
@@ -422,7 +533,11 @@ export function reportOf({ batch, flagged, proposals, usage, pilot, byCat }) {
   const problemCounts = {};
   for (const f of flagged) for (const p of f.problems) problemCounts[p] = (problemCounts[p] ?? 0) + 1;
   const flaggedBy = Object.fromEntries(ORDER.map((c) => [c, flagged.filter((f) => f.it.category === c).length]));
-  const sample = proposals.filter((p) => p.result.action !== "keep").slice(0, 50);
+  // A spread over the whole run, not its first (most suspicious) entries.
+  const sample = proposals
+    .filter((p) => p.result.action !== "keep")
+    .sort((a, b) => a.it.hash.localeCompare(b.it.hash))
+    .slice(0, 50);
   const tokens = Object.entries(usage).map(([m, u]) => `| ${m} | ${u.requests} | ${u.input.toLocaleString("en")} | ${u.output.toLocaleString("en")} |`);
   return [
     `# Dictionary review${pilot ? " — pilot" : ""}`,
@@ -435,7 +550,7 @@ export function reportOf({ batch, flagged, proposals, usage, pilot, byCat }) {
     "",
     `Problems flagged: ${Object.entries(problemCounts).map(([k, v]) => `${k} ${v}`).join(", ") || "none"}`,
     "",
-    `Tier 2 outcome: **${count((p) => p.result.action === "fix")}** fixes, **${count((p) => p.result.action === "drop")}** drops, ${count((p) => p.result.action === "keep")} kept as is (tier 1 was wrong), ${count((p) => p.result.action === "rejected")} proposals rejected by the checks.`,
+    `Tier 2 outcome: **${count((p) => p.result.action === "fix")}** fixes, **${count((p) => p.result.action === "drop")}** drops, ${count((p) => p.result.action === "keep")} kept as is (tier 1 was wrong), ${count((p) => p.result.action === "rejected")} proposals rejected by the checks. Within the fixes: ${count((p) => p.result.gloss)} glosses, ${count((p) => p.result.article)} articles, ${count((p) => p.result.example)} new examples, ${count((p) => p.result.removeExample)} examples removed.`,
     "",
     "## Cost",
     "",
@@ -445,7 +560,7 @@ export function reportOf({ batch, flagged, proposals, usage, pilot, byCat }) {
     "",
     `Estimated cost (batch prices): **$${costOf(usage).toFixed(3)}** — about $${batch.length ? ((costOf(usage) / batch.length) * 1000).toFixed(2) : "0"} per 1,000 senses.`,
     "",
-    "## Proposed changes (first 50)",
+    "## Proposed changes (50 at random)",
     "",
     ...sample.map((p) => {
       const [form, pos, gloss] = p.it.key.split("\t");
@@ -456,7 +571,9 @@ export function reportOf({ batch, flagged, proposals, usage, pilot, byCat }) {
       return [
         head,
         r.gloss ? `  - gloss → “${r.gloss}”` : null,
+        r.article ? `  - article: ${p.it.article ?? "none"} → ${r.article}` : null,
         r.example ? `  - example: ~~${p.it.example?.nl ?? "none"}~~ → ${r.example.nl} (${r.example.en})` : null,
+        r.removeExample ? `  - example removed: ~~${p.it.example?.nl}~~ (written again on demand)` : null,
         `  - why: ${r.reason}`,
       ]
         .filter(Boolean)

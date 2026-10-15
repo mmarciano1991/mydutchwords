@@ -5,7 +5,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { loadCorrections, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
-import { correctionsOf, costOf, hashOf, itemsOf, reportOf, select } from "./review.mjs";
+import { BatchState, correctionsOf, costOf, hashOf, itemsOf, reportOf, select } from "./review.mjs";
 
 const sense = (gloss: string, over: Record<string, unknown> = {}) => ({ id: `s_${gloss.replace(/\W/g, "")}`, gloss, examples: [] as unknown[], ...over });
 
@@ -32,11 +32,15 @@ describe("reviewed corrections", () => {
     writeFileSync(join(dir, "glosses-review.tsv"), "# header\nAmsterdammer\tadjective\tof\tfrom Amsterdam\n");
     writeFileSync(join(dir, "examples-review.tsv"), "bank\tnoun\tbench\tIk zit op de bank.\tI sit on the bench.\nbroken\tline\n");
     writeFileSync(join(dir, "drop-review.tsv"), "ziek\tnoun\thamlet in X\tplace name\n");
+    writeFileSync(join(dir, "articles-review.tsv"), "partij\tnoun\tparty\tde\nboek\tnoun\tbook\tder\n");
+    writeFileSync(join(dir, "noexample-review.tsv"), "erg\tadjective\tbad\n");
     const c = loadCorrections(dir);
     expect(c.glosses.get("Amsterdammer\tadjective\tof")).toMatchObject({ gloss: "from Amsterdam" });
     expect(c.examples.get("bank\tnoun\tbench")).toMatchObject({ nl: "Ik zit op de bank.", en: "I sit on the bench." });
     expect(c.examples.size).toBe(1);
     expect(c.drops.get("ziek\tnoun\thamlet in X")).toMatchObject({ reason: "place name" });
+    expect([...c.articles]).toEqual([["partij\tnoun\tparty", { article: "de", file: "articles-review.tsv" }]]);
+    expect(c.noExamples.has("erg\tadjective\tbad")).toBe(true);
   });
 });
 
@@ -49,6 +53,7 @@ const words = [
       {
         pos: "noun",
         article: "de",
+        fieldMeta: { article: { sources: ["en-wiktionary"], confidence: "checked" } },
         forms: [{ form: "banken" }],
         senses: [
           sense("bench", { examples: [{ nl: "Ik zit op de bank.", en: "I sit on the bench.", source: "corpus", origin: "tatoeba" }] }),
@@ -70,10 +75,11 @@ describe("review selection", () => {
     expect(items[0]).toMatchObject({ article: "de", others: ["bank (money)"], forms: ["bank", "banken"] });
   });
 
-  it("orders suspicious glosses first, then Tatoeba, and skips what was reviewed", () => {
-    expect(select(items, new Set(), { limit: 10 }).map((i) => i.form)).toEqual(["Amsterdammer", "bank", "fiets", "bank"]);
+  it("orders garbled glosses first, then by frequency, skips what was reviewed and rare words", () => {
+    expect(select(items, new Set(), { limit: 10 }).map((i) => i.form)).toEqual(["Amsterdammer", "fiets", "bank", "bank"]);
     const done = new Set([items[2].hash]);
-    expect(select(items, done, { limit: 2 }).map((i) => i.key)).toEqual([items[0].key, items[3].key]);
+    expect(select(items, done, { limit: 2 }).map((i) => i.form)).toEqual(["fiets", "bank"]);
+    expect(select(items, new Set(), { limit: 10, maxRank: 400 }).map((i) => i.form)).toEqual(["fiets"]);
   });
 
   it("reviews a sense again only when what it shows changed", () => {
@@ -109,9 +115,33 @@ describe("fix validation", () => {
     expect(correctionsOf(bank, { action: "fix", gloss: null, nl: "Ik zit op de bank.", en: "I sit on the bench.", reason: "r" })).toEqual({ action: "keep" });
   });
 
+  it("changes an unverified article only when tier 1 flagged it", () => {
+    const answer = { action: "fix", gloss: null, nl: null, en: null, keepExample: true, article: "het", reason: "r" };
+    expect(correctionsOf(bank, answer, ["wrong-article"])).toMatchObject({ action: "fix", article: "het" });
+    expect(correctionsOf(bank, answer, ["bad-gloss"])).toEqual({ action: "keep" });
+    expect(correctionsOf({ ...bank, articleVerified: true }, answer, ["wrong-article"])).toEqual({ action: "keep" });
+  });
+
+  it("removes an example that no longer fits when no new one passes", () => {
+    const answer = { action: "fix", gloss: "park bench", nl: null, en: null, keepExample: false, article: null, reason: "r" };
+    expect(correctionsOf(bank, answer)).toMatchObject({ gloss: "park bench", removeExample: true });
+  });
+
   it("rejects a gloss that breaks the gloss rule, or an example without the word", () => {
     expect(correctionsOf(bank, { action: "fix", gloss: "bench, seat, couch", nl: null, en: null, reason: "" }).action).toBe("rejected");
     expect(correctionsOf(bank, { action: "fix", gloss: null, nl: "Ik zit op een stoel.", en: "I sit on a chair.", reason: "" })).toMatchObject({ action: "rejected", why: expect.stringContaining("word not found") });
+  });
+});
+
+describe("resuming", () => {
+  it("keeps a run's batch ids until it is done, and forgets another run's", () => {
+    const path = join(mkdtempSync(join(tmpdir(), "batches-")), "batches.json");
+    const a = new BatchState(path, "run-a");
+    a.set("triage", "msgbatch_1");
+    expect(new BatchState(path, "run-a").get("triage")).toBe("msgbatch_1");
+    expect(new BatchState(path, "run-b").get("triage")).toBeUndefined();
+    a.done();
+    expect(new BatchState(path, "run-a").get("triage")).toBeUndefined();
   });
 });
 
