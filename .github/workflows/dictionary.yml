@@ -20,10 +20,15 @@ name: Dictionary
 on:
   workflow_dispatch:
     inputs:
+      # Off by default and never on the schedule: the model step writes and
+      # checks every missing example with the large models (hundreds of
+      # dollars a run). Missing examples are written on demand instead
+      # (supabase/functions/example) and quality is reviewed cheaply by
+      # the Dictionary review workflow.
       model:
-        description: "Run the model step (needs ANTHROPIC_API_KEY)"
+        description: "Run the model step (needs ANTHROPIC_API_KEY; costly)"
         type: boolean
-        default: true
+        default: false
       publish:
         description: "Publish to Supabase and the release asset"
         type: boolean
@@ -70,16 +75,15 @@ jobs:
         if: env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != ''
         run: mkdir -p .cache/dictionary-build && npm run dictionary:publish -- --pull-registry
 
-      # Without the model step, a sense gets an example only from Wiktionary
-      # or Tatoeba — most don't (the first build: 57,183 of 73,926 senses
-      # without one), and they ship as "Example coming soon". Never silent.
+      # Without the model step, a sense gets an example from Wiktionary,
+      # Tatoeba, data/examples or an on-demand sentence pulled above; the
+      # rest ship as "Example coming soon" until a learner saves them.
       - name: Build
         run: |
-          if [ -n "$ANTHROPIC_API_KEY" ] && [ "${{ github.event_name == 'schedule' || inputs.model }}" = "true" ]; then
+          if [ -n "$ANTHROPIC_API_KEY" ] && [ "${{ inputs.model }}" = "true" ]; then
             npm run dictionary:build -- --llm
           else
-            if [ -z "$ANTHROPIC_API_KEY" ]; then why="the ANTHROPIC_API_KEY secret is not set"; else why="the model input was off"; fi
-            echo "::warning title=Dictionary model step skipped::Senses with no corpus example ship without one, because $why. Set the secret and run this workflow with 'model' on to write and check the missing examples."
+            echo "::notice title=Dictionary model step off::Senses with no example get one on demand (supabase/functions/example)."
             npm run dictionary:build
           fi
 

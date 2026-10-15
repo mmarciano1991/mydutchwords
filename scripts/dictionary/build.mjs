@@ -33,6 +33,7 @@ import { loadTatoeba } from "./sources/tatoeba.mjs";
 import { assembleWord, glossFailures } from "./assemble.mjs";
 import { assignExamples, exampleIssues, indexTatoeba, targetForms } from "./examples.mjs";
 import { GENERATED_FILE, loadStoredExamples, storedKey } from "./stored.mjs";
+import { loadCorrections, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
 import { assignSenseIds, loadRegistry, saveRegistry } from "./ids.mjs";
 import { buildCompound, morphemesOf, stressOf } from "./morphology.mjs";
 
@@ -54,7 +55,7 @@ const [en, nl, opentaal, frequency, tatoebaPairs] = await Promise.all([
 log(`en: ${en.entries.size} words · nl: ${nl.entries.size} words · OpenTaal: ${opentaal.size} · Tatoeba: ${tatoebaPairs?.length ?? 0}`);
 
 const doubts = [];
-const report = { startedAt: new Date().toISOString(), counts: {}, doubtReasons: {}, examples: { wiktionary: 0, tatoeba: 0, stored: 0, storedRejected: 0, rejected: 0, none: 0, sampleRejections: [] } };
+const report = { startedAt: new Date().toISOString(), counts: {}, doubtReasons: {}, corrections: { placeDropped: 0, merged: 0, glossFixed: 0, glossRejected: 0, dropped: 0, exampleReplaced: 0, exampleRejected: 0 }, examples: { wiktionary: 0, tatoeba: 0, stored: 0, storedRejected: 0, rejected: 0, none: 0, sampleRejections: [] } };
 
 // ── 1. Official spelling ──
 // A record's word must be in OpenTaal — exactly, or in another
@@ -318,12 +319,53 @@ for (const { word, use, sense, issues } of needsCondensing) {
   }
 }
 
-// Drop held-back senses, empty uses and empty words.
+// ── Corrections (corrections.mjs): Tier 0 rules, then reviewed fixes ──
+const corrections = loadCorrections();
+for (const word of words.values()) {
+  for (const use of word.uses) {
+    for (const sense of use.senses) {
+      if (sense._doubt || !sense.gloss) continue;
+      if (tier0Drop(word, sense)) {
+        sense._doubt = true;
+        report.corrections.placeDropped++;
+        continue;
+      }
+      const key = storedKey(word.form, use.pos, sense.gloss);
+      if (corrections.drops.has(key)) {
+        sense._doubt = true;
+        report.corrections.dropped++;
+        continue;
+      }
+      const fix = corrections.glosses.get(key);
+      if (!fix) continue;
+      if (glossIssues(fix.gloss).length) {
+        report.corrections.glossRejected++;
+        doubts.push({ word: word.form, scope: "sense", pos: use.pos, reason: "gloss: reviewed correction failed the gloss rule", detail: { gloss: sense.gloss, proposed: fix.gloss, file: fix.file } });
+        continue;
+      }
+      // Stored examples and corrections written for the old gloss still find it.
+      sense._oldGloss = sense.gloss;
+      sense.gloss = fix.gloss;
+      report.corrections.glossFixed++;
+    }
+  }
+}
+
+// Drop held-back senses, merge duplicates, drop empty uses and empty words.
 for (const [form, word] of words) {
-  for (const use of word.uses) use.senses = use.senses.filter((s) => !s._doubt && s.gloss);
+  for (const use of word.uses) {
+    use.senses = use.senses.filter((s) => !s._doubt && s.gloss);
+    report.corrections.merged += mergeDuplicateSenses(use);
+  }
   word.uses = word.uses.filter((u) => u.senses.length);
   if (!word.uses.length) words.delete(form);
 }
+log(`corrections: ${report.corrections.placeDropped} place names and ${report.corrections.dropped} reviewed senses dropped, ${report.corrections.merged} duplicates merged, ${report.corrections.glossFixed} glosses corrected (${report.corrections.glossRejected} rejected)`);
+
+/** A per-sense lookup by the gloss as published, then by the gloss a
+ *  reviewed correction replaced. */
+const bySense = (map, word, use, sense) =>
+  map.get(storedKey(word.form, use.pos, sense.gloss ?? "")) ?? (sense._oldGloss ? map.get(storedKey(word.form, use.pos, sense._oldGloss)) : undefined);
 
 // ── Search index pieces needed by the checks ──
 // Pure singular nouns with one article: what de/het agreement checks a
@@ -379,7 +421,7 @@ for (const word of words.values()) {
   for (const use of word.uses) {
     for (const sense of use.senses) {
       if (sense.examples.length) continue;
-      const hit = stored.get(storedKey(word.form, use.pos, sense.gloss ?? ""));
+      const hit = bySense(stored, word, use, sense);
       if (!hit) continue;
       const { issues, spans } = exampleIssues({ nl: hit.nl, en: hit.en }, targetForms(word, use), checkCtx);
       if (issues.length) {
@@ -393,6 +435,27 @@ for (const word of words.values()) {
     }
   }
 }
+// Reviewed example corrections replace whatever example a sense has — after
+// the same checks; one that fails keeps the old example and is queued.
+for (const word of words.values()) {
+  for (const use of word.uses) {
+    for (const sense of use.senses) {
+      const fix = bySense(corrections.examples, word, use, sense);
+      if (!fix) continue;
+      const { issues, spans } = exampleIssues({ nl: fix.nl, en: fix.en }, targetForms(word, use), checkCtx);
+      if (issues.length) {
+        report.corrections.exampleRejected++;
+        doubts.push({ word: word.form, scope: "example", pos: use.pos, reason: "example: reviewed correction failed checks", detail: { gloss: sense.gloss, sentence: fix.nl, issues, file: fix.file } });
+        continue;
+      }
+      if (!sense.examples.length) report.examples.none--;
+      sense.examples = [{ nl: fix.nl, en: fix.en, targetSpans: spans, source: "generated" }];
+      report.corrections.exampleReplaced++;
+    }
+  }
+}
+log(`corrections: ${report.corrections.exampleReplaced} examples replaced (${report.corrections.exampleRejected} rejected)`);
+
 log(`examples: ${report.examples.wiktionary} Wiktionary, ${report.examples.tatoeba} Tatoeba, ${report.examples.stored} stored (${report.examples.storedRejected} failed checks), ${report.examples.rejected} rejected by checks, ${report.examples.none} senses without`);
 
 if (llm) await llm.writeAndCheckExamples(words, checkCtx, { log, doubts });
@@ -504,8 +567,8 @@ function clean(word) {
     void headForms;
     if (articleMissing) use.fieldMeta.article = { sources: [], confidence: "checked" };
     use.senses = use.senses.map((s) => {
-      const { _rawExamples, _expansion, _expansionWord, _doubt, sourceId, rawGloss, ...sense } = s;
-      void _rawExamples; void _expansion; void _expansionWord; void _doubt; void rawGloss; void sourceId;
+      const { _rawExamples, _expansion, _expansionWord, _doubt, _oldGloss, sourceId, rawGloss, ...sense } = s;
+      void _rawExamples; void _expansion; void _expansionWord; void _doubt; void _oldGloss; void rawGloss; void sourceId;
       sense.cognate = isCognate(word.form, sense.gloss) || undefined;
       return sense;
     });

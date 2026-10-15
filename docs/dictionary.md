@@ -157,6 +157,48 @@ same-sense check. Anything that fails three times goes to the doubt queue.
   senses, all of rare words, get one **on demand** (below) rather than all
   up front.
 
+## Quality review
+
+Three tiers, cheapest first; nothing a model proposes reaches learners
+without a person merging it and the build's checks passing it.
+
+**Tier 0 — rules, every build** (`scripts/dictionary/corrections.mjs`).
+A place-name sense on a common word ("appel: hamlet in Nijkerk") is dropped;
+two senses of one use with the same gloss are merged. The build logs both
+counts ("corrections: …").
+
+**Tiers 1–2 — the review** (`scripts/dictionary/review.mjs`, workflow
+*Dictionary review*). `claude-haiku-5-5` reads 25 senses per request and only
+says what is wrong (wrong meaning, unnatural or ungrammatical Dutch, bad
+translation, bad gloss, place name, slur, duplicate). `claude-sonnet-5-5`
+looks at the flagged ones alone and proposes the smallest fix: a gloss, an
+example, or dropping the sense. A new gloss must pass the gloss rule, a new
+example the mechanical checks and a second model's same-meaning check. All
+through the Batches API, at half price.
+
+Order: suspicious glosses ("of", "someone"), Tatoeba examples on words with
+several meanings, stored examples, the rest — each by frequency. Run it with
+`pilot` on first: it samples every kind and reports the flag rate and the
+cost per 1,000 senses.
+
+Results go to a branch `dictionary-review/<run>`:
+
+- `data/review/tier1.jsonl`, `tier2.jsonl` — every verdict, with a hash of
+  what was reviewed; a later run skips senses already reviewed in their
+  current form, so nothing is paid for twice;
+- `data/corrections/{glosses,examples,drop}-review.tsv` — the proposed
+  fixes, one line per sense (`form`, `pos`, `gloss`, …);
+- `data/review/report.md` — counts, cost, and the first 50 changes.
+
+Read the report, delete any line you disagree with, and merge. The next
+Dictionary run applies the corrections — an example only if it passes the
+build's checks (spelling, de/het), otherwise it goes to the doubt queue — and
+learners' decks pick them up on their next refresh, keeping their own edits.
+
+The model step of the Dictionary workflow (`model` input) is off by default
+and never runs on the schedule: it would write every missing example with
+the large models.
+
 ## Examples on demand
 
 A sense that still has no example gets one the moment a learner saves it:
