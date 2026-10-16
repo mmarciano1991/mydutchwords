@@ -33,7 +33,7 @@ import { loadTatoeba } from "./sources/tatoeba.mjs";
 import { assembleWord, glossFailures, selectedFrom } from "./assemble.mjs";
 import { assignExamples, exampleIssues, indexTatoeba, targetForms } from "./examples.mjs";
 import { GENERATED_FILE, loadStoredExamples, storedKey } from "./stored.mjs";
-import { loadCondensed, loadCorrections, loadGrammar, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
+import { loadAbbreviations, loadCondensed, loadCorrections, loadGrammar, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
 import { assignSenseIds, loadRegistry, saveRegistry } from "./ids.mjs";
 import { buildCompound, morphemesOf, stressOf } from "./morphology.mjs";
 
@@ -197,6 +197,9 @@ for (const word of words.values()) {
 // its own unit only when Wiktionary says so; nothing is invented here.
 
 // ── Abbreviations: the meaning comes from the expansion's entry ──
+// …or, where that has none, from a reviewed line in abbreviations.tsv.
+const abbreviationGlosses = loadAbbreviations();
+report.corrections.abbreviationGlossed = 0;
 for (const word of words.values()) {
   for (const use of word.uses) {
     for (const sense of use.senses) {
@@ -209,12 +212,22 @@ for (const word of words.values()) {
         sense._expansionWord = target.id;
       }
     }
+    const reviewedGloss = use.expansion && abbreviationGlosses.get(storedKey(word.form, use.pos, use.expansion));
+    if (reviewedGloss && !glossIssues(reviewedGloss).length) {
+      for (const sense of use.senses) {
+        if (!sense._expansion || sense.gloss) continue;
+        sense.gloss = reviewedGloss;
+        sense.meta = { ...sense.meta, sources: [...new Set([...sense.meta.sources, "review"])], confidence: "checked" };
+        report.corrections.abbreviationGlossed++;
+      }
+    }
     if (use.expansion && !use.senses.some((s) => s.gloss)) {
       doubts.push({ word: word.form, scope: "use", pos: use.pos, reason: "abbreviation: no English meaning for its expansion", detail: { expansion: use.expansion } });
     }
   }
   if (word.uses.some((u) => u.expansion)) word.kind = "abbreviation";
 }
+log(`corrections: ${report.corrections.abbreviationGlossed} abbreviations glossed from review`);
 
 // Alternative spellings: a spelling with no meanings of its own is a
 // variant of the word it spells (paddestoel → paddenstoel).

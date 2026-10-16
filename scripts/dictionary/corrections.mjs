@@ -19,6 +19,9 @@
                                                     disagree (article, plural,
                                                     participle, pastSg): the
                                                     value, one of theirs
+     abbreviations-*.tsv  form  pos  expansion  gloss   an abbreviation whose
+                                                    expansion has no English
+                                                    meaning of its own
    A line names the sense the way the learner sees it (form, part of speech,
    gloss), like stored examples (stored.mjs); one whose sense no longer
    exists is unused. Nothing is trusted: a replaced example passes the same
@@ -95,6 +98,13 @@ export function loadGrammar(dir = CORRECTIONS_DIR) {
     }
   }
   return out;
+}
+
+/** English meanings for abbreviations whose expansion gives none
+ *  (abbreviations.tsv: form, pos, expansion, gloss), keyed by
+ *  storedKey(form, pos, expansion). */
+export function loadAbbreviations(dir = CORRECTIONS_DIR) {
+  return new Map([...readTsv(dir, "abbreviations", 4)].map(([k, v]) => [k, v.cells[0]]));
 }
 
 /** Every reviewed correction, keyed by storedKey(form, pos, gloss). */

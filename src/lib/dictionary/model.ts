@@ -29,6 +29,8 @@ export type SourceName =
   | "tatoeba"
   | "pipeline"
   | "llm"
+  /** A person's reviewed correction (data/corrections). */
+  | "review"
   | "user";
 
 export interface FieldMeta {

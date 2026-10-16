@@ -137,6 +137,13 @@ the two models agreed on a wrong article in about a quarter of the 163
 proposals ("het noot", "het plaat"), and articles that depend on the
 meaning (de/het poker) can't be settled from the word alone; 116 were kept.
 
+**Abbreviations without a meaning.** An abbreviation takes its gloss from its
+expansion's entry; when that has none, it isn't published. A reviewed line
+in `data/corrections/abbreviations.tsv` (form, pos, expansion as the doubt
+queue shows it, gloss) gives it one, under the gloss rule. To see the
+frequent ones, run the workflow with `list_doubts` set to `abbreviation`
+(it prints them to the run log; any reason prefix works).
+
 `dict_doubt.status` takes `accepted`, `rejected` or `corrected`, with the
 correction in `resolution`. **Open question:** someone has to own this
 queue. The 1,915 frequent items are a few days' work for a Dutch-speaking
