@@ -136,10 +136,9 @@ silently.
 The first production build (12 Oct 2026) ran **without** the model step
 (`ANTHROPIC_API_KEY` unset). Of 73,926 published senses, 18,246 have an
 example: 6,605 from Wiktionary and 11,641 from Tatoeba. **57,183 have
-none.** The fix is operational: set the secret and run the workflow with
-`model` on. The model writes an example for each sense that has none, and
-each one passes the same checks as a corpus sentence plus a second model's
-same-sense check. Anything that fails three times goes to the doubt queue.
+none.** They are not written in bulk: a sense gets its example the moment a
+learner saves it (see *Examples on demand* below), so only senses that are
+actually used are paid for. The workflow's `model` input stays off.
 
 ## Known data gaps (first build, without the model step)
 
@@ -222,6 +221,25 @@ learners' decks pick them up on their next refresh, keeping their own edits.
 The model step of the Dictionary workflow (`model` input) is off by default
 and never runs on the schedule: it would write every missing example with
 the large models.
+
+### Outcome of the review (October 2026)
+
+Rounds 1 to 15 were run and merged (`data/corrections/*-round1…15.tsv`),
+about $20 of API credit in total. What the rounds showed:
+
+- Frequent senses (rounds 1 to 6, up to frequency rank 30,000) gave the
+  most; later rounds covered rare, unranked words alphabetically and found
+  mostly small gloss clean-ups.
+- Every round was read by hand before merging. Sonnet's drops were wrong
+  often enough to matter: idioms, names, informal meanings and core everyday
+  meanings ("lang: long", "landen: to land"). From round 7 on, 30 to 45% of
+  the drop lines were removed by hand.
+- Round 15 re-reviewed senses an earlier round had already corrected
+  (their key changed), so only its examples and articles were applied. Stop
+  there: further rounds mostly re-check corrected senses.
+- A final check of all drops against the published dictionary found three
+  words left with no sense at all (*doorkerven*, *overspuiten*,
+  *speelstad*); they were restored.
 
 ## Examples on demand
 
