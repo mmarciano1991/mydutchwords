@@ -49,6 +49,12 @@ on:
         description: "Settle frequent article/plural/verb-form disagreements with two models and push them for review (never publishes)"
         type: boolean
         default: false
+      # Prints the frequent doubts whose reason starts with this text to the
+      # run log, for reviewing them where the artifact can't be downloaded.
+      list_doubts:
+        description: "Print frequent doubts whose reason starts with this text (e.g. abbreviation)"
+        type: string
+        default: ""
       # With glosses: re-read a finished batch (msgbatch_…) instead of
       # paying for a new one, when a run lost its output after the batch.
       reuse_batch:
@@ -135,6 +141,12 @@ jobs:
             cat .cache/dictionary-build/report.json 2>/dev/null | head -60
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: List doubts
+        if: inputs.list_doubts != ''
+        env:
+          REASON: ${{ inputs.list_doubts }}
+        run: grep '"priority":"frequent"' .cache/dictionary-build/doubt.jsonl | grep -F "\"reason\":\"$REASON" || true
 
       - name: Keep the doubt queue and report
         if: always()
