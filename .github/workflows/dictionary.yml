@@ -41,6 +41,12 @@ on:
         description: "Shorten frequent too-long glosses with the model and push them for review (never publishes)"
         type: boolean
         default: false
+      # With glosses: re-read a finished batch (msgbatch_…) instead of
+      # paying for a new one, when a run lost its output after the batch.
+      reuse_batch:
+        description: "With glosses: id of a finished batch to re-read (free) instead of a new one"
+        type: string
+        default: ""
   schedule:
     - cron: "0 3 * * 1"
 
@@ -87,6 +93,8 @@ jobs:
       # Tatoeba, data/examples or an on-demand sentence pulled above; the
       # rest ship as "Example coming soon" until a learner saves them.
       - name: Build
+        env:
+          DICTIONARY_REUSE_BATCH: ${{ inputs.reuse_batch }}
         run: |
           if [ -n "$ANTHROPIC_API_KEY" ] && [ "${{ inputs.glosses }}" = "true" ]; then
             npm run dictionary:build -- --llm=glosses
@@ -131,12 +139,20 @@ jobs:
             .cache/dictionary-build/audit.json
 
       # The proposals are not applied until a person copies the lines they
-      # agree with to data/corrections/condensed.tsv on main.
+      # agree with to data/corrections/condensed.tsv on main. Also kept as
+      # an artifact: GitHub refuses the push when main's workflow files
+      # changed during the run.
+      - uses: actions/upload-artifact@v4
+        if: inputs.glosses
+        with:
+          name: condensed-proposed
+          path: .cache/dictionary-build/condensed.tsv
       - name: Push condensed glosses for review
         if: inputs.glosses
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          cat .cache/dictionary-build/condensed.tsv
           git checkout -B dictionary-condensed
           mkdir -p data/review
           cp .cache/dictionary-build/condensed.tsv data/review/condensed-proposed.tsv

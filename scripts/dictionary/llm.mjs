@@ -35,12 +35,17 @@ function jsonFormat(properties, required) {
 
 /** Runs requests as one or more batches; returns custom_id → parsed JSON
  *  (or null when the request failed, was refused, or returned bad JSON). */
-async function runBatch(requests, log) {
+async function runBatch(requests, log, reuse) {
   const out = new Map();
   for (let i = 0; i < requests.length; i += 50_000) {
     const chunk = requests.slice(i, i + 50_000);
-    const batch = await api().messages.batches.create({ requests: chunk });
-    log(`  batch ${batch.id}: ${chunk.length} requests`);
+    // A finished batch's results are kept for 29 days: re-reading them
+    // costs nothing when a run's output was lost after the batch was paid.
+    const batch = reuse ? await api().messages.batches.retrieve(reuse) : await api().messages.batches.create({ requests: chunk });
+    if (reuse && batch.request_counts.succeeded + batch.request_counts.errored + batch.request_counts.canceled + batch.request_counts.expired !== chunk.length) {
+      throw new Error(`batch ${reuse} does not match these ${chunk.length} requests`);
+    }
+    log(`  batch ${batch.id}${reuse ? " (reused)" : ""}: ${chunk.length} requests`);
     let status = batch;
     while (status.processing_status !== "ended") {
       await new Promise((r) => setTimeout(r, 30_000));
@@ -77,7 +82,7 @@ Rules:
 /** Condenses every gloss in `items` ({word, use, sense}) in place. A
  *  result that fails the gloss rule or uses words the source gloss doesn't
  *  have is discarded — the sense then goes to the doubt queue. */
-export async function condenseGlosses(items, { log }) {
+export async function condenseGlosses(items, { log, reuseBatch }) {
   if (!items.length) return;
   log(`model: condensing ${items.length} glosses…`);
   const requests = items.map((it, i) => ({
@@ -95,7 +100,7 @@ export async function condenseGlosses(items, { log }) {
       ],
     },
   }));
-  const results = await runBatch(requests, log);
+  const results = await runBatch(requests, log, reuseBatch);
   let accepted = 0;
   items.forEach((it, i) => {
     const gloss = results.get(`g${i}`)?.gloss?.trim();

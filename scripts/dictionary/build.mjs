@@ -352,7 +352,9 @@ if (args.has("llm")) {
   if (GLOSSES_ONLY) {
     const todo = failing.filter((it) => priorityOf(it.word.form) === "frequent");
     const before = new Map(todo.map((it) => [it, it.sense.gloss]));
-    await llm.condenseGlosses(todo, { log });
+    // DICTIONARY_REUSE_BATCH: read a finished batch's results instead of
+    // paying again — only for the same items, so the same build.
+    await llm.condenseGlosses(todo, { log, reuseBatch: process.env.DICTIONARY_REUSE_BATCH || undefined });
     const rows = todo.filter((it) => it.sense.gloss !== before.get(it) && !glossIssues(it.sense.gloss).length);
     writeFileSync(
       join(OUT_DIR, "condensed.tsv"),
