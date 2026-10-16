@@ -159,6 +159,20 @@ jobs:
           gh release view dictionary-latest >/dev/null 2>&1 || gh release create dictionary-latest --title "Dictionary (latest build)" --notes "Static dictionary shards for builds without a Supabase project. Rebuilt by the Dictionary workflow."
           gh release upload dictionary-latest dictionary.tar.gz --clobber
 
+      # Is the on-demand example function (supabase/functions/example)
+      # deployed? A made-up sense id costs no model call: a deployed
+      # function answers 422 "No such sense", a missing one 404.
+      - name: Check the on-demand example function
+        if: env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != ''
+        run: |
+          code=$(curl -s -o /tmp/example.json -w '%{http_code}' -X POST "${SUPABASE_URL%/}/functions/v1/example" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Content-Type: application/json" -d '{"senseId":"s_probe_not_a_sense"}')
+          case "$code" in
+            422) echo "On-demand examples: function deployed" >> "$GITHUB_STEP_SUMMARY" ;;
+            *) echo "::warning title=On-demand examples::example function answered $code — deploy it (docs/example-setup.md)"
+               echo "On-demand examples: function answered $code: $(head -c 200 /tmp/example.json)" >> "$GITHUB_STEP_SUMMARY" ;;
+          esac
+
       # The test fixture, from this build — commit it if the acceptance
       # cases should follow the new data.
       - name: Fixture from this build
