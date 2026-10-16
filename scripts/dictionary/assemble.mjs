@@ -21,6 +21,7 @@ import {
   verbSubtype,
 } from "./tags.mjs";
 import { numeralValue } from "./numerals.mjs";
+import { grammarKey } from "./corrections.mjs";
 
 const NOISY_FORM_TAGS = ["archaic", "dated", "Flanders", "colloquial", "with-gij", "majestic", "obsolete", "subjunctive", "dialectal"];
 
@@ -127,6 +128,16 @@ export function assembleWord(form, enRecs, nlRecs, ctx) {
   return { word, doubts, multiwords };
 }
 
+/** The value review chose where the sources disagree (ctx.grammar, from
+ *  data/corrections/grammar.tsv) — only when it is one the sources give. An
+ *  article may be "de/het" when both are among them. */
+function reviewed(ctx, form, pos, field, from, candidates, article = false) {
+  const value = ctx.grammar?.get(grammarKey(form, pos, field, from));
+  if (!value) return null;
+  const ok = article ? [...articleSet([value])].every((a) => candidates.includes(a)) : candidates.includes(value);
+  return ok ? value : null;
+}
+
 function buildUse(form, useId, recs, nlRecs, ctx, doubt, multiwords) {
   const first = recs[0];
   const pos = first.pos;
@@ -152,10 +163,19 @@ function buildUse(form, useId, recs, nlRecs, ctx, doubt, multiwords) {
     const nlArticles = nlRecs.map((r) => articleFromGenders(r.genders)).filter(Boolean);
     const nlSet = articleSet(nlArticles);
     const kept = [];
+    let articleReviewed = false;
     for (const rec of recs) {
       const a = recArticle.get(rec);
-      if (!a || nlSet.size === 0 || [...articleSet([a])].every((x) => nlSet.has(x))) kept.push(rec);
-      else doubt("use", "article: sources disagree", { pos, detail: { enWiktionary: a, nlWiktionary: nlArticles, senses: rec.senses.map((x) => x.glosses.at(-1)) } });
+      if (!a || nlSet.size === 0 || [...articleSet([a])].every((x) => nlSet.has(x))) {
+        kept.push(rec);
+        continue;
+      }
+      const settled = reviewed(ctx, form, pos, "article", a, [...articleSet([a, ...nlArticles])], true);
+      if (settled) {
+        recArticle.set(rec, settled);
+        kept.push(rec);
+        articleReviewed = true;
+      } else doubt("use", "article: sources disagree", { pos, detail: { enWiktionary: a, nlWiktionary: nlArticles, senses: rec.senses.map((x) => x.glosses.at(-1)) } });
     }
     if (!kept.length) return null;
     recs = kept;
@@ -173,6 +193,7 @@ function buildUse(form, useId, recs, nlRecs, ctx, doubt, multiwords) {
     } else {
       fieldMeta.article = meta("verified");
     }
+    if (articleReviewed) fieldMeta.article = { sources: ["en-wiktionary", "nl-wiktionary", "review"], confidence: "verified" };
     if (use.article === "de/het") use.articleNote = "Both de and het are used.";
 
     const enPlurals = new Set(recs.flatMap((r) => allOf(r.forms, ["plural"], ["diminutive"])));
@@ -185,8 +206,14 @@ function buildUse(form, useId, recs, nlRecs, ctx, doubt, multiwords) {
       if (nlPlurals.size === 0) fieldMeta.plural = meta("checked");
       else if (plurals.some((p) => nlPlurals.has(p))) fieldMeta.plural = meta("verified");
       else {
-        doubt("use", "plural: sources disagree", { pos, detail: { enWiktionary: plurals, nlWiktionary: [...nlPlurals] } });
-        return null;
+        const settled = reviewed(ctx, form, pos, "plural", plurals.join(", "), [...plurals, ...nlPlurals]);
+        if (!settled) {
+          doubt("use", "plural: sources disagree", { pos, detail: { enWiktionary: plurals, nlWiktionary: [...nlPlurals] } });
+          return null;
+        }
+        use.plural = settled;
+        delete use.plural2;
+        fieldMeta.plural = { sources: ["en-wiktionary", "nl-wiktionary", "review"], confidence: "verified" };
       }
     }
     use.diminutive = pick(forms, ["diminutive"], ["plural"]);
@@ -229,9 +256,16 @@ function buildUse(form, useId, recs, nlRecs, ctx, doubt, multiwords) {
         fieldMeta[field] = meta("checked");
       } else {
         // Several verbs share a spelling (voorkomen): agreement with any is
-        // enough; with none, the forms are in doubt.
-        doubt("use", `${field}: sources disagree`, { pos, detail: { enWiktionary: value, nlWiktionary: [...nlSet] } });
-        return null;
+        // enough; with none, the forms are in doubt — unless review settled
+        // it. A past singular is only ever confirmed, since its plural
+        // would have to change with it.
+        const settled = reviewed(ctx, form, pos, field, value, field === "pastSg" ? [value] : [value, ...nlSet]);
+        if (!settled) {
+          doubt("use", `${field}: sources disagree`, { pos, detail: { enWiktionary: value, nlWiktionary: [...nlSet] } });
+          return null;
+        }
+        use[field] = settled;
+        fieldMeta[field] = { sources: ["en-wiktionary", "nl-wiktionary", "review"], confidence: "verified" };
       }
     }
     const aux = new Set(nlRecs.flatMap((r) => r.auxiliaries));

@@ -33,7 +33,7 @@ import { loadTatoeba } from "./sources/tatoeba.mjs";
 import { assembleWord, glossFailures, selectedFrom } from "./assemble.mjs";
 import { assignExamples, exampleIssues, indexTatoeba, targetForms } from "./examples.mjs";
 import { GENERATED_FILE, loadStoredExamples, storedKey } from "./stored.mjs";
-import { loadCondensed, loadCorrections, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
+import { loadCondensed, loadCorrections, loadGrammar, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
 import { assignSenseIds, loadRegistry, saveRegistry } from "./ids.mjs";
 import { buildCompound, morphemesOf, stressOf } from "./morphology.mjs";
 
@@ -115,8 +115,9 @@ if (ONLY) {
 // ── 2–3. Assemble, cross-check ──
 const words = new Map();
 const multiwordCandidates = [];
+const grammar = loadGrammar();
 for (const [form, g] of groups) {
-  const { word, doubts: d, multiwords } = assembleWord(form, g.en, g.nl, { frequency });
+  const { word, doubts: d, multiwords } = assembleWord(form, g.en, g.nl, { frequency, grammar });
   for (const x of d) if (frequencyRankOk(form)) doubts.push(x);
   if (!word) continue;
   word.variants = [...g.spellings].filter((s) => s !== form);

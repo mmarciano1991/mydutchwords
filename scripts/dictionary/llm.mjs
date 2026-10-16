@@ -35,7 +35,7 @@ function jsonFormat(properties, required) {
 
 /** Runs requests as one or more batches; returns custom_id → parsed JSON
  *  (or null when the request failed, was refused, or returned bad JSON). */
-async function runBatch(requests, log, reuse) {
+export async function runBatch(requests, log, reuse) {
   const out = new Map();
   for (let i = 0; i < requests.length; i += 50_000) {
     const chunk = requests.slice(i, i + 50_000);

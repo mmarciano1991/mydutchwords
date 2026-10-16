@@ -4,7 +4,8 @@ import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
-import { loadCorrections, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
+import { grammarKey, loadCorrections, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
+import { assembleWord } from "./assemble.mjs";
 import { BatchState, correctionsOf, costOf, glossCore, keepWholeWords, hashOf, itemsOf, reportOf, select } from "./review.mjs";
 
 const sense = (gloss: string, over: Record<string, unknown> = {}) => ({ id: `s_${gloss.replace(/\W/g, "")}`, gloss, examples: [] as unknown[], ...over });
@@ -187,5 +188,27 @@ describe("report", () => {
     expect(md).toContain("pilot");
     expect(md).toContain("**1** fixes");
     expect(md).toContain("~~Ik zit op de bank.~~ → Op de bank in het park.");
+  });
+});
+
+describe("reviewed grammar (grammar.tsv)", () => {
+  const recSense = (g: string) => ({ glosses: [g], rawGloss: g, tags: [], altOf: [], synonyms: [], examples: [], links: [], categories: [] });
+  const en = (over: any) => ({ pos: "noun", kind: "noun", forms: [{ form: "bomen", tags: ["plural"] }], genders: ["m"], senses: [recSense("tree")], translations: [], tableTags: "", ...over });
+  const nl = (over: any) => ({ pos: "noun", forms: [{ form: "bomen", tags: ["plural"] }], genders: ["m"], senses: [recSense("boom")], translations: [], auxiliaries: [], ...over });
+  const ctx = (g: [string, string, string, string, string][] = []) => ({ frequency: { of: () => 1 }, grammar: new Map(g.map((r) => [grammarKey(r[0], r[1], r[2], r[3]), r[4]])) });
+  it("article disagreement: dropped without review, kept with it", () => {
+    const a = assembleWord("boom", [en({})], [nl({ genders: ["n"] })], ctx());
+    expect(a.word).toBeNull();
+    const b = assembleWord("boom", [en({})], [nl({ genders: ["n"] })], ctx([["boom", "noun", "article", "de", "het"]]));
+    expect(b.word.uses[0].article).toBe("het");
+    const c = assembleWord("boom", [en({})], [nl({ genders: ["n"] })], ctx([["boom", "noun", "article", "de", "de/het"]]));
+    expect(c.word.uses[0].article).toBe("de/het");
+  });
+  it("plural: only a value the sources give", () => {
+    const nlr = nl({ forms: [{ form: "boms", tags: ["plural"] }] });
+    expect(assembleWord("boom", [en({})], [nlr], ctx()).word).toBeNull();
+    expect(assembleWord("boom", [en({})], [nlr], ctx([["boom", "noun", "plural", "bomen", "bomer"]])).word).toBeNull();
+    const w = assembleWord("boom", [en({})], [nlr], ctx([["boom", "noun", "plural", "bomen", "boms"]])).word;
+    expect(w.uses[0].plural).toBe("boms");
   });
 });

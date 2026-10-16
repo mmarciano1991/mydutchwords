@@ -15,6 +15,10 @@
      articles-*.tsv   form  pos  gloss  de|het      both review models agreed
      noexample-*.tsv  form  pos  gloss              the example no longer fits
                                                     the corrected gloss
+     grammar-*.tsv    form  pos  field  from  value  where the two Wiktionaries
+                                                    disagree (article, plural,
+                                                    participle, pastSg): the
+                                                    value, one of theirs
    A line names the sense the way the learner sees it (form, part of speech,
    gloss), like stored examples (stored.mjs); one whose sense no longer
    exists is unused. Nothing is trusted: a replaced example passes the same
@@ -74,6 +78,23 @@ function readTsv(dir, prefix, columns) {
  *  storedKey(form, pos, source gloss). */
 export function loadCondensed(dir = CORRECTIONS_DIR) {
   return new Map([...readTsv(dir, "condensed", 4)].map(([k, v]) => [k, v.cells[0]]));
+}
+
+/** Grammar disagreements settled by review (grammar.tsv: form, pos, field,
+ *  English Wiktionary's value, the value to use), keyed by grammarKey. */
+export const grammarKey = (form, pos, field, from) => [form, pos, field, from].map((c) => String(c).normalize("NFC").trim()).join("\t");
+export function loadGrammar(dir = CORRECTIONS_DIR) {
+  const out = new Map();
+  if (!existsSync(dir)) return out;
+  for (const file of readdirSync(dir).filter((f) => f.startsWith("grammar") && f.endsWith(".tsv")).sort()) {
+    for (const line of readFileSync(join(dir, file), "utf8").split("\n")) {
+      if (!line.trim() || line.startsWith("#")) continue;
+      const cells = line.split("\t").map((c) => c.normalize("NFC").trim());
+      if (cells.length < 5 || cells.slice(0, 5).some((c) => !c)) continue;
+      out.set(grammarKey(...cells.slice(0, 4)), cells[4]);
+    }
+  }
+  return out;
 }
 
 /** Every reviewed correction, keyed by storedKey(form, pos, gloss). */
