@@ -124,6 +124,19 @@ publishes. It pushes the proposals to the branch `dictionary-condensed`
 `data/corrections/condensed.tsv` on main, which every build applies under the
 same checks, so they are paid for once.
 
+**Grammar disagreements.** Where English and Dutch Wiktionary give a
+different article, plural, past participle or past singular, the build
+leaves the use out. The workflow's `grammar` input asks two models, each
+choosing among the values the sources give, for the frequent ones
+(`scripts/dictionary/grammar.mjs`), and pushes the answers they agree on to
+the branch `dictionary-grammar`. Lines a person agrees with go to
+`data/corrections/grammar.tsv` (form, pos, field, English Wiktionary's
+value, the value to use); the build uses the value only while it is still
+one the sources give. Review every line: in the first run (October 2026)
+the two models agreed on a wrong article in about a quarter of the 163
+proposals ("het noot", "het plaat"), and articles that depend on the
+meaning (de/het poker) can't be settled from the word alone; 116 were kept.
+
 `dict_doubt.status` takes `accepted`, `rejected` or `corrected`, with the
 correction in `resolution`. **Open question:** someone has to own this
 queue. The 1,915 frequent items are a few days' work for a Dutch-speaking
