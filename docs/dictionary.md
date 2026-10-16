@@ -211,8 +211,10 @@ All rounds continue one branch, `dictionary-review-rounds`:
 - `data/review/report.md` — counts, cost, and 50 changes picked across the
   round; `recall.md` for a recall check.
 
-Read the report, then copy the round's corrections to main under their own
-name (`*-round1.tsv`, …) after deleting any line you disagree with, together
+Read the report, then append the round's corrections to the one file per
+kind on main (`data/corrections/{glosses,examples,drop,articles,noexample}.tsv`;
+a later line for the same sense replaces an earlier one) after deleting any
+line you disagree with, together
 with the review log; reset the branch to main for the next round. The next
 Dictionary run applies the corrections — an example only if it passes the
 build's checks (spelling, de/het), otherwise it goes to the doubt queue — and
@@ -224,7 +226,7 @@ the large models.
 
 ### Outcome of the review (October 2026)
 
-Rounds 1 to 15 were run and merged (`data/corrections/*-round1…15.tsv`),
+Rounds 1 to 15 were run and merged (now one file per kind in `data/corrections/`),
 about $20 of API credit in total. What the rounds showed:
 
 - Frequent senses (rounds 1 to 6, up to frequency rank 30,000) gave the

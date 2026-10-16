@@ -7,7 +7,7 @@
      - two senses of one use with the same gloss are merged into the first,
        which keeps an example either of them had.
 
-   Reviewed corrections (data/corrections/*.tsv, written by the review —
+   Reviewed corrections (data/corrections/*.tsv — one file per kind below; any name starting with the kind works, written by the review —
    scripts/dictionary/review.mjs — and checked by a person before merging):
      glosses-*.tsv    form  pos  gloss  new gloss
      examples-*.tsv   form  pos  gloss  nl  en      replaces the example
