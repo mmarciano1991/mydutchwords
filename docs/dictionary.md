@@ -115,6 +115,15 @@ The reasons:
 | spelling not in OpenTaal | 12,675 (131 frequent) | Usually right to exclude: archaic spellings, English words in the Dutch section. |
 | example: failed checks 3 times / different sense | (model step) | Write or pick an example. |
 
+**Too-long glosses.** A sense whose gloss still fails the gloss rule is not
+published. The Dictionary workflow's `glosses` input runs the model step for
+those senses only, and only for frequent words (`build --llm=glosses`): the
+model picks a short gloss from the source gloss's own words. The run never
+publishes. It pushes the proposals to the branch `dictionary-condensed`
+(`data/review/condensed-proposed.tsv`); the lines a person agrees with go to
+`data/corrections/condensed.tsv` on main, which every build applies under the
+same checks, so they are paid for once.
+
 `dict_doubt.status` takes `accepted`, `rejected` or `corrected`, with the
 correction in `resolution`. **Open question:** someone has to own this
 queue. The 1,915 frequent items are a few days' work for a Dutch-speaking

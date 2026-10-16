@@ -69,6 +69,13 @@ function readTsv(dir, prefix, columns) {
   return out;
 }
 
+/** Glosses condensed by the model step and saved after review
+ *  (condensed.tsv: form, pos, source gloss, gloss), keyed by
+ *  storedKey(form, pos, source gloss). */
+export function loadCondensed(dir = CORRECTIONS_DIR) {
+  return new Map([...readTsv(dir, "condensed", 4)].map(([k, v]) => [k, v.cells[0]]));
+}
+
 /** Every reviewed correction, keyed by storedKey(form, pos, gloss). */
 export function loadCorrections(dir = CORRECTIONS_DIR) {
   return {

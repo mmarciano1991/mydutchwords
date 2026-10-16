@@ -33,6 +33,14 @@ on:
         description: "Publish to Supabase and the release asset"
         type: boolean
         default: true
+      # Cheap: shortens only the frequent glosses that still fail the gloss
+      # rule (a selection from the source gloss, about a cent a gloss),
+      # pushes the proposals to the branch dictionary-condensed for review,
+      # and never publishes.
+      glosses:
+        description: "Shorten frequent too-long glosses with the model and push them for review (never publishes)"
+        type: boolean
+        default: false
   schedule:
     - cron: "0 3 * * 1"
 
@@ -80,7 +88,9 @@ jobs:
       # rest ship as "Example coming soon" until a learner saves them.
       - name: Build
         run: |
-          if [ -n "$ANTHROPIC_API_KEY" ] && [ "${{ inputs.model }}" = "true" ]; then
+          if [ -n "$ANTHROPIC_API_KEY" ] && [ "${{ inputs.glosses }}" = "true" ]; then
+            npm run dictionary:build -- --llm=glosses
+          elif [ -n "$ANTHROPIC_API_KEY" ] && [ "${{ inputs.model }}" = "true" ]; then
             npm run dictionary:build -- --llm
           else
             echo "::notice title=Dictionary model step off::Senses with no example get one on demand (supabase/functions/example)."
@@ -120,12 +130,27 @@ jobs:
             .cache/dictionary-build/report.json
             .cache/dictionary-build/audit.json
 
+      # The proposals are not applied until a person copies the lines they
+      # agree with to data/corrections/condensed.tsv on main.
+      - name: Push condensed glosses for review
+        if: inputs.glosses
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B dictionary-condensed
+          mkdir -p data/review
+          cp .cache/dictionary-build/condensed.tsv data/review/condensed-proposed.tsv
+          git add data/review/condensed-proposed.tsv
+          git commit -m "Condensed glosses proposed by the model step"
+          git push -f origin dictionary-condensed
+          echo "Proposals on branch dictionary-condensed: $(grep -vc '^#' data/review/condensed-proposed.tsv) glosses" >> "$GITHUB_STEP_SUMMARY"
+
       - name: Publish to Supabase
-        if: env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' && (github.event_name == 'schedule' || inputs.publish)
+        if: env.SUPABASE_URL != '' && env.SUPABASE_SERVICE_ROLE_KEY != '' && !inputs.glosses && (github.event_name == 'schedule' || inputs.publish)
         run: npm run dictionary:publish
 
       - name: Publish the static shards
-        if: github.event_name == 'schedule' || inputs.publish
+        if: "!inputs.glosses && (github.event_name == 'schedule' || inputs.publish)"
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

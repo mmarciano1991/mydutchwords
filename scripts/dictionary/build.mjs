@@ -30,10 +30,10 @@ import { loadNlWiktionary } from "./sources/nl.mjs";
 import { loadOpenTaal } from "./sources/opentaal.mjs";
 import { loadFrequency, UNRANKED } from "./sources/frequency.mjs";
 import { loadTatoeba } from "./sources/tatoeba.mjs";
-import { assembleWord, glossFailures } from "./assemble.mjs";
+import { assembleWord, glossFailures, selectedFrom } from "./assemble.mjs";
 import { assignExamples, exampleIssues, indexTatoeba, targetForms } from "./examples.mjs";
 import { GENERATED_FILE, loadStoredExamples, storedKey } from "./stored.mjs";
-import { loadCorrections, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
+import { loadCondensed, loadCorrections, mergeDuplicateSenses, tier0Drop } from "./corrections.mjs";
 import { assignSenseIds, loadRegistry, saveRegistry } from "./ids.mjs";
 import { buildCompound, morphemesOf, stressOf } from "./morphology.mjs";
 
@@ -322,20 +322,55 @@ for (const word of words.values()) {
 }
 log(`${needsCondensing.length} glosses fail the gloss rule after shortening`);
 
+// Condensed glosses saved from an earlier model run (data/corrections/
+// condensed.tsv: form, pos, source gloss, gloss), so a build doesn't pay for
+// them again. The same rules as the model's own result: the gloss rule, and
+// only words from the source gloss.
+report.corrections.condensedApplied = 0;
+{
+  const saved = loadCondensed();
+  for (const it of needsCondensing) {
+    const gloss = saved.get(storedKey(it.word.form, it.use.pos, it.sense.rawGloss ?? ""));
+    if (!gloss || glossIssues(gloss).length || !selectedFrom(gloss, it.sense.rawGloss)) continue;
+    it.sense.gloss = gloss;
+    it.sense.meta = { ...it.sense.meta, sources: [...new Set([...it.sense.meta.sources, "llm"])] };
+    report.corrections.condensedApplied++;
+  }
+  log(`corrections: ${report.corrections.condensedApplied} saved condensed glosses applied`);
+}
+
 let llm = null;
+// --llm         the full model step (glosses, examples, same-sense check)
+// --llm=glosses only the frequent glosses still failing the gloss rule; the
+//               accepted ones go to OUT_DIR/condensed.tsv, to be reviewed and
+//               saved in data/corrections/condensed.tsv
+const GLOSSES_ONLY = args.get("llm") === "glosses";
 if (args.has("llm")) {
   if (!process.env.ANTHROPIC_API_KEY) throw new Error("--llm needs ANTHROPIC_API_KEY");
   llm = await import("./llm.mjs");
-  // Glosses whose first alternative was kept mechanically ("entitlement,
-  // benefit, allowance" → "entitlement") are a selection too: the model
-  // picks the one a learner needs, from the same words.
-  const alternatives = [];
-  for (const word of words.values()) for (const use of word.uses) for (const sense of use.senses) {
-    if (sense.rawGloss && /[,;]|\sor\s/.test(sense.rawGloss.replace(/\([^)]*\)/g, "")) && !needsCondensing.some((n) => n.sense === sense)) {
-      alternatives.push({ word, use, sense, issues: [] });
+  const failing = needsCondensing.filter((it) => glossIssues(it.sense.gloss ?? "").length);
+  if (GLOSSES_ONLY) {
+    const todo = failing.filter((it) => priorityOf(it.word.form) === "frequent");
+    const before = new Map(todo.map((it) => [it, it.sense.gloss]));
+    await llm.condenseGlosses(todo, { log });
+    const rows = todo.filter((it) => it.sense.gloss !== before.get(it) && !glossIssues(it.sense.gloss).length);
+    writeFileSync(
+      join(OUT_DIR, "condensed.tsv"),
+      ["# form\tpos\tsource gloss\tgloss", ...rows.map((it) => [it.word.form, it.use.pos, it.sense.rawGloss, it.sense.gloss].join("\t"))].join("\n") + "\n"
+    );
+    log(`model: ${rows.length} condensed glosses written to condensed.tsv`);
+  } else {
+    // Glosses whose first alternative was kept mechanically ("entitlement,
+    // benefit, allowance" → "entitlement") are a selection too: the model
+    // picks the one a learner needs, from the same words.
+    const alternatives = [];
+    for (const word of words.values()) for (const use of word.uses) for (const sense of use.senses) {
+      if (sense.rawGloss && /[,;]|\sor\s/.test(sense.rawGloss.replace(/\([^)]*\)/g, "")) && !needsCondensing.some((n) => n.sense === sense)) {
+        alternatives.push({ word, use, sense, issues: [] });
+      }
     }
+    await llm.condenseGlosses([...failing, ...alternatives], { log });
   }
-  await llm.condenseGlosses([...needsCondensing, ...alternatives], { log });
 }
 for (const { word, use, sense, issues } of needsCondensing) {
   if (!glossIssues(sense.gloss).length) continue; // the model fixed it
@@ -517,7 +552,7 @@ log(`corrections: ${report.corrections.exampleReplaced} examples replaced (${rep
 
 log(`examples: ${report.examples.wiktionary} Wiktionary, ${report.examples.tatoeba} Tatoeba, ${report.examples.stored} stored (${report.examples.storedRejected} failed checks), ${report.examples.rejected} rejected by checks, ${report.examples.none} senses without`);
 
-if (llm) await llm.writeAndCheckExamples(words, checkCtx, { log, doubts });
+if (llm && !GLOSSES_ONLY) await llm.writeAndCheckExamples(words, checkCtx, { log, doubts });
 
 // ── Compounds, morphemes, opacity ──
 for (const word of words.values()) {
