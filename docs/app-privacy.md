@@ -6,9 +6,18 @@ file the iOS shell needs. The user-facing version is
 [`public/privacy.html`](../public/privacy.html). Keep all three in step: a
 new table, Edge Function or third-party call changes them.
 
-Before submitting, fill in the placeholders in `public/privacy.html`
-(operator, contact address, Supabase region). App Store Connect needs the
-policy's public URL, e.g. `https://<your-domain>/mydutchwords/privacy.html`.
+The policy is written for the GDPR: the operator is in the Netherlands, the
+app is open to anyone worldwide, and every user gets the GDPR's rights
+wherever they live. The lead supervisory authority is the Dutch Autoriteit
+Persoonsgegevens. User data is stored in the EU (Supabase, eu-west-1 /
+Ireland); the only transfers outside the EEA are the device's own Wiktionary
+lookups and Apple/Google sign-in. The minimum age without a parent's
+permission is 16 (the Dutch age for consent under GDPR art. 8).
+
+Before submitting, fill in `[YOUR NAME]` and `[CONTACT EMAIL]` in
+`public/privacy.html` (and a trade name and KvK number if run as a
+business). The store listings need the policy's public URL:
+`https://marcomarciano.com/mydutchwords/privacy.html`.
 
 ## What leaves the device
 
