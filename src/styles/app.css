@@ -3859,7 +3859,6 @@ textarea.text-input {
   position: absolute;
   inset: -8px -4px;
 }
-.info-pill--generated,
 .info-pill--reconstructed {
   background: var(--caution-bg);
   border-color: var(--caution-border);

@@ -68,9 +68,6 @@ export interface ContextSentence {
   /** Where the word is, when it can be pinned down. */
   target: TargetForm | null;
   source: "captured" | "example";
-  /** The example was written by the model (passed every check) — shown
-   *  with a "Generated example" pill. */
-  generated?: boolean;
 }
 
 /** The dictionary example, with its stored spans. */
@@ -78,7 +75,7 @@ function exampleContext(entry: DictionaryEntry): ContextSentence | null {
   const ex = entry.snapshot?.examples[0];
   if (ex) {
     const target = ex.targetSpans.length ? fromSpans(ex.nl, ex.targetSpans) : targetIn(ex.nl, entry);
-    return { sentence: ex.nl, translation: ex.en || null, target, source: "example", generated: ex.source === "generated" };
+    return { sentence: ex.nl, translation: ex.en || null, target, source: "example" };
   }
   if (!entry.snapshot && entry.example?.trim()) {
     return { sentence: entry.example, translation: entry.exampleEn || null, target: findTargetForm(entry.example, entry.dutch), source: "example" };

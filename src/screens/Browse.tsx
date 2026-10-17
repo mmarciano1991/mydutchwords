@@ -17,7 +17,6 @@ import { contextSentence } from "../lib/sentenceTarget";
 import { useLookup } from "../lib/useLookup";
 import { Appbar } from "../components/Appbar";
 import { DictionaryCard } from "../components/DictionaryCard";
-import { InfoPill } from "../components/InfoPill";
 import { masteryOf } from "../components/MasteryStatus";
 import { Notice } from "../components/Notice";
 import { SenseResults } from "../components/SenseResults";
@@ -201,7 +200,6 @@ function InContext({ entry }: { entry: DictionaryEntry }) {
   return (
     <>
       <ContextSentence entry={entry} context={ctx} />
-      {ctx.generated && <InfoPill kind="generated" />}
       {ctx.source === "captured" && !entry.snapshot?.examples.some((x) => x.source !== "captured") && (
         <p className="faint wordrow__no-example">A dictionary example is coming soon — this is the sentence you saved it from.</p>
       )}

@@ -1,16 +1,12 @@
-/* InfoPill — a small labelled pill that explains itself: "Generated
-   example", "Reconstructed meaning", "Belgium", a register. It is a button
-   with its full label ("Generated example, open explanation"); tapping it
+/* InfoPill — a small labelled pill that explains itself: "Reconstructed
+   meaning", "Belgium", a register. It is a button with its full label
+   ("Belgium, open explanation"); tapping it
    shows one line of explanation under it. Never colour alone. */
 import { useId, useState } from "react";
 
-export type InfoPillKind = "generated" | "reconstructed" | "belgium" | "formal" | "informal" | "vulgar" | "archaic" | "rare" | "personal";
+export type InfoPillKind = "reconstructed" | "belgium" | "formal" | "informal" | "vulgar" | "archaic" | "rare" | "personal";
 
 const COPY: Record<InfoPillKind, { label: string; explanation: string }> = {
-  generated: {
-    label: "Generated example",
-    explanation: "Written automatically for this meaning and checked for spelling, de/het and meaning. No real sentence was found yet.",
-  },
   reconstructed: {
     label: "Reconstructed meaning",
     explanation: "This word isn't in the dictionary. Its meaning is built from its parts, which are; the last part gives the article and plural.",
