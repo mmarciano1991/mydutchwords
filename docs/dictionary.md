@@ -88,8 +88,9 @@ Supabase project, the deploy workflow downloads the static shards from the
   holds, so practice works offline. A launch refreshes the snapshots from
   the dictionary, and fields the learner edited (`userEdited`) are never
   overwritten. Deck ids saved before the server dictionary (`aanslag#1`) keep
-  their stored content: the frozen legacy dictionary (`src/data/legacy/`)
-  is loaded once, only for such ids, to pin them. Those cards never get a
+  their stored content: the frozen legacy dictionary (static JSON shards in
+  `public/legacy/`, read by `src/lib/legacyDictionary.ts`) is fetched once,
+  only for such ids, to pin them. Those cards never get a
   snapshot, so a launch also fills in what they **lack** (an example, a
   noun's article) from the one dictionary sense their gloss names
   (`fillMissingDetails`): never a guess, never over a field that is already

@@ -20,6 +20,15 @@ enabled = true
 client_id = "env(SUPABASE_AUTH_GOOGLE_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_GOOGLE_SECRET)"
 
+[auth.external.apple]
+# Sign in with Apple — required by App Review (guideline 4.8) alongside any
+# other social login. The Services ID and the signing secret generated from
+# the .p8 key live in the dashboard (or env), never in the repo. See
+# docs/auth-setup.md.
+enabled = true
+client_id = "env(SUPABASE_AUTH_APPLE_CLIENT_ID)"
+secret = "env(SUPABASE_AUTH_APPLE_SECRET)"
+
 # Pronunciation (Azure neural voice). Callable without an account — the app
 # works signed out — so no JWT check; the function only speaks short words.
 [functions.tts]

@@ -1,5 +1,6 @@
 /* Auth — the account screen: email + password (log in / create account),
-   and "Continue with Google" (Figma 228:1789, "Sign-in" / "Log-in" frames).
+   and "Continue with Apple" / "Continue with Google" (Figma 228:1789,
+   "Sign-in" / "Log-in" frames; Apple added for App Review guideline 4.8).
    Every label here answers to the Welcome button that opened it: the
    create-account path says "Create account" throughout and the returning
    path says "Log in", so the screen never contradicts the door the user
@@ -14,9 +15,12 @@ import {
   resendConfirmation,
   sendPasswordReset,
   signInEmail,
-  signInWithGoogle,
+  oauthProviders,
+  signInWithProvider,
   signUpEmail,
+  verifyRecoveryOtp,
   verifySignupOtp,
+  type OAuthProvider,
 } from "../lib/auth";
 import { Appbar } from "../components/Appbar";
 import { Notice } from "../components/Notice";
@@ -31,6 +35,18 @@ function GoogleGlyph() {
     </svg>
   );
 }
+
+/** Apple's mark, drawn in the button's own text colour (Apple's sign-in
+ *  button guidelines: black button, white logo and label). */
+function AppleGlyph() {
+  return (
+    <svg width="16" height="18" viewBox="0 0 814 1000" aria-hidden="true" fill="currentColor">
+      <path d="M788 341c-6 4-108 62-108 190 0 149 131 201 135 203-1 3-21 72-69 142-43 62-88 124-156 124s-86-40-165-40c-77 0-104 41-166 41s-106-57-156-127C45 792 0 668 0 550c0-190 124-291 246-291 65 0 119 43 160 43 39 0 100-45 174-45 28 0 129 3 196 84zM558 168c31-37 53-88 53-139 0-7-1-14-2-20-50 2-110 33-146 75-28 32-55 83-55 135 0 8 1 15 2 18 3 1 9 2 14 2 45 0 102-30 134-71z" />
+    </svg>
+  );
+}
+
+const PROVIDER_LABEL: Record<OAuthProvider, string> = { apple: "Continue with Apple", google: "Continue with Google" };
 
 type Mode = "signin" | "signup" | "reset";
 /** Which email we're waiting on, if any — the screen becomes that step. */
@@ -53,6 +69,7 @@ export function Auth({
   const [code, setCode] = useState("");
 
   const isSignup = mode === "signup";
+  const providers = oauthProviders();
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -80,15 +97,16 @@ export function Auth({
     // On a real log-in the session change (watched in App) leaves this screen.
   }
 
-  async function google() {
+  async function social(provider: OAuthProvider) {
     setError(null);
     setBusy(true);
-    const res = await signInWithGoogle();
+    const res = await signInWithProvider(provider);
     if (res.error) {
       setError(res.error);
       setBusy(false);
     }
-    // On success the browser redirects to Google, so no further UI here.
+    // On success the browser redirects to the provider (or, in a native
+    // shell, the system sheet opens), so no further UI here.
   }
 
   async function resend() {
@@ -102,13 +120,16 @@ export function Auth({
 
   /** Verifying signs the user in directly (verifyOtp returns a session) —
    *  no separate "now log in" step, unlike the link, which only confirms
-   *  the account and still requires a password afterward. */
+   *  the account and still requires a password afterward. A recovery code
+   *  signs in with a recovery session, which App turns into "Set a new
+   *  password". */
   async function verifyCode(e: React.FormEvent) {
     e.preventDefault();
     if (busy || !code.trim()) return;
     setError(null);
     setBusy(true);
-    const res = await verifySignupOtp(email.trim(), code.trim());
+    const verify = sent === "reset" ? verifyRecoveryOtp : verifySignupOtp;
+    const res = await verify(email.trim(), code.trim());
     setBusy(false);
     if (res.error) return setError(res.error);
     // On success the session change (watched in App) leaves this screen.
@@ -136,7 +157,7 @@ export function Auth({
           <Notice type="success">
             {sent === "confirm"
               ? `We've sent a code to ${email || "your inbox"}. Enter it below to finish creating your account.`
-              : `We've sent a link to ${email || "your inbox"}. Open it to set a new password.`}
+              : `We've sent a code to ${email || "your inbox"}. Enter it below, then choose a new password.`}
           </Notice>
 
           {error && (
@@ -145,26 +166,26 @@ export function Auth({
             </div>
           )}
 
+          <form className="auth-form auth-form--after" onSubmit={verifyCode}>
+            <label className="auth-field">
+              <span className="auth-field__label">{sent === "confirm" ? "Confirmation code" : "Reset code"}</span>
+              <input
+                className="text-input"
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder="123456"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                autoFocus
+              />
+            </label>
+            <button className="btn btn--primary" type="submit" disabled={busy || !code.trim()}>
+              {busy ? "One moment…" : "Verify and continue"}
+            </button>
+          </form>
+
           {sent === "confirm" && (
             <>
-              <form className="auth-form auth-form--after" onSubmit={verifyCode}>
-                <label className="auth-field">
-                  <span className="auth-field__label">Confirmation code</span>
-                  <input
-                    className="text-input"
-                    value={code}
-                    onChange={(e) => setCode(e.target.value)}
-                    placeholder="123456"
-                    inputMode="numeric"
-                    autoComplete="one-time-code"
-                    autoFocus
-                  />
-                </label>
-                <button className="btn btn--primary" type="submit" disabled={busy || !code.trim()}>
-                  {busy ? "One moment…" : "Verify and continue"}
-                </button>
-              </form>
-
               <p className="muted auth-intro auth-intro--after">
                 Got a link instead of a code? Opening it confirms your account the same way — come back
                 here and log in afterward. Nothing after a minute or two? Check your spam folder, or send
@@ -174,6 +195,11 @@ export function Auth({
                 {busy ? "One moment…" : resent ? "Sent again" : "Send it again"}
               </button>
             </>
+          )}
+          {sent === "reset" && (
+            <p className="muted auth-intro auth-intro--after">
+              Nothing after a minute or two? Check your spam folder, or go back and send it again.
+            </p>
           )}
 
           <button
@@ -187,15 +213,15 @@ export function Auth({
     );
   }
 
-  // ── Forgot your password ── email only; the new password is set back in
-  // the app, after the link (see NewPassword).
+  // ── Forgot your password ── email only; the code from the email is typed
+  // in next, and the new password set after it (see NewPassword).
   if (mode === "reset") {
     return (
       <div className="screen">
         <Appbar title="Reset your password" onBack={backToLogin} />
         <div className="screen__body gutter auth-body">
           <p className="muted auth-intro">
-            Enter the email you signed up with and we&rsquo;ll send you a link to set a new
+            Enter the email you signed up with and we&rsquo;ll send you a code to set a new
             password.
           </p>
 
@@ -221,7 +247,7 @@ export function Auth({
               />
             </label>
             <button className="btn btn--primary auth-submit" type="submit" disabled={busy}>
-              {busy ? "One moment…" : "Send reset link"}
+              {busy ? "One moment…" : "Send reset code"}
             </button>
           </form>
 
@@ -298,14 +324,23 @@ export function Auth({
           </button>
         )}
 
-        <div className="auth-divider">
-          <span>or</span>
-        </div>
+        {providers.length > 0 && (
+          <div className="auth-divider">
+            <span>or</span>
+          </div>
+        )}
 
-        <button className="btn btn--secondary" onClick={google} disabled={busy}>
-          <GoogleGlyph />
-          Continue with Google
-        </button>
+        {providers.map((p) => (
+          <button
+            key={p}
+            className={p === "apple" ? "btn btn--apple" : "btn btn--secondary"}
+            onClick={() => void social(p)}
+            disabled={busy}
+          >
+            {p === "apple" ? <AppleGlyph /> : <GoogleGlyph />}
+            {PROVIDER_LABEL[p]}
+          </button>
+        ))}
 
         <button
           className="link-btn link-btn--center auth-switch"
@@ -316,6 +351,14 @@ export function Auth({
         >
           {isSignup ? "Already have an account? Log in" : "New here? Create an account"}
         </button>
+
+        <p className="faint auth-legal">
+          {isSignup ? "By creating an account you accept how we handle your data, as set out in our " : "Read our "}
+          <a href={`${import.meta.env.BASE_URL}privacy.html`} target="_blank" rel="noopener">
+            privacy policy
+          </a>
+          .
+        </p>
       </div>
     </div>
   );

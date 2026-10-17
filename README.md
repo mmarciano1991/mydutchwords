@@ -97,6 +97,9 @@ tab. Vite is configured with `base: "./"` so it works from that subfolder.
   pipeline, data model, search, the doubt queue and who reviews it.
 - [`docs/auth-setup.md`](docs/auth-setup.md) — accounts and cloud sync via
   Supabase.
+- [`docs/app-privacy.md`](docs/app-privacy.md) — what the app collects, the
+  App Store / Play privacy labels and the iOS privacy manifest; the policy
+  itself is [`public/privacy.html`](public/privacy.html).
 - [`docs/tts-setup.md`](docs/tts-setup.md) — the natural (Azure neural) voice
   for exercises, via a Supabase Edge Function.
 - [`docs/pilot-survey.md`](docs/pilot-survey.md) — running a timed user test:

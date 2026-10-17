@@ -14,7 +14,11 @@
 
    Every event is stamped with the signed-in user at the time it happened,
    and only that user's events are ever uploaded — so a device that changes
-   accounts can't attribute one person's answers to another. */
+   accounts can't attribute one person's answers to another.
+
+   Opt-in: App records an event only for a signed-in learner who consented
+   (lib/research). The outbox is also capped, so a device that stays
+   offline for months can't fill local storage with it. */
 import type { ReviewEventDraft } from "./learningEngine";
 import { supabase } from "./supabase";
 
@@ -22,6 +26,8 @@ const OUTBOX_KEY = "woordkast.reviewEvents.outbox";
 const TABLE = "review_events";
 /** Rows per insert request. */
 const BATCH = 200;
+/** Most events kept waiting on the device; the oldest go first. */
+export const OUTBOX_MAX = 5000;
 
 export interface ReviewEvent extends ReviewEventDraft {
   id: string;
@@ -65,7 +71,7 @@ function writeOutbox(events: ReviewEvent[]): void {
 /** Appends one event to the local outbox. */
 export function appendReviewEvent(draft: ReviewEventDraft, userId: string | null): ReviewEvent {
   const event: ReviewEvent = { ...draft, id: newId(), userId };
-  writeOutbox([...readOutbox(), event]);
+  writeOutbox([...readOutbox(), event].slice(-OUTBOX_MAX));
   return event;
 }
 
@@ -122,4 +128,14 @@ export function flushReviewEvents(userId: string): Promise<boolean> {
     }
   })();
   return flushing;
+}
+
+/** Drops every event still waiting — consent withdrawn, account deleted or
+ *  signed out of for good. */
+export function clearReviewEvents(): void {
+  try {
+    localStorage.removeItem(OUTBOX_KEY);
+  } catch {
+    // Nothing to clear in private mode.
+  }
 }

@@ -17,41 +17,29 @@
  * Rows that already carry an English gloss (words the user added themselves,
  * which sync their own translation) are left alone.
  */
-import { readFileSync, writeFileSync } from "node:fs";
+import { readdirSync, readFileSync, writeFileSync } from "node:fs";
 
 const ENRICHED = ["english", "gender", "example", "exampleEn"];
-const GENDER = { d: "de", h: "het" };
 
-/* ── the bundled dictionary ────────────────────────────────────────────── */
+/* ── the legacy dictionary ─────────────────────────────────────────────── */
 
-/** The payload of a `export const NAME = "…";` line in a generated module.
- *  Matched as a whole line: JSON.stringify never emits a raw newline, so the
- *  literal cannot span one, and anchoring avoids tripping over an escaped
- *  quote inside the data. */
-function generatedString(file, exportName) {
-  const src = readFileSync(file, "utf8");
-  const match = src.match(new RegExp(`^export const ${exportName} = ("[^\\n]*");$`, "m"));
-  if (!match) {
-    throw new Error(`${file} has no single-line \`export const ${exportName} = "…";\` — regenerate it with \`npm run dictionary\``);
-  }
-  return JSON.parse(match[1]);
-}
-
+/** The frozen pre-server dictionary (public/legacy, see
+ *  src/lib/legacyDictionary.ts): each word's first meaning. */
 function loadDictionary() {
-  const core = generatedString("src/data/legacy/core.generated.ts", "CORE").split("\n");
-  const examples = generatedString("src/data/legacy/examples.generated.ts", "EXAMPLES").split("\n");
-
   const byId = new Map();
-  core.forEach((line, i) => {
-    const [dutch, english, genderCode] = line.split("\t");
-    const [example = "", exampleEn = ""] = (examples[i] ?? "").split("\t");
-    // Curated words come first and win: FreeDict may repeat one with a
-    // thinner gloss and no example sentence.
-    const id = dutch.toLowerCase();
-    if (!byId.has(id)) {
-      byId.set(id, { english, gender: GENDER[genderCode] ?? "", example, exampleEn });
+  for (const file of readdirSync("public/legacy").filter((f) => f.endsWith(".json"))) {
+    const shard = JSON.parse(readFileSync(`public/legacy/${file}`, "utf8"));
+    for (const [id, word] of Object.entries(shard)) {
+      const first = word.senses[0];
+      if (!first || byId.has(id)) continue;
+      byId.set(id, {
+        english: first.english,
+        gender: first.gender === "de" || first.gender === "het" ? first.gender : "",
+        example: first.example ?? "",
+        exampleEn: first.exampleEn ?? "",
+      });
     }
-  });
+  }
   return byId;
 }
 

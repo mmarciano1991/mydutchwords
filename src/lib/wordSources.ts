@@ -10,7 +10,7 @@
      - personal words: saved with the learner's own translation when the
        dictionary had nothing (`personal`);
      - legacy ids from before the server dictionary ("aanslag",
-       "aanslag#1"), pinned to the content they had (data/legacy).
+       "aanslag#1"), pinned to the content they had (lib/legacyDictionary).
 
    The store is synced to the learner's account (lib/cloudState). */
 import { useSyncExternalStore } from "react";
@@ -19,6 +19,7 @@ import { articleOf, articleUnverified, entryOf, snapshotOf } from "./dictionary/
 import type { Pos, Sense, Use, WordEntry } from "./dictionary/model";
 import { requestExample } from "./exampleService";
 import type { DictionaryEntry } from "./types";
+import { legacyEntries } from "./legacyDictionary";
 
 const STORE_KEY = "woordkast.customWords";
 
@@ -64,10 +65,6 @@ function persist(): void {
 
 // ── Legacy ids ──
 
-type LegacyModule = typeof import("../data/legacy/resolve");
-let legacy: LegacyModule | null = null;
-let legacyLoading: Promise<void> | null = null;
-
 /** True for an id saved before the server dictionary. New sense ids start
  *  with "s_" (dictionary), "c_" (a reconstructed compound), "p_" (personal)
  *  or "o_" (the online dictionary). */
@@ -75,27 +72,21 @@ export function isLegacyId(id: string): boolean {
   return !/^[scpo]_/.test(id);
 }
 
-/** Pins every legacy id among `ids` that has no stored content yet, loading
- *  the frozen legacy dictionary once to do it. */
-export function pinLegacyEntries(ids: string[]): Promise<void> {
+/** Pins every legacy id among `ids` that has no stored content yet, from
+ *  the frozen legacy dictionary (lib/legacyDictionary — fetched only when
+ *  there is something to pin). */
+export async function pinLegacyEntries(ids: string[]): Promise<void> {
   const missing = ids.filter((id) => isLegacyId(id) && !store.has(id));
-  if (!missing.length) return Promise.resolve();
-  legacyLoading ??= import("../data/legacy/resolve").then(async (m) => {
-    // Examples first: a card read before they arrive would show without one.
-    await m.ready();
-    legacy = m;
-  });
-  return legacyLoading.then(() => {
-    let changed = false;
-    for (const id of missing) {
-      const entry = legacy?.legacyEntry(id);
-      if (entry && !store.has(id)) {
-        store.set(id, entry);
-        changed = true;
-      }
+  if (!missing.length) return;
+  const found = await legacyEntries(missing);
+  let changed = false;
+  for (const [id, entry] of found) {
+    if (!store.has(id)) {
+      store.set(id, entry);
+      changed = true;
     }
-    if (changed) persist();
-  });
+  }
+  if (changed) persist();
 }
 
 // ── Reading ──
@@ -104,7 +95,7 @@ export function pinLegacyEntries(ids: string[]): Promise<void> {
  *  legacy id before pinLegacyEntries has run, or an id that was never
  *  stored). */
 export function resolveEntry(id: string): DictionaryEntry | undefined {
-  return store.get(id) ?? (legacy ? legacy.legacyEntry(id) : undefined);
+  return store.get(id);
 }
 
 // ── Writing ──

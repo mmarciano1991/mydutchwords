@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { isSupabaseConfigured, supabase } from "./supabase";
+import { listenForAuthCallbacks } from "./auth";
 
 export interface AuthState {
   session: Session | null;
@@ -49,6 +50,8 @@ export function useAuth(): AuthState {
 
   useEffect(() => {
     if (!supabase) return;
+    // A native shell's OAuth callback (no-op in a browser).
+    listenForAuthCallbacks();
     let active = true;
     // Initial read is from local storage (fast, offline-safe); refresh is background.
     supabase.auth

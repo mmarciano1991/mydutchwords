@@ -48,6 +48,30 @@ The schema lives as a migration in [`supabase/migrations/`](../supabase/migratio
 3. Copy the generated **Client ID** and **Client secret** into that Supabase
    Google provider panel and enable it.
 
+## 3b. Enable Sign in with Apple (~15 min)
+
+App Review (guideline 4.8) requires Sign in with Apple in any app that
+offers another social login, so the sign-in screen shows **Continue with
+Apple** above Google. It needs a paid Apple Developer account.
+
+1. In **Apple Developer → Certificates, Identifiers & Profiles**:
+   - an **App ID** with the *Sign in with Apple* capability (the bundle id
+     the native app will use, e.g. `nl.woordkast.app`);
+   - a **Services ID** (e.g. `nl.woordkast.web`) with *Sign in with Apple*
+     enabled; under *Configure*, add your site's domain and, as Return URL,
+     the callback shown in Supabase at **Authentication → Providers → Apple**
+     (`https://<your-project-ref>.supabase.co/auth/v1/callback`);
+   - a **Key** with *Sign in with Apple* enabled; download the `.p8`.
+2. In Supabase **Authentication → Providers → Apple**: enable it, enter the
+   Services ID as *Client ID* (add the App ID too, comma-separated, for the
+   native app's ID-token sign-in later), and the secret generated from the
+   `.p8` key, Team ID and Key ID (the panel links Supabase's generator).
+   **The secret expires after 6 months** — put a reminder in the calendar.
+
+Until Apple is enabled, either keep it out of the build with
+`VITE_OAUTH_PROVIDERS=google` or the button answers with Supabase's
+"provider is not enabled" error.
+
 > Email/password sign-in is on by default — no extra setup. New sign-ups get a
 > confirmation email unless you turn that off under
 > **Authentication → Providers → Email**.
@@ -66,6 +90,12 @@ template edit:
    (a 6-digit code Supabase generates instead of a confirmation link).
 3. Save.
 
+Do the same for **Authentication → Emails → Reset password**: replace
+`{{ .ConfirmationURL }}` with `{{ .Token }}`. "Forgot your password?" asks
+for that code (`verifyRecoveryOtp`), then for the new password — nothing
+depends on an email link opening the app, which a native shell can't rely
+on.
+
 Until this edit is made, the email still contains a link instead of a code —
 the app's "enter the code" screen has no code to show, so the fallback copy
 ("Got a link instead of a code? Opening it confirms your account the same
@@ -81,7 +111,17 @@ Under **Authentication → URL Configuration**:
 - **Redirect URLs**: add the same production URL, plus
   `http://localhost:5173` for local development.
 
-This is required so Google sign-in is allowed to return to your site.
+This is required so Apple and Google sign-in are allowed to return to your
+site. Sign-in uses the PKCE flow (`flowType: "pkce"` in
+`src/lib/supabase.ts`): the provider returns a one-time `?code=` that only
+this browser can redeem.
+
+A native shell (Capacitor, planned) adds its own callback here too, e.g.
+`woordkast://auth-callback`, and builds with
+`VITE_AUTH_REDIRECT_URL=woordkast://auth-callback`. The app then opens
+OAuth in the system sign-in sheet instead of navigating its web view
+(Google refuses sign-in inside embedded web views) and finishes it in
+`handleAuthCallback` — see `src/lib/platform.ts`.
 
 ## 5. Add the env values and build
 
@@ -163,3 +203,19 @@ original email/password account was never confirmed, linking is skipped and
 a second, separate account is created instead — with its own empty saved
 snapshot. If you find two rows, that's the cause, not a sync bug: the
 progress is still on the first account, just inaccessible from the second.
+
+## Deleting an account
+
+Settings → **Delete account** calls `delete_my_account()`
+(`supabase/migrations/20261017130000_account_deletion_and_consent.sql`),
+which removes the user from `auth.users` — `user_state` and `review_events`
+follow by `on delete cascade` — and clears their row in
+`research.user_state_backup_engine_v2`, which has no foreign key. A new
+table holding a `user_id` must either cascade or be added to that function.
+
+## The research log is opt-in
+
+`review_events` only accepts rows from users whose `user_metadata` has
+`research_consent: true` (Settings → **Help research**, off by default).
+Pilot participants who should keep contributing need to turn it on once.
+

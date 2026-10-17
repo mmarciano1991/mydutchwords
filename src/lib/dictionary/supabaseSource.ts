@@ -15,6 +15,19 @@ async function rpc<T>(db: SupabaseClient, fn: string, args: Row, signal?: AbortS
   return (data ?? []) as T[];
 }
 
+/** Ids per call. The id-list RPCs refuse more than 500
+ *  (20261017120000_dictionary_rpc_limits.sql); a deck can hold more. */
+export const ID_BATCH = 200;
+
+/** An id-list RPC over any number of ids, in batches. */
+async function rpcBatched<T>(db: SupabaseClient, fn: string, arg: string, ids: string[], signal?: AbortSignal): Promise<T[]> {
+  const rows: T[] = [];
+  for (let i = 0; i < ids.length; i += ID_BATCH) {
+    rows.push(...(await rpc<T>(db, fn, { [arg]: ids.slice(i, i + ID_BATCH) }, signal)));
+  }
+  return rows;
+}
+
 export function supabaseSource(db: SupabaseClient): DictionarySource {
   return {
     async suggest(key, limit, signal) {
@@ -51,7 +64,7 @@ export function supabaseSource(db: SupabaseClient): DictionarySource {
     },
     async parts(keys, signal) {
       if (!keys.length) return [];
-      const rows = await rpc<Row>(db, "dict_parts", { keys }, signal);
+      const rows = await rpcBatched<Row>(db, "dict_parts", "keys", keys, signal);
       return rows.map(
         (r): PartRow => ({
           key: r.key as string,
@@ -65,12 +78,12 @@ export function supabaseSource(db: SupabaseClient): DictionarySource {
     },
     async words(ids, signal) {
       if (!ids.length) return [];
-      const rows = await rpc<Row>(db, "dict_words_get", { ids }, signal);
+      const rows = await rpcBatched<Row>(db, "dict_words_get", "ids", ids, signal);
       return rows.map((r) => r.data as WordEntry);
     },
     async wordsForSenses(senseIds, signal) {
       if (!senseIds.length) return [];
-      const rows = await rpc<Row>(db, "dict_senses_get", { ids: senseIds }, signal);
+      const rows = await rpcBatched<Row>(db, "dict_senses_get", "ids", senseIds, signal);
       const byId = new Map(rows.map((r) => [r.word_id as string, r.data as WordEntry]));
       return [...byId.values()];
     },

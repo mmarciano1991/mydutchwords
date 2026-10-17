@@ -1,5 +1,5 @@
 /* NewPassword — the second half of password recovery. Following a recovery
-   link signs the user in, so without this screen they'd land on the dashboard
+   link, or entering the recovery code, signs the user in, so without this screen they'd land on the dashboard
    with the password they came to change still unchanged, and no way to change
    it. App renders this ahead of everything else while that recovery is live.
 
@@ -36,7 +36,7 @@ export function NewPassword({ onDone }: { onDone: () => void }) {
 
       <div className="screen__body gutter auth-body">
         <p className="muted auth-intro">
-          You&rsquo;re logged in from the link in your email. Choose a new password and
+          You&rsquo;re logged in from the code in your email. Choose a new password and
           you&rsquo;ll be able to log in with it from now on.
         </p>
 

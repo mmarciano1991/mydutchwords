@@ -17,9 +17,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  // `data` holds the authored dictionary sources. They are build inputs for
-  // scripts/gen-dictionary.mjs, never imported by the app, but they are
-  // typechecked here so a malformed entry is caught while editing.
-  "include": ["src", "data"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
