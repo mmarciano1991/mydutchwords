@@ -14,9 +14,9 @@ Ireland); the only transfers outside the EEA are the device's own Wiktionary
 lookups and Apple/Google sign-in. The minimum age without a parent's
 permission is 16 (the Dutch age for consent under GDPR art. 8).
 
-Before submitting, fill in `[YOUR NAME]` and `[CONTACT EMAIL]` in
-`public/privacy.html` (and a trade name and KvK number if run as a
-business). The store listings need the policy's public URL:
+The contact address in `public/privacy.html` (info@marcomarciano.com) is
+temporary: switch it to the app's own address at release, and add a trade
+name and KvK number if Woordkast is run as a business. The store listings need the policy's public URL:
 `https://marcomarciano.com/mydutchwords/privacy.html`.
 
 ## What leaves the device
