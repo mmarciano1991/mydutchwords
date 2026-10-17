@@ -19,6 +19,21 @@ body,
   height: 100%;
 }
 
+/* Text sizes are in rem, so they follow the root size. On iOS (Safari, and
+   the WKWebView of a native shell) the root takes the system body style,
+   which tracks the user's Dynamic Type setting — 17px at the default size,
+   as in Apple's own apps. Elsewhere it is the browser's own setting (16px
+   by default). macOS Safari is left out on purpose: there
+   -apple-system-body is 13px. */
+html {
+  font-size: 100%;
+}
+@supports (font: -apple-system-body) and (-webkit-touch-callout: none) {
+  html {
+    font: -apple-system-body;
+  }
+}
+
 body {
   margin: 0;
   /* Deep porcelain gallery canvas behind the phone frame on desktop. */
@@ -109,7 +124,7 @@ input {
 .splash-wordmark {
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 22px;
+  font-size: 1.375rem;
   color: var(--text-display);
   animation: splash-rise 700ms var(--ease-standard) 180ms both;
 }
@@ -149,7 +164,7 @@ input {
 
 .error-screen__title {
   font-family: var(--font-serif);
-  font-size: 24px;
+  font-size: 1.5rem;
   font-weight: 600;
   color: var(--text-display);
 }
@@ -232,7 +247,7 @@ input {
 .wordmark {
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 12px;
+  font-size: 0.75rem;
   letter-spacing: var(--tracking-wordmark);
   text-transform: uppercase;
   color: var(--primary);
@@ -364,6 +379,25 @@ input {
 .btn--secondary:disabled {
   border-color: var(--line-cool-strong);
   color: var(--ink-300);
+}
+
+/* apple — Sign in with Apple, drawn as Apple's guidelines require: a black
+   button with a white mark and label, the same size as its neighbours. */
+.btn--apple {
+  background: #000;
+  color: #fff;
+  border-color: #000;
+  gap: var(--space-2);
+}
+.btn--apple:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+.btn--apple:active:not(:disabled) {
+  background: #1f1f1f;
+  transform: translateY(1px);
+}
+.btn--apple:disabled {
+  opacity: 0.5;
 }
 
 /* inverted — the on-cobalt property (Figma 324:1918 / 324:1992): the contained
@@ -590,7 +624,7 @@ input {
   background: var(--semantic-success-success-subdle);
   color: var(--semantic-success-onsuccess-strong);
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
 }
 .badge svg {
   color: var(--semantic-success-onsuccess-strong);
@@ -822,7 +856,7 @@ textarea.text-input {
   gap: 12px;
   margin: 20px 0;
   color: var(--text-faint);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -853,7 +887,7 @@ textarea.text-input {
   justify-content: center;
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
 /* ── Gender / pos chips & notices ── */
@@ -861,7 +895,7 @@ textarea.text-input {
   padding: 4px 12px; /* Figma 59:11 — space-1 / space-3 */
   border-radius: var(--radius-chip);
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.875rem;
 }
 .chip--de {
   background: var(--primary);
@@ -874,7 +908,7 @@ textarea.text-input {
 }
 .chip--sm {
   padding: 4px 12px; /* Figma 59:11 — space-1 / space-3 */
-  font-size: 13px;
+  font-size: 0.8125rem;
 }
 
 .notice {
@@ -1234,9 +1268,15 @@ textarea.text-input {
   margin-top: var(--dock-top-h, 0px);
 }
 /* Room for the floating nav, so the last row of a screen can scroll clear of
-   it: the 62px pill plus the nav's padding above and below. */
+   it: the nav's own height (the 62px pill plus its padding above and below)
+   and 20px more, so a button at the very end sits above the nav's blur, not
+   under its edge, and is comfortable to tap. */
+.phone--tabs {
+  --bottomnav-h: calc(62px + var(--space-5) + max(var(--space-5), env(safe-area-inset-bottom)));
+  --bottomnav-clearance: 20px;
+}
 .phone--tabs .screen__body {
-  padding-bottom: calc(62px + var(--space-5) + max(var(--space-5), env(safe-area-inset-bottom)));
+  padding-bottom: calc(var(--bottomnav-h) + var(--bottomnav-clearance));
 }
 .bottomnav__pill {
   position: relative;
@@ -1431,13 +1471,13 @@ textarea.text-input {
 .wordcard__word {
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 34px;
+  font-size: 2.125rem;
   line-height: 1.05;
   color: var(--text-display);
   margin-top: 4px;
 }
 .wordcard__gloss {
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--primary);
 }
 .wordcard__rule {
@@ -1457,7 +1497,7 @@ textarea.text-input {
    is a note on that answer, not an interruption before it. Same quiet
    register as .source-note for the same reason — context, not a warning. */
 .wordcard__note {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.45;
   color: var(--text-faint);
   margin: 10px 0 0;
@@ -1523,7 +1563,7 @@ textarea.text-input {
    typing it into Capture. ── */
 .readtext {
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: 1.0625rem;
   line-height: 1.75;
   color: var(--text-body);
   margin: 0;
@@ -1609,12 +1649,12 @@ textarea.text-input {
 .sensecard__word {
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 20px;
+  font-size: 1.25rem;
   color: var(--text-display);
 }
 .sensecard__tag {
   margin-left: auto;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   letter-spacing: 0.03em;
   text-transform: uppercase;
@@ -1625,7 +1665,7 @@ textarea.text-input {
   white-space: nowrap;
 }
 .sensecard__gloss {
-  font-size: 16px;
+  font-size: 1rem;
   color: var(--primary);
 }
 .sensecard__example {
@@ -1706,7 +1746,7 @@ textarea.text-input {
   color: var(--text-display);
 }
 .addchoice__desc {
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   line-height: 1.45;
   color: var(--text-faint);
 }
@@ -1759,7 +1799,7 @@ textarea.text-input {
   background: var(--semantic-warning-warning-default);
   border: 1px solid var(--semantic-warning-outline-default);
   color: var(--semantic-warning-onwarning-default);
-  font-size: 10.5px;
+  font-size: 0.6562rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1771,7 +1811,7 @@ textarea.text-input {
   background: var(--surface-card);
   color: var(--primary);
   font-family: var(--font-serif);
-  font-size: 15.5px;
+  font-size: 0.9688rem;
   padding: 8px 14px;
   border-radius: 11px;
   transition: background var(--motion-base) var(--ease-standard);
@@ -2479,7 +2519,7 @@ textarea.text-input {
   border: none;
   color: var(--primary);
   font-weight: 700;
-  font-size: 13px;
+  font-size: 0.8125rem;
   padding: 0;
 }
 /* ── Motion & micro-interactions ──
@@ -2573,7 +2613,7 @@ textarea.text-input {
   word-break: break-word;
 }
 .compound__note {
-  font-size: 14px;
+  font-size: 0.875rem;
   margin: 10px 2px 0;
 }
 
@@ -2590,12 +2630,12 @@ textarea.text-input {
   box-shadow: inset 0 0 0 1.4px var(--border-cool);
   border-radius: var(--radius-chip);
   font-weight: 600;
-  font-size: 13px;
+  font-size: 0.8125rem;
   letter-spacing: 0.01em;
   cursor: help;
 }
 .chip--unknown.chip--sm {
-  font-size: 11px;
+  font-size: 0.6875rem;
 }
 
 /* ── Sense cards: extra states ──────────────────────────────────────────
@@ -2608,7 +2648,7 @@ textarea.text-input {
   cursor: default;
 }
 .sensecard__context {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--text-faint);
   margin-top: 2px;
 }
@@ -2617,7 +2657,7 @@ textarea.text-input {
    One line explaining why an entry is thinner than a curated one. Quiet by
    design: it's context for a gap, not a warning about a mistake. */
 .source-note {
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.45;
   color: var(--text-faint);
   margin: 10px 0 0;
@@ -2881,7 +2921,7 @@ textarea.text-input {
   color: var(--cream-000);
   font-family: var(--font-sans);
   font-weight: 700;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   white-space: nowrap;
 }
 .practice-card__divider {
@@ -2957,17 +2997,17 @@ textarea.text-input {
 .onb__lead {
   margin: 14px 0 0;
   max-width: 300px;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.55;
   color: var(--text-muted);
 }
 .onb__question {
-  font-size: 26px;
+  font-size: 1.625rem;
   line-height: 1.2;
 }
 .onb__hint {
   margin: 10px 0 22px;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.5;
   color: var(--text-muted);
 }
@@ -3002,7 +3042,7 @@ textarea.text-input {
   gap: var(--space-2);
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 24px;
+  font-size: 1.5rem;
   line-height: 1.2;
   color: var(--text-body);
 }
@@ -3012,7 +3052,7 @@ textarea.text-input {
 }
 .onb__note {
   margin: 18px 2px 0;
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.5;
   color: var(--text-faint);
 }
@@ -3021,7 +3061,7 @@ textarea.text-input {
   max-width: 310px;
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 26px;
+  font-size: 1.625rem;
   line-height: 1.25;
   color: var(--text-display);
 }
@@ -3038,7 +3078,7 @@ textarea.text-input {
 .onb__facts li {
   position: relative;
   padding-left: 22px;
-  font-size: 14.5px;
+  font-size: 0.9062rem;
   line-height: 1.5;
   color: var(--text-muted);
 }
@@ -3101,7 +3141,7 @@ textarea.text-input {
 .choice__title {
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 19px;
+  font-size: 1.1875rem;
   color: var(--text-display);
 }
 .choice__sub {
@@ -3139,15 +3179,15 @@ textarea.text-input {
 }
 .modal__emoji {
   margin: 0;
-  font-size: 40px;
+  font-size: 2.5rem;
 }
 .modal__title {
   margin-top: 8px;
-  font-size: 28px;
+  font-size: 1.75rem;
 }
 .modal__body {
   margin: 10px 0 22px;
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.55;
   color: var(--text-muted);
 }
@@ -3202,7 +3242,7 @@ textarea.text-input {
   color: var(--primary);
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 16px;
+  font-size: 1rem;
 }
 .report-week {
   margin-top: 18px;
@@ -3224,14 +3264,14 @@ textarea.text-input {
 }
 .reflect__title {
   margin-top: 10px;
-  font-size: 26px;
+  font-size: 1.625rem;
   line-height: 1.2;
 }
 .reflect__now {
   margin: 8px 0 16px;
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 20px;
+  font-size: 1.25rem;
   color: var(--primary);
 }
 .reflect__words {
@@ -3250,7 +3290,7 @@ textarea.text-input {
 }
 .reflect__text-lead {
   margin: 0 0 12px;
-  font-size: 15.5px;
+  font-size: 0.9688rem;
   line-height: 1.5;
   color: var(--text-body);
 }
@@ -3260,7 +3300,7 @@ textarea.text-input {
 .reflect__passage {
   margin: 0;
   font-family: var(--font-serif);
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.65;
   color: var(--text-faint);
 }
@@ -3273,12 +3313,12 @@ textarea.text-input {
 }
 .reflect__legend {
   margin: 10px 0 0;
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--text-faint);
 }
 .reflect__retained {
   margin: 20px 0 0;
-  font-size: 15px;
+  font-size: 0.9375rem;
   line-height: 1.5;
   color: var(--text-muted);
 }
@@ -3286,7 +3326,7 @@ textarea.text-input {
   margin: 14px 0 0;
   font-family: var(--font-serif);
   font-style: italic;
-  font-size: 17px;
+  font-size: 1.0625rem;
   color: var(--text-display);
 }
 
@@ -3299,24 +3339,24 @@ textarea.text-input {
   margin: 0;
   font-family: var(--font-serif);
   font-weight: 600;
-  font-size: 18px;
+  font-size: 1.125rem;
   color: var(--text-display);
 }
 .settings-habit__label {
   display: block;
   margin: 16px 0 8px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text-muted);
 }
 .settings-habit__note {
   margin: 8px 0 0;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--error-fg);
 }
 .settings-habit__foot {
   margin: 16px 0 0;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   line-height: 1.5;
   color: var(--text-faint);
 }
@@ -3347,7 +3387,7 @@ textarea.text-input {
   background: var(--surface-card);
   color: var(--text-display);
   font-family: var(--font-serif);
-  font-size: 20px;
+  font-size: 1.25rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   text-align: center;
@@ -3366,7 +3406,7 @@ textarea.text-input {
   min-height: 64px;
   margin-top: var(--space-5);
   border-radius: var(--radius-card);
-  font-size: 30px;
+  font-size: 1.875rem;
 }
 .seg--row {
   grid-template-columns: repeat(5, 1fr);
@@ -3383,7 +3423,7 @@ textarea.text-input {
   border-radius: var(--radius-input);
   background: var(--surface-card);
   color: var(--text-body);
-  font-size: 13.5px;
+  font-size: 0.8438rem;
   font-weight: 700;
   line-height: 1.3;
   text-align: center;
@@ -3401,13 +3441,13 @@ textarea.text-input {
   color: var(--primary);
 }
 .seg__sub {
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 400;
   color: var(--text-muted);
 }
 .seg__opt--num {
   font-family: var(--font-serif);
-  font-size: 17px;
+  font-size: 1.0625rem;
 }
 .toggle-row {
   display: flex;
@@ -3419,12 +3459,12 @@ textarea.text-input {
 .toggle-row__title {
   display: block;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text-body);
 }
 .toggle-row__sub {
   display: block;
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   color: var(--text-faint);
   margin-top: 2px;
 }
@@ -3646,7 +3686,7 @@ textarea.text-input {
 
 /* Sign in, create account, new password */
 .auth-body { padding-top: 8px; padding-bottom: 24px; }
-.auth-intro { font-size: 14px; line-height: 1.55; margin: 0 2px 18px; }
+.auth-intro { font-size: 0.875rem; line-height: 1.55; margin: 0 2px 18px; }
 .auth-intro--after { margin: 18px 2px; }
 .auth-error { margin-bottom: 14px; }
 .auth-error--after { margin-bottom: 0; margin-top: 14px; }
@@ -3656,11 +3696,14 @@ textarea.text-input {
 .link-btn--center { display: block; margin: 22px auto 0; }
 .auth-forgot { margin-top: 14px; }
 .auth-switch { margin-top: 20px; }
+.auth-body .btn--apple + .btn--secondary { margin-top: 12px; }
+.auth-legal { font-size: 0.75rem; line-height: 1.5; text-align: center; margin: 18px 8px 0; }
+.auth-legal a { color: inherit; }
 
 /* Welcome, and the empty dashboard */
 .intro-body { justify-content: center; flex: 1; padding-bottom: 24px; }
 .intro-mark { margin-bottom: 26px; }
-.intro-text { font-size: 15.5px; margin: 18px 0 0; line-height: 1.6; max-width: 286px; }
+.intro-text { font-size: 0.9688rem; margin: 18px 0 0; line-height: 1.6; max-width: 286px; }
 .intro-actions { padding-bottom: 30px; }
 .intro-actions--stack { display: flex; flex-direction: column; gap: 22px; }
 .welcome-tagline {
@@ -3674,13 +3717,13 @@ textarea.text-input {
 /* Adding words */
 .add-body { padding-top: 16px; padding-bottom: 24px; }
 .add-body--compose { padding-bottom: 20px; display: flex; flex-direction: column; gap: 14px; }
-.add-intro { font-size: 15px; line-height: 1.55; margin: 0 0 18px; }
-.add-lede { font-size: 15px; line-height: 1.55; margin: 0; }
+.add-intro { font-size: 0.9375rem; line-height: 1.55; margin: 0 0 18px; }
+.add-lede { font-size: 0.9375rem; line-height: 1.55; margin: 0; }
 .text-input--area {
   min-height: 220px;
   resize: vertical;
   font-family: var(--font-sans);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.5;
 }
 .notice + .readtext { margin-top: 14px; }
@@ -3688,10 +3731,10 @@ textarea.text-input {
 .readtext__lookup { margin-top: 20px; }
 .capture-body { padding-top: 16px; padding-bottom: 16px; }
 .capture-empty { padding: 24px 6px; text-align: center; }
-.lookup-note { font-size: 14px; margin: -4px 2px 0; text-align: center; }
+.lookup-note { font-size: 0.875rem; margin: -4px 2px 0; text-align: center; }
 
 /* Practice */
-.practice-count { font-size: 13px; font-weight: 700; color: var(--text-muted); }
+.practice-count { font-size: 0.8125rem; font-weight: 700; color: var(--text-muted); }
 .exercise--flashcard { padding: 14px 22px 4px; display: flex; flex-direction: column; }
 .eyebrow--center { text-align: center; }
 .exercise__grades { padding: 12px 22px 32px; display: flex; gap: 12px; }
@@ -3701,13 +3744,13 @@ textarea.text-input {
 .report-head { text-align: center; }
 .report-title {
   font-family: var(--font-serif);
-  font-size: 30px;
+  font-size: 1.875rem;
   font-weight: 600;
   color: var(--text-display);
   margin-top: 14px;
 }
-.report-sub { font-size: 14px; margin: 7px 0 0; }
-.report-forecast { font-size: 13px; margin: 2px 0 0; text-align: center; }
+.report-sub { font-size: 0.875rem; margin: 7px 0 0; }
+.report-forecast { font-size: 0.8125rem; margin: 2px 0 0; text-align: center; }
 .report-stats { display: flex; gap: 12px; margin-top: 18px; }
 .report-learning__head {
   display: flex;
@@ -3717,11 +3760,11 @@ textarea.text-input {
 }
 .report-learning__title {
   font-family: var(--font-serif);
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text-display);
 }
-.report-learning__note { font-size: 12.5px; }
+.report-learning__note { font-size: 0.7812rem; }
 .report-learning__list { display: flex; flex-direction: column; gap: 9px; }
 .reflection-actions { padding: 12px 22px 32px; }
 
@@ -3729,12 +3772,12 @@ textarea.text-input {
 .browse-body { padding-top: 14px; padding-bottom: 20px; }
 .browse-removed { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-bottom: 14px; }
 .browse-removed .notice { align-self: stretch; }
-.browse-empty { font-size: 15px; padding: 30px 4px; text-align: center; }
-.browse-count { font-size: 14px; padding: 0 4px 14px; }
+.browse-empty { font-size: 0.9375rem; padding: 30px 4px; text-align: center; }
+.browse-count { font-size: 0.875rem; padding: 0 4px 14px; }
 .wordrow__edit { display: flex; flex-direction: column; gap: 10px; }
 .wordrow__edit-actions { display: flex; gap: 10px; margin-top: 2px; }
 .wordrow__edit-btn { flex: 1; }
-.wordrow__no-example { font-size: 13px; }
+.wordrow__no-example { font-size: 0.8125rem; }
 .wordrow__edit-link { margin-top: 10px; align-self: flex-start; }
 
 /* Settings */
@@ -3745,16 +3788,51 @@ textarea.text-input {
 .account-row__text { min-width: 0; }
 .account-row__email {
   font-weight: 700;
-  font-size: 14px;
+  font-size: 0.875rem;
   color: var(--text-body);
   overflow: hidden;
   text-overflow: ellipsis;
 }
-.account-row__sub { font-size: 12.5px; }
-.settings-stat__label { font-size: 14px; }
+.account-row__sub { font-size: 0.7812rem; }
+.settings-stat__label { font-size: 0.875rem; }
 .settings-stat__value { font-family: var(--font-serif); font-weight: 600; color: var(--text-display); }
 .settings-stat__divider { margin: 12px 0; }
-.settings-foot { font-size: 12px; line-height: 1.5; margin-top: 18px; text-align: center; }
+.settings-foot { font-size: 0.75rem; line-height: 1.5; margin-top: 18px; text-align: center; }
+.settings-research { margin-bottom: 14px; }
+.settings-backup,
+.settings-links { margin-top: 14px; }
+.settings-backup { display: flex; flex-direction: column; gap: 12px; }
+.settings-backup__actions,
+.settings-backup__confirm { display: flex; flex-direction: column; gap: 12px; }
+.settings-backup__load { cursor: pointer; }
+.settings-backup__load:focus-within { outline: 2px solid var(--semantic-button-outline-default); outline-offset: 2px; }
+.settings-links { display: flex; flex-direction: column; padding-top: 6px; padding-bottom: 6px; }
+.settings-link {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  font-weight: 600;
+  color: var(--text-body);
+  text-decoration: none;
+  cursor: pointer;
+}
+.settings-link + .settings-link { border-top: 1px solid var(--line-cool-strong); }
+.settings-delete { margin-top: 14px; text-align: center; }
+.settings-delete__link { color: var(--error-fg); }
+.settings-delete__confirm { display: flex; flex-direction: column; gap: 12px; text-align: left; }
+
+/* danger — the one irreversible action (Delete account): solid error. */
+.btn--danger {
+  background: var(--error-fg);
+  border-color: var(--error-fg);
+  color: #fff;
+}
+.btn--danger:disabled { opacity: 0.6; }
 
 /* ── Developer tools (admins) ── */
 .settings-dev {
@@ -3780,7 +3858,7 @@ textarea.text-input {
   padding: 4px var(--space-4);
   background: var(--primary);
   color: var(--on-primary);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 700;
 }
 .dev-preview__bar .link-btn {
@@ -3825,7 +3903,7 @@ textarea.text-input {
   border-radius: var(--radius-pill);
   background: var(--success-bg);
   color: var(--success-fg);
-  font-size: 12.5px;
+  font-size: 0.7812rem;
   font-weight: 700;
   line-height: normal;
   white-space: nowrap;
@@ -4180,7 +4258,7 @@ textarea.text-input {
   border-radius: var(--radius-pill);
   background: var(--cream-100);
   color: var(--text-muted);
-  font-size: 11.5px;
+  font-size: 0.7188rem;
   font-weight: 700;
 }
 .suggest__tag--deck {
@@ -4515,7 +4593,7 @@ textarea.text-input {
   font-size: var(--size-body);
 }
 .word-part__label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--text-faint);
 }
@@ -4541,3 +4619,23 @@ textarea.text-input {
   flex: 1;
   justify-content: center;
 }
+
+/* About & licences */
+.about-body { padding-top: 8px; padding-bottom: 28px; }
+.about-intro { font-size: 0.875rem; line-height: 1.55; color: var(--text-body); margin: 0 0 8px; }
+.about-intro a,
+.about-foot a { color: var(--text-body); font-weight: 600; }
+.about-heading {
+  font-family: var(--font-serif);
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-display);
+  margin: 22px 0 6px;
+}
+.about-list { list-style: none; margin: 0; padding: 0; }
+.about-item { padding: 12px 0; border-bottom: 1px solid var(--line-cool-strong); }
+.about-item__name { font-weight: 700; color: var(--text-body); text-decoration: none; }
+.about-item__what { font-size: 0.875rem; line-height: 1.5; margin: 4px 0; color: var(--text-muted); }
+.about-item__licence { font-size: 0.8125rem; color: var(--text-body); }
+.about-foot { margin-top: 22px; text-align: center; font-size: 0.875rem; }
+

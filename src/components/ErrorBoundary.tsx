@@ -5,6 +5,7 @@
    here instead of unmounting everything. Reloading fixes both cases in
    practice, and progress is safe: it is in local storage and the cloud. */
 import { Component, type ErrorInfo, type ReactNode } from "react";
+import { reportError } from "../lib/errorReporting";
 
 export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: boolean }> {
   state = { failed: false };
@@ -14,7 +15,7 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { failed: 
   }
 
   componentDidCatch(error: Error, info: ErrorInfo) {
-    console.error("[woordkast] the app hit an error", error, info.componentStack);
+    reportError(error, "render", info.componentStack ?? undefined);
   }
 
   render() {

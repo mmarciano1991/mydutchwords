@@ -76,7 +76,8 @@ import {
   type HabitTime,
   type HabitState,
 } from "./lib/habit";
-import { appendReviewEvent, flushReviewEvents, newSessionId } from "./lib/reviewEvents";
+import { appendReviewEvent, clearReviewEvents, flushReviewEvents, newSessionId } from "./lib/reviewEvents";
+import { hasResearchConsent, setResearchConsent } from "./lib/research";
 import { completionSentence } from "./lib/sentenceTarget";
 import { dutchAudioAvailable, onVoicesChanged } from "./lib/audio";
 import { MC_DICTIONARY_FILL_WORDS } from "./lib/learningConfig";
@@ -85,7 +86,7 @@ import { useDailyReminder } from "./lib/reminders";
 import { expandOriginFrom, type ExpandOrigin } from "./lib/expandOrigin";
 import { useAuth } from "./lib/useAuth";
 import { useCloudSync } from "./lib/useCloudSync";
-import { signOut } from "./lib/auth";
+import { deleteAccount, signOut } from "./lib/auth";
 import type { AppState } from "./lib/cloudState";
 import { Dashboard } from "./screens/Dashboard";
 import { Browse } from "./screens/Browse";
@@ -102,12 +103,13 @@ import { Settings, type HabitPrefs } from "./screens/Settings";
 import { Auth } from "./screens/Auth";
 import { NewPassword } from "./screens/NewPassword";
 import { Welcome } from "./screens/Welcome";
+import { About } from "./screens/About";
 import { TabBar, type Tab } from "./components/TabBar";
 import { isAdmin } from "./lib/devMode";
 
-type Route = Tab | "practice" | "report" | "reflection" | "week" | "add-choice" | "capture" | "add-from-text";
+type Route = Tab | "practice" | "report" | "reflection" | "week" | "add-choice" | "capture" | "add-from-text" | "about";
 
-const FOCUSED: Route[] = ["practice", "report", "reflection", "week", "add-choice", "capture", "add-from-text"];
+const FOCUSED: Route[] = ["practice", "report", "reflection", "week", "add-choice", "capture", "add-from-text", "about"];
 
 /* How long to wait for a signed-in user's remote habit before showing
    onboarding anyway. A failed pull stops the wait at once (offline); this
@@ -201,8 +203,11 @@ export default function App() {
   // offline as before.
   const locked = configured && !user;
   // Stamped on every review event, so each is uploaded only for its own user.
+  // Null without a signed-in learner who opted in to the field study — then
+  // no event is recorded at all (lib/research).
+  const consented = hasResearchConsent(user);
   const userIdRef = useRef<string | null>(null);
-  userIdRef.current = user?.id ?? null;
+  userIdRef.current = user && consented ? user.id : null;
 
   // Applies a merged remote+local snapshot after login (custom words are set
   // by the sync hook before this runs).
@@ -245,20 +250,43 @@ export default function App() {
     // Must happen while still authenticated — RLS needs auth.uid() = user_id.
     const saved = await flush();
     if (!saved && !force) return false;
-    if (user) await flushReviewEvents(user.id);
+    if (user && consented) await flushReviewEvents(user.id);
     await signOut();
-    // Start the local session clean so the next account doesn't inherit this
-    // deck.
-    setDeck([]);
-    setResults([]);
-    setRun(null);
-    setHabit(null);
-    setCustomEntries([]);
+    clearLocal();
     // Straight back to log-in, not Welcome — this visitor already knows
     // the app, and has an account by definition.
     setAuthMode("signin");
     setAuthStep("auth");
     return true;
+  }
+
+  /** Starts the local session clean, so the next account doesn't inherit
+   *  this deck. */
+  function clearLocal() {
+    setDeck([]);
+    setResults([]);
+    setRun(null);
+    setHabit(null);
+    setCustomEntries([]);
+    clearReviewEvents();
+  }
+
+  /** Deletes the account on the server, then this device's copy. Resolves an
+   *  error message, or null once it is gone. */
+  async function handleDeleteAccount(): Promise<string | null> {
+    const res = await deleteAccount();
+    if (res.error) return res.error;
+    clearLocal();
+    setAuthMode("signup");
+    setAuthStep("welcome");
+    return null;
+  }
+
+  /** Opting out also drops the answers still waiting to upload. */
+  async function changeResearchConsent(on: boolean): Promise<string | null> {
+    const error = await setResearchConsent(on);
+    if (!error && !on) clearReviewEvents();
+    return error;
   }
 
   // Resolve the deck (newest first) into full entries — each a local copy
@@ -283,20 +311,23 @@ export default function App() {
   );
 
   // Cards saved before the server dictionary keep the content they had: the
-  // frozen legacy dictionary is loaded once to pin them, then never again.
+  // frozen legacy dictionary is fetched once to pin them, then never again
+  // (offline, they wait for the next launch).
   // Their cards had no part of speech, and some no example or article:
   // once pinned, those are looked up (while online) and filled in from the
   // dictionary sense each card unambiguously stands for.
   useEffect(() => {
     const ids = deck.map((d) => d.id);
-    void pinLegacyEntries(ids).then(async () => {
-      if (typeof navigator !== "undefined" && navigator.onLine === false) return;
-      await fillMissingPos(ids).catch((err) => console.info("[woordkast] part-of-speech lookup skipped", err));
-      await fillMissingDetails(ids).catch((err) => console.info("[woordkast] example/article lookup skipped", err));
-      // A dictionary sense that shipped without an example gets one written
-      // on demand — the first learner to save it pays, everyone after reads.
-      await fillMissingExamples(ids).catch((err) => console.info("[woordkast] example request skipped", err));
-    });
+    void pinLegacyEntries(ids)
+      .catch((err) => console.info("[woordkast] legacy cards not pinned yet", err))
+      .then(async () => {
+        if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+        await fillMissingPos(ids).catch((err) => console.info("[woordkast] part-of-speech lookup skipped", err));
+        await fillMissingDetails(ids).catch((err) => console.info("[woordkast] example/article lookup skipped", err));
+        // A dictionary sense that shipped without an example gets one written
+        // on demand — the first learner to save it pays, everyone after reads.
+        await fillMissingExamples(ids).catch((err) => console.info("[woordkast] example request skipped", err));
+      });
   }, [deck]);
 
   // Once per launch, while online: refresh the deck's copies from the
@@ -695,7 +726,8 @@ export default function App() {
         deckRef.current = deckRef.current.map((d) => (d.id === updated.id ? updated : d));
         setDeck(deckRef.current);
       }
-      appendReviewEvent(event, userIdRef.current);
+      // Only for a learner who opted in (see userIdRef).
+      if (userIdRef.current) appendReviewEvent(event, userIdRef.current);
       const grade = graded ? toGrade(answer.result) : null;
       if (grade) setResults((prev) => [...prev, { entryId: answer.wordId, grade, timestamp: now.getTime() }]);
       // The word's own first answer is its answer in the run. A skip leaves
@@ -843,10 +875,16 @@ export default function App() {
                   dutchAudio={dutchAudio}
                   onHabitChange={changeHabit}
                   onSignOut={handleSignOut}
+                  onDeleteAccount={handleDeleteAccount}
+                  researchConsent={consented}
+                  onResearchConsentChange={changeResearchConsent}
+                  onOpenAbout={() => setRoute("about")}
                   isAdmin={isAdmin(user)}
                   onPreviewOnboarding={setOnboardingPreview}
                 />
               )}
+
+              {route === "about" && <About onBack={() => setRoute("settings")} />}
 
               {route === "practice" && (
                 <Practice

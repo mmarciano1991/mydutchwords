@@ -12,6 +12,7 @@ import { notificationsSupported, requestReminderPermission } from "../lib/remind
 import { setSoundEffectsMuted, soundEffectsMuted } from "../lib/sfx";
 import { Notice } from "../components/Notice";
 import { readDevMode, writeDevMode } from "../lib/devMode";
+import { backupFileName, createBackup, parseBackup, restoreBackup } from "../lib/durableStore";
 
 export type HabitPrefs = Pick<HabitState, "commitment" | "time" | "weeklyTarget" | "reminders" | "audioExercises">;
 
@@ -24,6 +25,10 @@ export function Settings({
   isAdmin = false,
   onHabitChange,
   onSignOut,
+  onDeleteAccount,
+  researchConsent = false,
+  onResearchConsentChange,
+  onOpenAbout,
   onPreviewOnboarding,
 }: {
   deckCount: number;
@@ -41,6 +46,14 @@ export function Settings({
   /** Resolves false, without signing out, when the latest progress couldn't
    *  be saved first — unless `force`d. */
   onSignOut: (opts?: { force?: boolean }) => Promise<boolean>;
+  /** Deletes the account and everything stored for it. Resolves an error
+   *  message, or null once it is gone. */
+  onDeleteAccount?: () => Promise<string | null>;
+  /** The learner opted in to the field study's review log (lib/research). */
+  researchConsent?: boolean;
+  onResearchConsentChange?: (on: boolean) => Promise<string | null>;
+  /** Opens About & licences. */
+  onOpenAbout?: () => void;
   /** The account is an admin (Supabase app_metadata.role = "admin"):
    *  shows the Developer card. */
   isAdmin?: boolean;
@@ -61,6 +74,62 @@ export function Settings({
     if (savedTime) setTimeInput((shown) => (isHabitTime(shown) || shown === "" ? savedTime : shown));
   }, [savedTime]);
   const [signOut, setSignOut] = useState<"idle" | "saving" | "unsaved">("idle");
+  const [deleting, setDeleting] = useState<"idle" | "confirm" | "busy">("idle");
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [consentBusy, setConsentBusy] = useState(false);
+  const [consentError, setConsentError] = useState<string | null>(null);
+  const [backupNote, setBackupNote] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [pendingRestore, setPendingRestore] = useState<ReturnType<typeof createBackup> | null>(null);
+
+  async function deleteForGood() {
+    if (!onDeleteAccount) return;
+    setDeleting("busy");
+    setDeleteError(null);
+    const error = await onDeleteAccount();
+    if (error) {
+      setDeleteError(error);
+      setDeleting("confirm");
+    }
+    // On success App leaves Settings for the Welcome screen.
+  }
+
+  async function toggleConsent(on: boolean) {
+    if (!onResearchConsentChange) return;
+    setConsentBusy(true);
+    setConsentError(null);
+    const error = await onResearchConsentChange(on);
+    setConsentBusy(false);
+    if (error) setConsentError(error);
+  }
+
+  function saveBackup() {
+    const blob = new Blob([JSON.stringify(createBackup(), null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = backupFileName();
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    setBackupNote({ type: "success", text: "Backup saved. Keep the file somewhere safe." });
+  }
+
+  async function chooseBackup(file: File | undefined) {
+    setBackupNote(null);
+    if (!file) return;
+    const parsed = parseBackup(await file.text());
+    if (typeof parsed === "string") setBackupNote({ type: "error", text: parsed });
+    else setPendingRestore(parsed);
+  }
+
+  function confirmRestore() {
+    if (!pendingRestore) return;
+    restoreBackup(pendingRestore);
+    // The app reads its state at start-up; with an account, sync then
+    // merges the restored words with the account's.
+    window.location.reload();
+  }
 
   async function logOut(force = false) {
     setSignOut("saving");
@@ -232,6 +301,66 @@ export function Settings({
                 {signOut === "saving" ? "Saving…" : "Log out"}
               </button>
             )}
+
+            {onDeleteAccount && (
+              <div className="settings-delete">
+                {deleting === "idle" ? (
+                  <button className="link-btn settings-delete__link" onClick={() => setDeleting("confirm")}>
+                    Delete account
+                  </button>
+                ) : (
+                  <div className="settings-delete__confirm" role="group" aria-labelledby="delete-heading">
+                    <p className="settings-habit__heading" id="delete-heading">Delete your account?</p>
+                    <Notice type="caution">
+                      Your account, deck, progress and practice history are deleted from our servers and
+                      from this device. This can&rsquo;t be undone. Save a backup first if you might want
+                      your words back.
+                    </Notice>
+                    {deleteError && <Notice type="error">{deleteError}</Notice>}
+                    <button
+                      className="btn btn--danger"
+                      onClick={() => void deleteForGood()}
+                      disabled={deleting === "busy"}
+                    >
+                      {deleting === "busy" ? "Deleting…" : "Delete my account"}
+                    </button>
+                    <button
+                      className="link-btn link-btn--center"
+                      onClick={() => {
+                        setDeleting("idle");
+                        setDeleteError(null);
+                      }}
+                      disabled={deleting === "busy"}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {configured && onResearchConsentChange && (
+          <div className="card card--warm settings-card settings-research">
+            <label className="toggle-row">
+              <span>
+                <span className="toggle-row__title">Help research</span>
+                <span className="toggle-row__sub">
+                  Share each answer you give — the word, right or wrong, and how long it took — with the
+                  Woordkast study on how people learn words. Off by default; turning it off stops it at
+                  once. See the privacy policy.
+                </span>
+              </span>
+              <input
+                type="checkbox"
+                className="toggle"
+                checked={researchConsent}
+                disabled={consentBusy}
+                onChange={(e) => void toggleConsent(e.target.checked)}
+              />
+            </label>
+            {consentError && <p className="settings-habit__note">{consentError}</p>}
           </div>
         )}
 
@@ -240,6 +369,60 @@ export function Settings({
             <span className="muted settings-stat__label">Words in your deck</span>
             <span className="settings-stat__value">{deckCount}</span>
           </div>
+        </div>
+
+        <div className="card card--warm settings-card settings-backup">
+          <p className="settings-habit__heading">Backup</p>
+          <p className="toggle-row__sub">
+            {configured
+              ? "Your progress syncs to your account. A backup file is an extra copy you keep yourself."
+              : "Your progress is kept on this device only. Save a backup now and then, so clearing the browser can’t lose it."}
+          </p>
+          {pendingRestore ? (
+            <div className="settings-backup__confirm">
+              <Notice type="caution">
+                Restore the backup from {new Date(pendingRestore.exportedAt).toLocaleDateString()}? It
+                replaces the words and progress on this device
+                {configured ? ", then syncs them with your account (nothing in your account is lost)" : ""}.
+              </Notice>
+              <button className="btn btn--primary" onClick={confirmRestore}>
+                Restore
+              </button>
+              <button className="link-btn link-btn--center" onClick={() => setPendingRestore(null)}>
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="settings-backup__actions">
+              <button className="btn btn--secondary" onClick={saveBackup}>
+                Save a backup
+              </button>
+              <label className="btn btn--secondary settings-backup__load">
+                Restore from a backup
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  className="sr-only"
+                  onChange={(e) => {
+                    void chooseBackup(e.target.files?.[0]);
+                    e.target.value = "";
+                  }}
+                />
+              </label>
+            </div>
+          )}
+          {backupNote && <Notice type={backupNote.type}>{backupNote.text}</Notice>}
+        </div>
+
+        <div className="card card--warm settings-card settings-links">
+          <a className="settings-link" href={`${import.meta.env.BASE_URL}privacy.html`} target="_blank" rel="noopener">
+            Privacy policy
+          </a>
+          {onOpenAbout && (
+            <button className="settings-link" onClick={onOpenAbout}>
+              About &amp; licences
+            </button>
+          )}
         </div>
 
         {/* Developer — admins only. Dev mode is a per-device switch; its

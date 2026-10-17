@@ -31,8 +31,12 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        // OAuth (Google) returns to the app with tokens in the URL; pick them up.
+        // OAuth returns to the app with a one-time code in the URL; pick it up.
         detectSessionInUrl: true,
+        // PKCE rather than tokens in the URL fragment: the code is useless
+        // without the verifier this device kept, and it is the flow a native
+        // shell's custom-scheme callback needs (lib/platform).
+        flowType: "pkce",
       },
     })
   : null;

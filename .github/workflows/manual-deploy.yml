@@ -48,6 +48,9 @@ jobs:
           # these secrets unset still produces a working, fully offline build.
           VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           VITE_SUPABASE_PUBLISHABLE_KEY: ${{ secrets.VITE_SUPABASE_PUBLISHABLE_KEY }}
+          # Social sign-in buttons (default "apple,google"); set the repo
+          # variable to "google" until Sign in with Apple is enabled.
+          VITE_OAUTH_PROVIDERS: ${{ vars.VITE_OAUTH_PROVIDERS }}
 
       - name: Upload to Hostinger via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.5

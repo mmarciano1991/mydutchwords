@@ -3,14 +3,17 @@ import { createRoot } from "react-dom/client";
 import { applyTokens } from "./lib/applyTokens";
 import { Splash } from "./components/Splash";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { installErrorReporting } from "./lib/errorReporting";
+import { prepareDurableStorage } from "./lib/durableStore";
 import "./styles/app.css";
 
+installErrorReporting();
 applyTokens();
 
-// The app (and with it the ~14k-word bundled dictionary, by far the largest
-// part of the JS) loads as a separate async chunk, so the first paint — the
-// splash — doesn't wait for it.
-const App = lazy(() => import("./App"));
+// The app loads as a separate async chunk, so the first paint — the splash —
+// doesn't wait for it. Durable storage goes first: in a native shell it puts
+// back any progress the web view's storage lost, before the app reads it.
+const App = lazy(() => prepareDurableStorage().then(() => import("./App")));
 
 // The splash is a deliberate opening beat (Access flow, Figma 228:1789), not
 // just a loading state: it overlays the app for a moment, then fades away to
