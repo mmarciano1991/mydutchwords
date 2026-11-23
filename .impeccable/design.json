@@ -1,0 +1,182 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-23T12:00:00Z",
+  "title": "Design System: Woordkast",
+  "extensions": {
+    "colorMeta": {
+      "delft-cobalt": { "role": "primary", "displayName": "Delft Cobalt", "canonical": "#1b4079", "tonalRamp": ["#0f2b54", "#1b4079", "#2e5ea8", "#6e92c4", "#9db6d8", "#c2cfe4", "#dce4f1", "#eef3fa"] },
+      "delft-cobalt-deep": { "role": "primary", "displayName": "Delft Cobalt Deep", "canonical": "#0f2b54" },
+      "tile-blue": { "role": "primary", "displayName": "Tile Blue", "canonical": "#2e5ea8" },
+      "wash-blue": { "role": "primary", "displayName": "Wash Blue", "canonical": "#6e92c4" },
+      "glaze-line": { "role": "primary", "displayName": "Glaze Line", "canonical": "#9db6d8" },
+      "blue-mist": { "role": "primary", "displayName": "Blue Mist", "canonical": "#dce4f1" },
+      "blue-tint": { "role": "primary", "displayName": "Blue Tint", "canonical": "#eef3fa" },
+      "porcelain-cream": { "role": "neutral", "displayName": "Porcelain Cream", "canonical": "#fbf8f1", "tonalRamp": ["#3a372f", "#6b675c", "#aaa597", "#e2ddcf", "#e6e3d8", "#ede8db", "#f0ece1", "#fbf8f1"] },
+      "porcelain-white": { "role": "neutral", "displayName": "Porcelain White", "canonical": "#ffffff" },
+      "gallery-cream": { "role": "neutral", "displayName": "Gallery Cream", "canonical": "#e6e3d8" },
+      "cream-shelf": { "role": "neutral", "displayName": "Cream Shelf", "canonical": "#f0ece1" },
+      "cream-line": { "role": "neutral", "displayName": "Cream Line", "canonical": "#ede8db" },
+      "cool-hairline": { "role": "neutral", "displayName": "Cool Hairline", "canonical": "#e4e9f2" },
+      "cool-hairline-strong": { "role": "neutral", "displayName": "Cool Hairline Strong", "canonical": "#d7deea" },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#1b2638", "tonalRamp": ["#1b2638", "#34405a", "#596373", "#5a6b86", "#a9b0be", "#a9b2c2", "#d7deea", "#eef0f4"] },
+      "ink-quote": { "role": "neutral", "displayName": "Ink Quote", "canonical": "#34405a" },
+      "ink-faint": { "role": "neutral", "displayName": "Ink Faint", "canonical": "#596373" },
+      "ink-light": { "role": "neutral", "displayName": "Ink Light", "canonical": "#a9b0be" },
+      "slate-inactive": { "role": "neutral", "displayName": "Slate Inactive", "canonical": "#5a6b86" },
+      "success-fg": { "role": "status", "displayName": "Moss Text", "canonical": "#2e5e40" },
+      "success-solid": { "role": "status", "displayName": "Moss", "canonical": "#3e7a57", "tonalRamp": ["#1e3d2a", "#2e5e40", "#3e7a57", "#5f9877", "#8fb9a0", "#c2dbcb", "#dce9e1", "#e7f0ea"] },
+      "success-bg": { "role": "status", "displayName": "Moss Wash", "canonical": "#e7f0ea" },
+      "success-border": { "role": "status", "displayName": "Moss Line", "canonical": "#c2dbcb" },
+      "caution-fg": { "role": "status", "displayName": "Ochre Text", "canonical": "#8a6a1e" },
+      "caution-solid": { "role": "status", "displayName": "Ochre", "canonical": "#c99a2e", "tonalRamp": ["#5a4412", "#8a6a1e", "#c99a2e", "#d9b55f", "#e9d5a6", "#f0e1bd", "#f6ead0", "#fbf1dd"] },
+      "caution-bg": { "role": "status", "displayName": "Ochre Wash", "canonical": "#fbf1dd" },
+      "caution-border": { "role": "status", "displayName": "Ochre Line", "canonical": "#e9d5a6" },
+      "error-fg": { "role": "status", "displayName": "Terracotta Text", "canonical": "#9a3b22" },
+      "error-solid": { "role": "status", "displayName": "Terracotta", "canonical": "#b5462f", "tonalRamp": ["#5e2414", "#9a3b22", "#b5462f", "#cc735f", "#e2c3b8", "#e7c6b8", "#f0dad2", "#f7e8e2"] },
+      "error-bg": { "role": "status", "displayName": "Terracotta Wash", "canonical": "#f7e8e2" },
+      "error-border": { "role": "status", "displayName": "Terracotta Line", "canonical": "#e7c6b8" }
+    },
+    "typographyMeta": {
+      "word-hero": { "displayName": "Word hero", "purpose": "The word on a flashcard, the practice-card title, the welcome title." },
+      "display": { "displayName": "Display", "purpose": "Screen titles." },
+      "title": { "displayName": "Title", "purpose": "Section titles and option-card names." },
+      "word-row": { "displayName": "Word row", "purpose": "A Dutch word in a list." },
+      "quote": { "displayName": "Quote", "purpose": "Example sentences in context, italic." },
+      "body": { "displayName": "Body", "purpose": "Explanations, glosses, notices." },
+      "body-sm": { "displayName": "Body small", "purpose": "Secondary lines and card metadata." },
+      "button": { "displayName": "Button", "purpose": "Every button label." },
+      "label": { "displayName": "Label", "purpose": "Uppercase eyebrows." },
+      "wordmark": { "displayName": "Wordmark", "purpose": "The small uppercase WOORDKAST beside the tulip glyph." }
+    },
+    "shadows": [
+      { "name": "card", "value": "0 8px 22px rgba(15, 43, 84, 0.07)", "purpose": "Content cards and the nav pill." },
+      { "name": "card-sm", "value": "0 1px 2px rgba(15, 43, 84, 0.04)", "purpose": "Compact rows." },
+      { "name": "field", "value": "0 2px 9px rgba(15, 43, 84, 0.05)", "purpose": "Search and input fields." },
+      { "name": "float", "value": "0 16px 40px rgba(15, 43, 84, 0.13)", "purpose": "The desktop phone frame and floating sheets." },
+      { "name": "primary", "value": "0 8px 20px rgba(27, 64, 121, 0.28)", "purpose": "Primary buttons at rest." },
+      { "name": "pressed", "value": "0 2px 6px rgba(27, 64, 121, 0.28)", "purpose": "A primary button while held down." },
+      { "name": "fab", "value": "0 12px 26px rgba(27, 64, 121, 0.36)", "purpose": "The floating add button." },
+      { "name": "success", "value": "0 8px 18px rgba(62, 122, 87, 0.26)", "purpose": "An armed 'I knew it' button." }
+    ],
+    "motion": [
+      { "name": "ease-standard", "value": "cubic-bezier(0.2, 0, 0, 1)", "purpose": "Default easing for state changes." },
+      { "name": "ease-emphasized", "value": "cubic-bezier(0.3, 0, 0, 1)", "purpose": "Press and recover." },
+      { "name": "ease-accelerate", "value": "cubic-bezier(0.3, 0, 0.8, 0.15)", "purpose": "Things leaving the screen, such as a swiped card." },
+      { "name": "ease-spring", "value": "cubic-bezier(0.34, 1.56, 0.64, 1)", "purpose": "A released card springing back." },
+      { "name": "motion-fast", "value": "120ms", "purpose": "Taps and presses." },
+      { "name": "motion-base", "value": "180ms", "purpose": "Hover, colour and shadow." },
+      { "name": "motion-nav", "value": "260ms", "purpose": "Bottom nav layout changes." },
+      { "name": "motion-unfold", "value": "300ms", "purpose": "A card unfolding, such as search suggestions." },
+      { "name": "motion-expand", "value": "340ms", "purpose": "Container transform from a button into a screen." },
+      { "name": "motion-flip", "value": "480ms", "purpose": "Flashcard 3D flip." },
+      { "name": "motion-swipe", "value": "320ms", "purpose": "A swiped flashcard flying off." },
+      { "name": "motion-settle", "value": "420ms", "purpose": "A released flashcard springing back." }
+    ],
+    "breakpoints": [
+      { "name": "phone-frame", "value": "480px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single primary action on a screen: a full-width cobalt pill.",
+      "html": "<button class=\"ds-btn-primary\">Continue</button>",
+      "css": ".ds-btn-primary { width: 100%; min-height: 45px; max-height: 46px; padding: 12px 16px; border: 1.5px solid transparent; border-radius: 999px; background: var(--primary, #1b4079); color: var(--on-primary, #fbf8f1); font: 700 1rem/1 'Hanken Grotesk', system-ui, sans-serif; box-shadow: 0 8px 20px rgba(27, 64, 121, 0.28); cursor: pointer; transition: background 180ms cubic-bezier(0.2, 0, 0, 1), box-shadow 180ms cubic-bezier(0.2, 0, 0, 1), transform 120ms cubic-bezier(0.3, 0, 0, 1); } .ds-btn-primary:hover { transform: translateY(-1px); } .ds-btn-primary:active { transform: translateY(1px); background: var(--primary-press, #0f2b54); box-shadow: 0 2px 6px rgba(27, 64, 121, 0.28); } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 8px 20px rgba(27, 64, 121, 0.28), 0 0 0 3px #dce4f1; } .ds-btn-primary:disabled { background: #d7deea; color: #fff; box-shadow: none; transform: none; cursor: not-allowed; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined cobalt pill for the second option; fills with Blue Tint on press.",
+      "html": "<button class=\"ds-btn-secondary\">Pick different ones</button>",
+      "css": ".ds-btn-secondary { width: 100%; min-height: 45px; max-height: 46px; padding: 12px 16px; border: 1.5px solid var(--primary, #1b4079); border-radius: 999px; background: none; color: var(--primary, #1b4079); font: 700 1rem/1 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer; transition: background 180ms cubic-bezier(0.2, 0, 0, 1), transform 120ms cubic-bezier(0.3, 0, 0, 1); } .ds-btn-secondary:hover { transform: translateY(-1px); } .ds-btn-secondary:active { transform: translateY(1px); background: #eef3fa; } .ds-btn-secondary:focus-visible { outline: none; box-shadow: 0 0 0 3px #dce4f1; }"
+    },
+    {
+      "name": "Text Input",
+      "kind": "input",
+      "refersTo": "text-input",
+      "description": "Porcelain pill field; the border turns Glaze Line on focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"Search a Dutch word\" />",
+      "css": ".ds-input { width: 100%; min-height: 45px; padding: 12px 16px; border: 1px solid #e4e9f2; border-radius: 999px; background: #fff; font: 400 1rem/1.55 'Hanken Grotesk', system-ui, sans-serif; color: #34405a; box-shadow: 0 2px 9px rgba(15, 43, 84, 0.05); outline: none; transition: border-color 120ms ease; } .ds-input::placeholder { color: #596373; } .ds-input:hover { border-color: #d7deea; } .ds-input:focus-visible { border-color: #9db6d8; }"
+    },
+    {
+      "name": "Article Chips",
+      "kind": "chip",
+      "refersTo": "chip-de",
+      "description": "de is solid cobalt, het is a cobalt ring; always shown with the word.",
+      "html": "<span class=\"ds-chip ds-chip--de\">de</span> <span class=\"ds-chip ds-chip--het\">het</span>",
+      "css": ".ds-chip { display: inline-block; padding: 4px 12px; border-radius: 9px; font: 700 0.875rem/1.2 'Hanken Grotesk', system-ui, sans-serif; } .ds-chip--de { background: #1b4079; color: #fff; } .ds-chip--het { background: #fff; color: #1b4079; box-shadow: inset 0 0 0 1.6px #1b4079; }"
+    },
+    {
+      "name": "Word Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Porcelain card with a hairline border, a serif Dutch word and its gloss.",
+      "html": "<div class=\"ds-card\"><div class=\"ds-card__row\"><span class=\"ds-card__chip\">de</span><span class=\"ds-card__word\">aanslag</span></div><p class=\"ds-card__gloss\">tax assessment</p><p class=\"ds-card__quote\">De aanslag komt per post.</p></div>",
+      "css": ".ds-card { background: #fff; border: 1px solid #e4e9f2; border-radius: 20px; box-shadow: 0 8px 22px rgba(15, 43, 84, 0.07); padding: 16px; font-family: 'Hanken Grotesk', system-ui, sans-serif; transition: border-color 180ms cubic-bezier(0.2, 0, 0, 1); } .ds-card:hover { border-color: #d7deea; } .ds-card__row { display: flex; align-items: center; gap: 8px; } .ds-card__chip { padding: 4px 12px; border-radius: 9px; background: #1b4079; color: #fff; font-weight: 700; font-size: 0.8125rem; } .ds-card__word { font: 600 1.125rem/1.15 Spectral, Georgia, serif; color: #0f2b54; } .ds-card__gloss { margin: 8px 0 0; color: #1b2638; font-size: 1rem; line-height: 1.55; } .ds-card__quote { margin: 4px 0 0; font: italic 500 1rem/1.5 Spectral, Georgia, serif; color: #34405a; }"
+    },
+    {
+      "name": "Practice Card",
+      "kind": "custom",
+      "refersTo": "practice-card",
+      "description": "The dashboard's one solid-cobalt surface and primary action, with inverted buttons.",
+      "html": "<div class=\"ds-practice\"><p class=\"ds-practice__kind\">Today's practice · 10 words</p><h3 class=\"ds-practice__title\">A little Dutch, every day</h3><button class=\"ds-practice__btn\">Start</button></div>",
+      "css": ".ds-practice { display: flex; flex-direction: column; gap: 16px; padding: 16px; background: #1b4079; color: #fbf8f1; border-radius: 20px; font-family: 'Hanken Grotesk', system-ui, sans-serif; } .ds-practice__kind { margin: 0; font-weight: 700; font-size: 0.875rem; line-height: 1.45; } .ds-practice__title { margin: 0; font: 600 1.75rem/1.1 Spectral, Georgia, serif; } .ds-practice__btn { min-height: 45px; border: 1.5px solid transparent; border-radius: 999px; background: #fff; color: #1b4079; font: 700 1rem/1 'Hanken Grotesk', system-ui, sans-serif; cursor: pointer; transition: background 180ms cubic-bezier(0.2, 0, 0, 1), transform 120ms cubic-bezier(0.3, 0, 0, 1); } .ds-practice__btn:hover { transform: translateY(-1px); } .ds-practice__btn:active { transform: translateY(1px); background: #eef3fa; } .ds-practice__btn:focus-visible { outline: none; box-shadow: 0 0 0 3px #9db6d8; }"
+    },
+    {
+      "name": "Bottom Navigation",
+      "kind": "nav",
+      "refersTo": "bottom-nav",
+      "description": "Floating white pill with a travelling cobalt glass pill for the active tab, plus the FAB.",
+      "html": "<nav class=\"ds-nav\"><div class=\"ds-nav__pill\"><button class=\"ds-nav__tab ds-nav__tab--active\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"currentColor\"><path d=\"M12 3 3 10.5V21h6v-6h6v6h6V10.5z\"/></svg>Home</button><button class=\"ds-nav__tab\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><rect x=\"5\" y=\"3\" width=\"14\" height=\"18\" rx=\"2\"/><path d=\"M9 3v18\"/></svg>Deck</button><button class=\"ds-nav__tab\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"3\"/><path d=\"M12 2v3M12 19v3M2 12h3M19 12h3\"/></svg>Settings</button></div><button class=\"ds-nav__fab\" aria-label=\"Add\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"><path d=\"M12 5v14M5 12h14\"/></svg></button></nav>",
+      "css": ".ds-nav { display: flex; align-items: center; gap: 8px; max-width: 390px; } .ds-nav__pill { flex: 1; height: 62px; display: flex; align-items: center; gap: 8px; padding: 3px 7px; background: #fff; border: 1px solid #e4e9f2; border-radius: 999px; box-shadow: 0 8px 22px rgba(15, 43, 84, 0.07); } .ds-nav__tab { flex: 1; height: 48px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: none; border-radius: 999px; background: transparent; color: #1b4079; font: 700 0.75rem/16px 'Hanken Grotesk', system-ui, sans-serif; letter-spacing: 0.02em; cursor: pointer; transition: background 180ms cubic-bezier(0.2, 0, 0, 1), color 180ms cubic-bezier(0.2, 0, 0, 1); } .ds-nav__tab:hover { background: #eef3fa; } .ds-nav__tab:focus-visible { outline: none; box-shadow: 0 0 0 3px #dce4f1; } .ds-nav__tab--active, .ds-nav__tab--active:hover { background: #1b4079; color: #fff; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22), 0 4px 14px rgba(27, 64, 121, 0.2); } .ds-nav__fab { width: 60px; height: 60px; border: none; border-radius: 50%; background: #1b4079; color: #fbf8f1; display: flex; align-items: center; justify-content: center; box-shadow: 0 12px 26px rgba(27, 64, 121, 0.36); cursor: pointer; transition: transform 120ms cubic-bezier(0.3, 0, 0, 1), background 180ms cubic-bezier(0.2, 0, 0, 1); } .ds-nav__fab:active { background: #0f2b54; transform: scale(0.94); } .ds-nav__fab:focus-visible { outline: none; box-shadow: 0 12px 26px rgba(27, 64, 121, 0.36), 0 0 0 3px #dce4f1; }"
+    },
+    {
+      "name": "Info Notice",
+      "kind": "custom",
+      "refersTo": "notice-info",
+      "description": "A neutral fact in Blue Tint; error, caution and success use their status sets the same way.",
+      "html": "<div class=\"ds-notice\"><svg width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M12 11v5M12 8v.01\" stroke-linecap=\"round\"/></svg>Already in your deck</div>",
+      "css": ".ds-notice { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: #eef3fa; border: 1px solid #9db6d8; color: #1b4079; font: 700 1rem/1.55 'Hanken Grotesk', system-ui, sans-serif; } .ds-notice svg { flex-shrink: 0; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Delft Tile",
+    "overview": "Every screen is a hand-painted tile: cobalt glaze on warm porcelain, one motif at a time. The palette is a single blue family on cream, painted with care, so the Dutch word on each tile is what the eye lands on. Spectral, a bookish serif, carries the Dutch words and the screen titles. Hanken Grotesk, a plain grotesque, carries every piece of interface around them. The word is the ornament; the chrome stays quiet.\n\nThe density is calm and phone-sized. One column sits in a 420px canvas with 22px gutters, and one primary action sits at the bottom of the screen. On desktop the phone floats on a deeper cream \"gallery\" wall with a 44px corner radius, like a tile on display. Surfaces are porcelain-white cards with hairline cool borders and soft navy-tinted shadows. Controls are pills that lift a pixel on hover and press down a pixel when tapped: soft, tactile and reassuring, never sharp or loud.\n\nThe one brand illustration is the tulip medallion (`src/components/brand.tsx`), drawn in the same five blues as the palette. It appears on the splash, the welcome screen, onboarding and empty states, and nowhere else.",
+    "keyCharacteristics": [
+      "One hue family (Delft cobalt) on porcelain cream. Green, amber and terracotta appear only as status colours.",
+      "Serif for Dutch words and titles, sans for UI.",
+      "Pills everywhere a finger lands; rounded 20px cards for content.",
+      "Soft lift: navy-tinted shadows, a 1px hover rise, a 1px press.",
+      "Short Material-style motion with a reduced-motion fallback for every animation."
+    ],
+    "rules": [
+      { "name": "The One Glaze Rule", "body": "Blue is the only brand hue. Never introduce a second accent; new emphasis comes from cobalt depth (Deep, Tile, Wash) or from cobalt versus cream.", "section": "colors" },
+      { "name": "The Status Is Not Decoration Rule", "body": "Green, ochre and terracotta appear only when they mean something: a result, a mastery level, a warning. Never use them for a section colour or an illustration.", "section": "colors" },
+      { "name": "The Figma First Rule", "body": "Colour, spacing, radius and size tokens come from Figma (`design/figma-tokens.json` → `npm run tokens`). Never add one only in code.", "section": "colors" },
+      { "name": "The Serif Is For Dutch Rule", "body": "Spectral is used for Dutch words, titles and example sentences only. Buttons, labels, inputs and navigation are always Hanken Grotesk.", "section": "typography" },
+      { "name": "The Rem Rule", "body": "Type sizes are authored in px in Figma and applied as rem (`src/lib/applyTokens.ts`), so text follows the user's text-size setting and iOS Dynamic Type. Never hard-code px font sizes.", "section": "typography" },
+      { "name": "The Cobalt Shadow Rule", "body": "Every shadow is tinted with the palette's navy or the element's own colour. A neutral grey shadow breaks the glaze.", "section": "elevation" },
+      { "name": "The Press Lowers Rule", "body": "On press, a raised control moves down 1px and its shadow tightens (Primary → Pressed). Disabled controls have no shadow and no movement.", "section": "elevation" }
+    ],
+    "dos": [
+      "**Do** use the CSS custom properties (`var(--primary)`, `var(--space-5)`, `var(--radius-card)`) rather than literal values; they are the contract with Figma.",
+      "**Do** put one primary action per screen, full width, at the bottom in the dock.",
+      "**Do** set Dutch words in Spectral and always show their `de`/`het` chip with them.",
+      "**Do** give every animation a `prefers-reduced-motion` fallback, using the motion tokens (`--motion-fast` 120ms to `--motion-flip` 480ms, `--ease-standard` by default).",
+      "**Do** tint shadows with navy or the element's own colour.",
+      "**Do** keep tap targets at least 44px and text sizes in rem."
+    ],
+    "donts": [
+      "**Don't** add a second brand accent; depth and emphasis come from the cobalt family.",
+      "**Don't** use status colours (green, ochre, terracotta) as decoration.",
+      "**Don't** use sharp corners or square buttons; tappable single-line controls are pills.",
+      "**Don't** use grey or black shadows, or a solid opaque bar behind floating navigation.",
+      "**Don't** set buttons, labels or inputs in the serif.",
+      "**Don't** add new illustrations beside the tulip medallion and glyph, or redraw them; they are copied from the design file.",
+      "**Don't** add a token only in code; create it in Figma first and run `npm run tokens`."
+    ]
+  }
+}
